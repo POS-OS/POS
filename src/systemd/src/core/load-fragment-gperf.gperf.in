@@ -73,7 +73,7 @@
 {{type}}.SystemCallErrorNumber,               config_parse_syscall_errno,                         0,                                  offsetof({{type}}, exec_context)
 {{type}}.SystemCallLog,                       config_parse_syscall_log,                           0,                                  offsetof({{type}}, exec_context)
 {{type}}.MemoryDenyWriteExecute,              config_parse_bool,                                  0,                                  offsetof({{type}}, exec_context.memory_deny_write_execute)
-{{type}}.RestrictNamespaces,                  config_parse_restrict_namespaces,                   0,                                  offsetof({{type}}, exec_context)
+{{type}}.RestrictNamespaces,                  config_parse_namespace_flags,                       0,                                  offsetof({{type}}, exec_context.restrict_namespaces)
 {{type}}.RestrictRealtime,                    config_parse_bool,                                  0,                                  offsetof({{type}}, exec_context.restrict_realtime)
 {{type}}.RestrictSUIDSGID,                    config_parse_bool,                                  0,                                  offsetof({{type}}, exec_context.restrict_suid_sgid)
 {{type}}.RestrictAddressFamilies,             config_parse_address_families,                      0,                                  offsetof({{type}}, exec_context)
@@ -90,6 +90,7 @@
 {{type}}.RestrictAddressFamilies,             config_parse_warn_compat,                           DISABLED_CONFIGURATION,             0
 {{type}}.LockPersonality,                     config_parse_warn_compat,                           DISABLED_CONFIGURATION,             0
 {% endif %}
+{{type}}.DelegateNamespaces,                  config_parse_namespace_flags,                       0,                                  offsetof({{type}}, exec_context.delegate_namespaces)
 {{type}}.RestrictFileSystems,                 config_parse_restrict_filesystems,                  0,                                  offsetof({{type}}, exec_context)
 {{type}}.LimitCPU,                            config_parse_rlimit,                                RLIMIT_CPU,                         offsetof({{type}}, exec_context.rlimit)
 {{type}}.LimitFSIZE,                          config_parse_rlimit,                                RLIMIT_FSIZE,                       offsetof({{type}}, exec_context.rlimit)
@@ -180,7 +181,7 @@
 {% else %}
 {{type}}.SmackProcessLabel,                   config_parse_warn_compat,                           DISABLED_CONFIGURATION,             0
 {% endif %}
-{{type}}.ProtectHostname,                     config_parse_bool,                                  0,                                  offsetof({{type}}, exec_context.protect_hostname)
+{{type}}.ProtectHostname,                     config_parse_protect_hostname,                      0,                                  offsetof({{type}}, exec_context)
 {{type}}.MemoryKSM,                           config_parse_tristate,                              0,                                  offsetof({{type}}, exec_context.memory_ksm)
 {%- endmacro -%}
 
@@ -268,8 +269,9 @@
 {%- endmacro -%}
 
 %{
-#if __GNUC__ >= 7
 _Pragma("GCC diagnostic ignored \"-Wimplicit-fallthrough\"")
+#if __GNUC__ >= 15
+_Pragma("GCC diagnostic ignored \"-Wzero-as-null-pointer-constant\"")
 #endif
 #include <stddef.h>
 #include "all-units.h"
@@ -374,6 +376,7 @@ Unit.ConditionOSRelease,                      config_parse_unit_condition_string
 Unit.ConditionMemoryPressure,                 config_parse_unit_condition_string,                 CONDITION_MEMORY_PRESSURE,          offsetof(Unit, conditions)
 Unit.ConditionCPUPressure,                    config_parse_unit_condition_string,                 CONDITION_CPU_PRESSURE,             offsetof(Unit, conditions)
 Unit.ConditionIOPressure,                     config_parse_unit_condition_string,                 CONDITION_IO_PRESSURE,              offsetof(Unit, conditions)
+Unit.ConditionKernelModuleLoaded,             config_parse_unit_condition_string,                 CONDITION_KERNEL_MODULE_LOADED,     offsetof(Unit, conditions)
 Unit.AssertPathExists,                        config_parse_unit_condition_path,                   CONDITION_PATH_EXISTS,              offsetof(Unit, asserts)
 Unit.AssertPathExistsGlob,                    config_parse_unit_condition_path,                   CONDITION_PATH_EXISTS_GLOB,         offsetof(Unit, asserts)
 Unit.AssertPathIsDirectory,                   config_parse_unit_condition_path,                   CONDITION_PATH_IS_DIRECTORY,        offsetof(Unit, asserts)
@@ -406,6 +409,7 @@ Unit.AssertOSRelease,                         config_parse_unit_condition_string
 Unit.AssertMemoryPressure,                    config_parse_unit_condition_string,                 CONDITION_MEMORY_PRESSURE,          offsetof(Unit, asserts)
 Unit.AssertCPUPressure,                       config_parse_unit_condition_string,                 CONDITION_CPU_PRESSURE,             offsetof(Unit, asserts)
 Unit.AssertIOPressure,                        config_parse_unit_condition_string,                 CONDITION_IO_PRESSURE,              offsetof(Unit, asserts)
+Unit.AssertKernelModuleLoaded,                config_parse_unit_condition_string,                 CONDITION_KERNEL_MODULE_LOADED,     offsetof(Unit, asserts)
 Unit.CollectMode,                             config_parse_collect_mode,                          0,                                  offsetof(Unit, collect_mode)
 Service.PIDFile,                              config_parse_pid_file,                              0,                                  offsetof(Service, pid_file)
 Service.ExecCondition,                        config_parse_exec,                                  SERVICE_EXEC_CONDITION,             offsetof(Service, exec_command)

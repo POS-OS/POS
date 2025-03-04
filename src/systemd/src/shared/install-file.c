@@ -44,12 +44,11 @@ static int fs_make_very_read_only(int fd) {
                         r = btrfs_subvol_set_read_only_fd(fd, true);
                         if (r >= 0)
                                 return 0;
-
-                        if (!ERRNO_IS_NOT_SUPPORTED(r) && r != -EINVAL)
+                        if (!ERRNO_IS_NEG_IOCTL_NOT_SUPPORTED(r))
                                 return r;
                 }
 
-                r = chattr_fd(fd, FS_IMMUTABLE_FL, FS_IMMUTABLE_FL, NULL);
+                r = chattr_fd(fd, FS_IMMUTABLE_FL, FS_IMMUTABLE_FL);
                 if (r < 0)
                         return r;
 

@@ -230,8 +230,8 @@ static bool print_multiline(
                 get_log_colors(priority, &color_on, &color_off, &highlight_on);
 
                 if (audit && strempty(color_on)) {
-                        color_on = ANSI_BLUE;
-                        color_off = ANSI_NORMAL;
+                        color_on = ansi_blue();
+                        color_off = ansi_normal();
                 }
         }
 
@@ -335,7 +335,7 @@ static int output_timestamp_monotonic(
         assert(previous_boot_id);
 
         if (!VALID_MONOTONIC(display_ts->monotonic))
-                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No valid monotonic timestamp available");
+                return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "No valid monotonic timestamp available, skipping showing journal entry.");
 
         written_chars += fprintf(f, "[%5"PRI_USEC".%06"PRI_USEC, display_ts->monotonic / USEC_PER_SEC, display_ts->monotonic % USEC_PER_SEC);
 
@@ -375,15 +375,14 @@ static int output_timestamp_realtime(
         assert(j);
 
         if (!VALID_REALTIME(usec))
-                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No valid realtime timestamp available.");
+                return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "No valid realtime timestamp available, skipping showing journal entry.");
 
         switch (mode) {
 
         case OUTPUT_SHORT_FULL:
         case OUTPUT_WITH_UNIT: {
                 if (!format_timestamp_style(buf, sizeof(buf), usec, flags & OUTPUT_UTC ? TIMESTAMP_UTC : TIMESTAMP_PRETTY))
-                        return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
-                                               "Failed to format timestamp: %" PRIu64, usec);
+                        return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "Failed to format timestamp (%"PRIu64"), skipping showing journal entry.", usec);
                 break;
         }
 
@@ -623,6 +622,8 @@ static int output_short(
                 parse_display_realtime(j, realtime, monotonic, &usec);
                 r = output_timestamp_realtime(f, j, mode, flags, usec);
         }
+        if (r == -EINVAL)
+                return 0;
         if (r < 0)
                 return r;
         n += r;
@@ -827,12 +828,12 @@ static int output_verbose(
         timestamp = format_timestamp_style(buf, sizeof buf, usec,
                                            flags & OUTPUT_UTC ? TIMESTAMP_US_UTC : TIMESTAMP_US);
         fprintf(f, "%s%s%s %s[%s]%s\n",
-                timestamp && (flags & OUTPUT_COLOR) ? ANSI_UNDERLINE : "",
+                timestamp && (flags & OUTPUT_COLOR) ? ansi_underline() : "",
                 timestamp ?: "(no timestamp)",
-                timestamp && (flags & OUTPUT_COLOR) ? ANSI_NORMAL : "",
-                (flags & OUTPUT_COLOR) ? ANSI_GREY : "",
+                timestamp && (flags & OUTPUT_COLOR) ? ansi_normal() : "",
+                (flags & OUTPUT_COLOR) ? ansi_grey() : "",
                 cursor,
-                (flags & OUTPUT_COLOR) ? ANSI_NORMAL : "");
+                (flags & OUTPUT_COLOR) ? ansi_grey() : "");
 
         JOURNAL_FOREACH_DATA_RETVAL(j, data, length, r) {
                 _cleanup_free_ char *urlified = NULL;
@@ -859,8 +860,8 @@ static int output_verbose(
 
                 if (flags & OUTPUT_COLOR) {
                         if (startswith(data, "MESSAGE=")) {
-                                on = ANSI_HIGHLIGHT;
-                                off = ANSI_NORMAL;
+                                on = ansi_highlight();
+                                off = ansi_normal();
                         } else if (startswith(data, "CONFIG_FILE=")) {
                                 _cleanup_free_ char *u = NULL;
 
@@ -875,8 +876,8 @@ static int output_verbose(
 
                         } else if (startswith(data, "_")) {
                                 /* Highlight trusted data as such */
-                                on = ANSI_GREEN;
-                                off = ANSI_NORMAL;
+                                on = ansi_green();
+                                off = ansi_normal();
                         }
                 }
 

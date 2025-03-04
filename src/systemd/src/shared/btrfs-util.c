@@ -3,8 +3,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <inttypes.h>
-#include <linux/btrfs_tree.h>
-#include <linux/fs.h>
 #include <linux/loop.h>
 #include <linux/magic.h>
 #include <stddef.h>
@@ -26,6 +24,7 @@
 #include "fs-util.h"
 #include "io-util.h"
 #include "macro.h"
+#include "missing_fs.h"
 #include "path-util.h"
 #include "rm-rf.h"
 #include "smack-util.h"
@@ -328,6 +327,12 @@ int btrfs_subvol_get_info_fd(int fd, uint64_t subvol_id, BtrfsSubvolInfo *ret) {
 
         assert(fd >= 0);
         assert(ret);
+
+        /* Make sure this works on O_PATH fds */
+        _cleanup_close_ int fd_close = -EBADF;
+        fd = fd_reopen_condition(fd, O_CLOEXEC|O_RDONLY|O_DIRECTORY, O_PATH, &fd_close);
+        if (fd < 0)
+                return fd;
 
         if (subvol_id == 0) {
                 r = btrfs_subvol_get_id_fd(fd, &subvol_id);
@@ -1544,7 +1549,7 @@ int btrfs_subvol_snapshot_at_full(
                                  * it: the IMMUTABLE bit. Let's use this here, if this is requested. */
 
                                 if (flags & BTRFS_SNAPSHOT_FALLBACK_IMMUTABLE)
-                                        (void) chattr_at(new_fd, subvolume, FS_IMMUTABLE_FL, FS_IMMUTABLE_FL, NULL);
+                                        (void) chattr_at(new_fd, subvolume, FS_IMMUTABLE_FL, FS_IMMUTABLE_FL);
                         } else {
                                 r = btrfs_subvol_set_read_only_at(new_fd, subvolume, true);
                                 if (r < 0)

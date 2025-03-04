@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
 #include <linux/rtnetlink.h>
+#include <threads.h>
 
 #include "alloc-util.h"
+#include "bitfield.h"
 #include "logarithm.h"
-#include "missing_threads.h"
 #include "networkd-address.h"
 #include "networkd-link.h"
 #include "networkd-manager.h"
@@ -405,7 +406,7 @@ int route_flags_to_string_alloc(uint32_t flags, char **ret) {
         assert(ret);
 
         for (size_t i = 0; i < ELEMENTSOF(map); i++)
-                if (FLAGS_SET(flags, 1 << i) && map[i])
+                if (BIT_SET(flags, i) && map[i])
                         if (!strextend_with_separator(&str, ",", map[i]))
                                 return -ENOMEM;
 

@@ -45,6 +45,7 @@
 #include "process-util.h"
 #include "recurse-dir.h"
 #include "sha256.h"
+#include "shift-uid.h"
 #include "stat-util.h"
 #include "string-util.h"
 #include "strv.h"
@@ -68,6 +69,7 @@ static enum {
         ACTION_DISCOVER,
         ACTION_VALIDATE,
         ACTION_MAKE_ARCHIVE,
+        ACTION_SHIFT,
 } arg_action = ACTION_DISSECT;
 static char *arg_image = NULL;
 static char *arg_root = NULL;
@@ -92,9 +94,14 @@ static bool arg_rmdir = false;
 static bool arg_in_memory = false;
 static char **arg_argv = NULL;
 static char *arg_loop_ref = NULL;
+static bool arg_loop_ref_auto = false;
 static ImagePolicy *arg_image_policy = NULL;
 static bool arg_mtree_hash = true;
 static bool arg_via_service = false;
+static RuntimeScope arg_runtime_scope = _RUNTIME_SCOPE_INVALID;
+static bool arg_all = false;
+static uid_t arg_uid_base = UID_INVALID;
+static bool arg_quiet = false;
 
 STATIC_DESTRUCTOR_REGISTER(arg_image, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_root, freep);
@@ -127,6 +134,7 @@ static int help(void) {
                "%1$s [OPTIONS...] --make-archive IMAGE [TARGET]\n"
                "%1$s [OPTIONS...] --discover\n"
                "%1$s [OPTIONS...] --validate IMAGE\n"
+               "%1$s [OPTIONS...] --shift IMAGE UIDBASE\n"
                "\n%5$sDissect a Discoverable Disk Image (DDI).%6$s\n\n"
                "%3$sOptions:%4$s\n"
                "     --no-pager           Do not pipe output into a pager\n"
@@ -150,7 +158,11 @@ static int help(void) {
                "     --json=pretty|short|off\n"
                "                          Generate JSON output\n"
                "     --loop-ref=NAME      Set reference string for loopback device\n"
+               "     --loop-ref-auto      Derive reference string from image file name\n"
                "     --mtree-hash=BOOL    Whether to include SHA256 hash in the mtree output\n"
+               "     --user               Discover user images\n"
+               "     --system             Discover system images\n"
+               "     --all                Show hidden images too\n"
                "\n%3$sCommands:%4$s\n"
                "  -h --help               Show this help\n"
                "     --version            Show package version\n"
@@ -169,6 +181,8 @@ static int help(void) {
                "     --make-archive       Convert the DDI to an archive file\n"
                "     --discover           Discover DDIs in well known directories\n"
                "     --validate           Validate image and image policy\n"
+               "     --shift              Shift UID range to selected base\n"
+               "  -q --quiet              Suppress output of chosen loopback block device\n"
                "\nSee the %2$s for details.\n",
                program_invocation_short_name,
                link,
@@ -270,10 +284,15 @@ static int parse_argv(int argc, char *argv[]) {
                 ARG_ATTACH,
                 ARG_DETACH,
                 ARG_LOOP_REF,
+                ARG_LOOP_REF_AUTO,
                 ARG_IMAGE_POLICY,
                 ARG_VALIDATE,
                 ARG_MTREE_HASH,
                 ARG_MAKE_ARCHIVE,
+                ARG_SHIFT,
+                ARG_SYSTEM,
+                ARG_USER,
+                ARG_ALL,
         };
 
         static const struct option options[] = {
@@ -303,14 +322,21 @@ static int parse_argv(int argc, char *argv[]) {
                 { "json",          required_argument, NULL, ARG_JSON          },
                 { "discover",      no_argument,       NULL, ARG_DISCOVER      },
                 { "loop-ref",      required_argument, NULL, ARG_LOOP_REF      },
+                { "loop-ref-auto", no_argument,       NULL, ARG_LOOP_REF_AUTO },
                 { "image-policy",  required_argument, NULL, ARG_IMAGE_POLICY  },
                 { "validate",      no_argument,       NULL, ARG_VALIDATE      },
                 { "mtree-hash",    required_argument, NULL, ARG_MTREE_HASH    },
                 { "make-archive",  no_argument,       NULL, ARG_MAKE_ARCHIVE  },
+                { "shift",         no_argument,       NULL, ARG_SHIFT         },
+                { "system",        no_argument,       NULL, ARG_SYSTEM        },
+                { "user",          no_argument,       NULL, ARG_USER          },
+                { "all",           no_argument,       NULL, ARG_ALL           },
+                { "quiet",         no_argument,       NULL, 'q'               },
                 {}
         };
 
         _cleanup_free_ char **buf = NULL; /* we use free(), not strv_free() here, as we don't copy the strings here */
+        bool system_scope_requested = false, user_scope_requested = false;
         int c, r;
 
         assert(argc >= 0);
@@ -320,7 +346,7 @@ static int parse_argv(int argc, char *argv[]) {
         if (r < 0)
                 return r;
 
-        while ((c = getopt_long(argc, argv, "hmurMUlxa", options, NULL)) >= 0) {
+        while ((c = getopt_long(argc, argv, "hmurMUlxaq", options, NULL)) >= 0) {
 
                 switch (c) {
 
@@ -503,6 +529,7 @@ static int parse_argv(int argc, char *argv[]) {
                 case ARG_LOOP_REF:
                         if (isempty(optarg)) {
                                 arg_loop_ref = mfree(arg_loop_ref);
+                                arg_loop_ref_auto = false;
                                 break;
                         }
 
@@ -512,6 +539,13 @@ static int parse_argv(int argc, char *argv[]) {
                         r = free_and_strdup_warn(&arg_loop_ref, optarg);
                         if (r < 0)
                                 return r;
+
+                        arg_loop_ref_auto = false;
+                        break;
+
+                case ARG_LOOP_REF_AUTO:
+                        arg_loop_ref = mfree(arg_loop_ref);
+                        arg_loop_ref_auto = true;
                         break;
 
                 case ARG_IMAGE_POLICY:
@@ -531,12 +565,31 @@ static int parse_argv(int argc, char *argv[]) {
                         break;
 
                 case ARG_MAKE_ARCHIVE:
-
                         r = dlopen_libarchive();
                         if (r < 0)
                                 return log_error_errno(r, "Archive support not available (compiled without libarchive, or libarchive not installed?).");
 
                         arg_action = ACTION_MAKE_ARCHIVE;
+                        break;
+
+                case ARG_SHIFT:
+                        arg_action = ACTION_SHIFT;
+                        break;
+
+                case ARG_SYSTEM:
+                        system_scope_requested = true;
+                        break;
+
+                case ARG_USER:
+                        user_scope_requested = true;
+                        break;
+
+                case ARG_ALL:
+                        arg_all = true;
+                        break;
+
+                case 'q':
+                        arg_quiet = true;
                         break;
 
                 case '?':
@@ -546,6 +599,10 @@ static int parse_argv(int argc, char *argv[]) {
                         assert_not_reached();
                 }
         }
+
+        if (system_scope_requested || user_scope_requested)
+                arg_runtime_scope = system_scope_requested && user_scope_requested ? _RUNTIME_SCOPE_INVALID :
+                        system_scope_requested ? RUNTIME_SCOPE_SYSTEM : RUNTIME_SCOPE_USER;
 
         switch (arg_action) {
 
@@ -702,6 +759,33 @@ static int parse_argv(int argc, char *argv[]) {
 
                 arg_flags |= DISSECT_IMAGE_READ_ONLY;
                 arg_flags &= ~(DISSECT_IMAGE_PIN_PARTITION_DEVICES|DISSECT_IMAGE_ADD_PARTITION_DEVICES);
+                break;
+
+        case ACTION_SHIFT:
+                if (optind + 2 != argc)
+                        return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                               "Expected an image path and a UID base as only argument.");
+
+                r = parse_image_path_argument(argv[optind], &arg_root, &arg_image);
+                if (r < 0)
+                        return r;
+
+                if (streq(argv[optind + 1], "foreign"))
+                        arg_uid_base = FOREIGN_UID_BASE;
+                else {
+                        r = parse_uid(argv[optind + 1], &arg_uid_base);
+                        if (r < 0)
+                                return log_error_errno(r, "Failed to parse UID base: %s", argv[optind + 1]);
+
+                        if ((arg_uid_base & 0xFFFF) != 0)
+                                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Selected UID base not a multiple of 64K: " UID_FMT, arg_uid_base);
+                        if (arg_uid_base != 0 &&
+                            !uid_is_container(arg_uid_base) &&
+                            !uid_is_foreign(arg_uid_base))
+                                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Selected UID range is not in the container range, nor the foreign one, refusing.");
+                }
+
+                arg_flags |= DISSECT_IMAGE_REQUIRE_ROOT;
                 break;
 
         default:
@@ -1172,7 +1256,7 @@ static const char *pick_color_for_uid_gid(uid_t uid) {
                 return ansi_normal();            /* files in disk images are typically owned by root and other system users, no issue there */
         if (uid_is_dynamic(uid))
                 return ansi_highlight_red();     /* files should never be owned persistently by dynamic users, and there are just no excuses */
-        if (uid_is_container(uid))
+        if (uid_is_container(uid) || uid_is_foreign(uid))
                 return ansi_highlight_cyan();
 
         return ansi_highlight();
@@ -1417,7 +1501,7 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
         const char *root;
         int r;
 
-        assert(IN_SET(arg_action, ACTION_LIST, ACTION_MTREE, ACTION_COPY_FROM, ACTION_COPY_TO, ACTION_MAKE_ARCHIVE));
+        assert(IN_SET(arg_action, ACTION_LIST, ACTION_MTREE, ACTION_COPY_FROM, ACTION_COPY_TO, ACTION_MAKE_ARCHIVE, ACTION_SHIFT));
 
         if (arg_image) {
                 assert(m);
@@ -1445,7 +1529,7 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
                 if (r < 0)
                         return r;
 
-                mounted_dir = TAKE_PTR(t);
+                root = mounted_dir = TAKE_PTR(t);
 
                 if (d) {
                         r = loop_device_flock(d, LOCK_UN);
@@ -1456,11 +1540,10 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
                 r = dissected_image_relinquish(m);
                 if (r < 0)
                         return log_error_errno(r, "Failed to relinquish DM and loopback block devices: %m");
-        }
 
-        root = mounted_dir ?: arg_root;
-
-        dissected_image_close(m);
+                dissected_image_close(m);
+        } else
+                root = arg_root;
 
         switch (arg_action) {
 
@@ -1482,7 +1565,7 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
                 }
 
                 /* Try to copy as directory? */
-                r = copy_directory_at(source_fd, NULL, AT_FDCWD, arg_target, COPY_REFLINK|COPY_MERGE_EMPTY|COPY_SIGINT|COPY_HARDLINKS);
+                r = copy_directory_at(source_fd, NULL, AT_FDCWD, arg_target, COPY_REFLINK|COPY_MERGE|COPY_REPLACE|COPY_SIGINT|COPY_HARDLINKS);
                 if (r >= 0)
                         return 0;
                 if (r != -ENOTDIR)
@@ -1561,9 +1644,9 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
                                 if (errno != ENOENT)
                                         return log_error_errno(errno, "Failed to open destination '%s': %m", arg_target);
 
-                                r = copy_tree_at(source_fd, ".", dfd, bn, UID_INVALID, GID_INVALID, COPY_REFLINK|COPY_REPLACE|COPY_SIGINT|COPY_HARDLINKS, NULL, NULL);
+                                r = copy_tree_at(source_fd, ".", dfd, bn, UID_INVALID, GID_INVALID, COPY_REFLINK|COPY_MERGE|COPY_REPLACE|COPY_SIGINT|COPY_HARDLINKS, NULL, NULL);
                         } else
-                                r = copy_tree_at(source_fd, ".", target_fd, ".", UID_INVALID, GID_INVALID, COPY_REFLINK|COPY_REPLACE|COPY_SIGINT|COPY_HARDLINKS, NULL, NULL);
+                                r = copy_tree_at(source_fd, ".", target_fd, ".", UID_INVALID, GID_INVALID, COPY_REFLINK|COPY_MERGE|COPY_REPLACE|COPY_SIGINT|COPY_HARDLINKS, NULL, NULL);
                         if (r < 0)
                                 return log_error_errno(r, "Failed to copy '%s' to '%s' in image '%s': %m", arg_source, arg_target, arg_image);
 
@@ -1673,6 +1756,13 @@ static int action_list_or_mtree_or_copy_or_make_archive(DissectedImage *m, LoopD
 #endif
         }
 
+        case ACTION_SHIFT:
+                r = path_patch_uid(root, arg_uid_base, 0x10000);
+                if (r < 0)
+                        return log_error_errno(r, "Failed to shift UID base: %m");
+
+                return 0;
+
         default:
                 assert_not_reached();
         }
@@ -1691,7 +1781,7 @@ static int action_umount(const char *path) {
         if (fd < 0)
                 return log_error_errno(fd, "Failed to resolve path '%s': %m", path);
 
-        r = fd_is_mount_point(fd, NULL, 0);
+        r = is_mount_point_at(fd, NULL, 0);
         if (r == 0)
                 return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "'%s' is not a mount point", canonical);
         if (r < 0)
@@ -1851,7 +1941,7 @@ static int action_discover(void) {
                 return log_oom();
 
         for (ImageClass cl = 0; cl < _IMAGE_CLASS_MAX; cl++) {
-                r = image_discover(cl, NULL, images);
+                r = image_discover(arg_runtime_scope, cl, NULL, images);
                 if (r < 0)
                         return log_error_errno(r, "Failed to discover images: %m");
         }
@@ -1870,18 +1960,21 @@ static int action_discover(void) {
 
         HASHMAP_FOREACH(img, images) {
 
-                if (!IN_SET(img->type, IMAGE_RAW, IMAGE_BLOCK))
+                if (!arg_all && startswith(img->name, "."))
                         continue;
 
                 r = table_add_many(
                                 t,
                                 TABLE_STRING, img->name,
+                                TABLE_SET_COLOR, startswith(img->name, ".") ? ANSI_GREY : NULL,
                                 TABLE_STRING, image_type_to_string(img->type),
                                 TABLE_STRING, image_class_to_string(img->class),
                                 TABLE_BOOLEAN, img->read_only,
+                                TABLE_SET_COLOR, !img->read_only ? ANSI_HIGHLIGHT_GREEN : ANSI_HIGHLIGHT_RED,
                                 TABLE_PATH, img->path,
                                 TABLE_TIMESTAMP, img->mtime != 0 ? img->mtime : img->crtime,
-                                TABLE_SIZE, img->usage);
+                                TABLE_SIZE, img->usage,
+                                TABLE_SET_COLOR, img->usage <= 0 ? ANSI_HIGHLIGHT_RED : NULL);
                 if (r < 0)
                         return table_log_add_error(r);
         }
@@ -1905,7 +1998,9 @@ static int action_attach(DissectedImage *m, LoopDevice *d) {
         if (r < 0)
                 return log_error_errno(r, "Failed to relinquish DM and loopback block devices: %m");
 
-        puts(d->node);
+        if (!arg_quiet)
+                puts(d->node);
+
         return 0;
 }
 
@@ -2036,6 +2131,16 @@ static int run(int argc, char *argv[]) {
                         return r;
         }
 
+        if (arg_root) {
+                r = path_pick_update_warn(
+                                &arg_root,
+                                &pick_filter_image_dir,
+                                PICK_ARCHITECTURE|PICK_TRIES,
+                                /* ret_result= */ NULL);
+                if (r < 0)
+                        return r;
+        }
+
         switch (arg_action) {
         case ACTION_UMOUNT:
                 return action_umount(arg_path);
@@ -2065,6 +2170,12 @@ static int run(int argc, char *argv[]) {
                                                                         * support */
         }
 
+        if (!arg_loop_ref && arg_loop_ref_auto) {
+                r = path_extract_filename(arg_image, &arg_loop_ref);
+                if (r < 0)
+                        return log_error_errno(r, "Failed to extract file name from image path '%s': %m", arg_image);
+        }
+
         if (arg_action == ACTION_VALIDATE)
                 return action_validate();
 
@@ -2082,7 +2193,7 @@ static int run(int argc, char *argv[]) {
                         else
                                 r = loop_device_make_by_path(arg_image, open_flags, /* sector_size= */ UINT32_MAX, loop_flags, LOCK_SH, &d);
                         if (r < 0) {
-                                if (!ERRNO_IS_PRIVILEGE(r) || !IN_SET(arg_action, ACTION_DISSECT, ACTION_LIST, ACTION_MTREE, ACTION_COPY_FROM, ACTION_COPY_TO))
+                                if (!ERRNO_IS_PRIVILEGE(r) || !IN_SET(arg_action, ACTION_DISSECT, ACTION_LIST, ACTION_MTREE, ACTION_COPY_FROM, ACTION_COPY_TO, ACTION_SHIFT))
                                         return log_error_errno(r, "Failed to set up loopback device for %s: %m", arg_image);
 
                                 log_debug_errno(r, "Lacking permissions to set up loopback block device for %s, using service: %m", arg_image);
@@ -2130,8 +2241,8 @@ static int run(int argc, char *argv[]) {
                         if (arg_in_memory)
                                 return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP), "--in-memory= not supported when operating via systemd-mountfsd.");
 
-                        if (arg_loop_ref)
-                                return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP), "--loop-ref= not supported when operating via systemd-mountfsd.");
+                        if (arg_loop_ref || arg_loop_ref_auto) /* yes, the 2nd check is strictly speaking redundant, given the normalization we did above, but let's be explicit here */
+                                return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP), "--loop-ref=/--loop-ref-auto not supported when operating via systemd-mountfsd.");
 
                         if (verity_settings_set(&arg_verity_settings))
                                 return log_error_errno(SYNTHETIC_ERRNO(EOPNOTSUPP), "Externally configured verity settings not supported when operating via systemd-mountfsd.");
@@ -2167,6 +2278,7 @@ static int run(int argc, char *argv[]) {
         case ACTION_COPY_FROM:
         case ACTION_COPY_TO:
         case ACTION_MAKE_ARCHIVE:
+        case ACTION_SHIFT:
                 return action_list_or_mtree_or_copy_or_make_archive(m, d, userns_fd);
 
         case ACTION_WITH:

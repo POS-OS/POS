@@ -2,11 +2,11 @@
 
 #include "af-list.h"
 #include "daemon-util.h"
-#include "data-fd-util.h"
 #include "fd-util.h"
 #include "fileio.h"
 #include "iovec-util.h"
 #include "json-util.h"
+#include "memfd-util.h"
 #include "networkd-address.h"
 #include "networkd-json.h"
 #include "networkd-link.h"
@@ -69,7 +69,7 @@ int manager_serialize(Manager *manager) {
                 return r;
 
         _cleanup_close_ int fd = -EBADF;
-        fd = acquire_data_fd(dump);
+        fd = memfd_new_and_seal_string("serialization", dump);
         if (fd < 0)
                 return fd;
 
@@ -442,7 +442,7 @@ int manager_deserialize(Manager *manager) {
                 return log_debug_errno(errno, "Failed to fdopen() serialization file descriptor: %m");
 
         _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
-        unsigned err_line, err_column;
+        unsigned err_line = 0, err_column = 0;
         r = sd_json_parse_file(
                         f,
                         /* path = */ NULL,

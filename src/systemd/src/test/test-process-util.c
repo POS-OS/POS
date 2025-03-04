@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <linux/oom.h>
 #include <pthread.h>
+#include <sys/eventfd.h>
 #include <sys/mount.h>
 #include <sys/personality.h>
 #include <sys/prctl.h>
@@ -27,6 +28,7 @@
 #include "missing_syscall.h"
 #include "namespace-util.h"
 #include "parse-util.h"
+#include "pidfd-util.h"
 #include "process-util.h"
 #include "procfs-util.h"
 #include "rlimit-util.h"
@@ -69,7 +71,7 @@ static void test_pid_get_comm_one(pid_t pid) {
         ASSERT_OK(pid_get_cmdline(pid, 1, 0, &d));
         log_info("PID"PID_FMT" cmdline truncated to 1: '%s'", pid, d);
 
-        r = get_process_ppid(pid, &e);
+        r = pid_get_ppid(pid, &e);
         if (pid == 1)
                 ASSERT_ERROR(r, EADDRNOTAVAIL);
         else
@@ -657,6 +659,24 @@ TEST(safe_fork) {
         ASSERT_OK(wait_for_terminate(pid, &status));
         ASSERT_EQ(status.si_code, CLD_EXITED);
         ASSERT_EQ(status.si_status, 88);
+
+        _cleanup_(pidref_done) PidRef child = PIDREF_NULL;
+        r = pidref_safe_fork("(test-child)", FORK_DETACH, &child);
+        if (r == 0) {
+                /* Don't freeze so this doesn't linger around forever in case something goes wrong. */
+                usleep_safe(100 * USEC_PER_SEC);
+                _exit(EXIT_SUCCESS);
+        }
+
+        ASSERT_OK_POSITIVE(r);
+        ASSERT_GT(child.pid, 0);
+        ASSERT_OK(pidref_get_ppid(&child, &pid));
+        ASSERT_OK(pidref_kill(&child, SIGKILL));
+
+        if (is_reaper_process())
+                ASSERT_EQ(pid, getpid_cached());
+        else
+                ASSERT_NE(pid, getpid_cached());
 }
 
 TEST(pid_to_ptr) {
@@ -701,7 +721,7 @@ TEST(ioprio_class_from_to_string) {
         test_ioprio_class_from_to_string_one("0", IOPRIO_CLASS_NONE, IOPRIO_CLASS_BE);
         test_ioprio_class_from_to_string_one("1", 1, 1);
         test_ioprio_class_from_to_string_one("7", 7, 7);
-        test_ioprio_class_from_to_string_one("8", 8, 8);
+        test_ioprio_class_from_to_string_one("8", -EINVAL, -EINVAL);
         test_ioprio_class_from_to_string_one("9", -EINVAL, -EINVAL);
         test_ioprio_class_from_to_string_one("-1", -EINVAL, -EINVAL);
 }
@@ -813,18 +833,18 @@ TEST(setpriority_closest) {
         }
 }
 
-TEST(get_process_ppid) {
+TEST(pid_get_ppid) {
         uint64_t limit;
         int r;
 
-        ASSERT_ERROR(get_process_ppid(1, NULL), EADDRNOTAVAIL);
+        ASSERT_ERROR(pid_get_ppid(1, NULL), EADDRNOTAVAIL);
 
         /* the process with the PID above the global limit definitely doesn't exist. Verify that */
         ASSERT_OK(procfs_get_pid_max(&limit));
         log_debug("kernel.pid_max = %"PRIu64, limit);
 
         if (limit < INT_MAX) {
-                r = get_process_ppid(limit + 1, NULL);
+                r = pid_get_ppid(limit + 1, NULL);
                 log_debug_errno(r, "get_process_limit(%"PRIu64") → %d/%m", limit + 1, r);
                 assert(r == -ESRCH);
         }
@@ -833,7 +853,7 @@ TEST(get_process_ppid) {
                 _cleanup_free_ char *c1 = NULL, *c2 = NULL;
                 pid_t ppid;
 
-                r = get_process_ppid(pid, &ppid);
+                r = pid_get_ppid(pid, &ppid);
                 if (r == -EADDRNOTAVAIL) {
                         log_info("No further parent PID");
                         break;
@@ -847,6 +867,29 @@ TEST(get_process_ppid) {
                 log_info("Parent of " PID_FMT " (%s) is " PID_FMT " (%s).", pid, c1, ppid, c2);
 
                 pid = ppid;
+        }
+
+        /* the same via pidref */
+        _cleanup_(pidref_done) PidRef pidref = PIDREF_NULL;
+        ASSERT_OK(pidref_set_self(&pidref));
+        for (;;) {
+                _cleanup_free_ char *c1 = NULL, *c2 = NULL;
+                _cleanup_(pidref_done) PidRef parent = PIDREF_NULL;
+                r = pidref_get_ppid_as_pidref(&pidref, &parent);
+                if (r == -EADDRNOTAVAIL) {
+                        log_info("No further parent PID");
+                        break;
+                }
+
+                ASSERT_OK(r);
+
+                ASSERT_OK(pidref_get_cmdline(&pidref, SIZE_MAX, PROCESS_CMDLINE_COMM_FALLBACK, &c1));
+                ASSERT_OK(pidref_get_cmdline(&parent, SIZE_MAX, PROCESS_CMDLINE_COMM_FALLBACK, &c2));
+
+                log_info("Parent of " PID_FMT " (%s) is " PID_FMT " (%s).", pidref.pid, c1, parent.pid, c2);
+
+                pidref_done(&pidref);
+                pidref = TAKE_PIDREF(parent);
         }
 }
 
@@ -984,7 +1027,7 @@ TEST(pid_get_start_time) {
 
         _cleanup_(pidref_done_sigkill_wait) PidRef child = PIDREF_NULL;
 
-        ASSERT_OK(pidref_safe_fork("(stub)", FORK_RESET_SIGNALS|FORK_CLOSE_ALL_FDS|FORK_REOPEN_LOG, &child));
+        ASSERT_OK_POSITIVE(pidref_safe_fork("(stub)", FORK_RESET_SIGNALS|FORK_CLOSE_ALL_FDS|FORK_REOPEN_LOG|FORK_FREEZE, &child));
 
         usec_t start_time2;
         ASSERT_OK(pidref_get_start_time(&child, &start_time2));
@@ -992,6 +1035,68 @@ TEST(pid_get_start_time) {
         log_info("child starttime: " USEC_FMT, start_time2);
 
         ASSERT_GE(start_time2, start_time);
+}
+
+TEST(pidref_from_same_root_fs) {
+        int r;
+
+        _cleanup_(pidref_done) PidRef pid1 = PIDREF_NULL, self = PIDREF_NULL;
+
+        ASSERT_OK(pidref_set_self(&self));
+        ASSERT_OK(pidref_set_pid(&pid1, 1));
+
+        ASSERT_OK_POSITIVE(pidref_from_same_root_fs(&self, &self));
+        ASSERT_OK_POSITIVE(pidref_from_same_root_fs(&pid1, &pid1));
+
+        r = pidref_from_same_root_fs(&pid1, &self);
+        if (ERRNO_IS_NEG_PRIVILEGE(r))
+                return (void) log_tests_skipped("skipping pidref_from_same_root_fs() test, lacking privileged.");
+        ASSERT_OK(r);
+        log_info("PID1 and us have the same rootfs: %s", yes_no(r));
+
+        int q = pidref_from_same_root_fs(&self, &pid1);
+        ASSERT_OK(q);
+        ASSERT_EQ(r, q);
+
+        _cleanup_(pidref_done_sigkill_wait) PidRef child1 = PIDREF_NULL;
+        ASSERT_OK(pidref_safe_fork("(child1)", FORK_RESET_SIGNALS|FORK_CLOSE_ALL_FDS|FORK_REOPEN_LOG|FORK_FREEZE, &child1));
+        ASSERT_OK_POSITIVE(pidref_from_same_root_fs(&self, &child1));
+
+        _cleanup_close_ int efd = eventfd(0, EFD_CLOEXEC);
+        ASSERT_OK_ERRNO(efd);
+
+        _cleanup_(pidref_done_sigkill_wait) PidRef child2 = PIDREF_NULL;
+        r = pidref_safe_fork("(child2)", FORK_RESET_SIGNALS|FORK_REOPEN_LOG, &child2);
+        ASSERT_OK(r);
+
+        if (r == 0) {
+                ASSERT_OK_ERRNO(chroot("/usr"));
+                uint64_t u = 1;
+
+                ASSERT_OK_EQ_ERRNO(write(efd, &u, sizeof(u)), (ssize_t) sizeof(u));
+                freeze();
+        }
+
+        uint64_t u;
+        ASSERT_OK_EQ_ERRNO(read(efd, &u, sizeof(u)), (ssize_t) sizeof(u));
+
+        ASSERT_OK_ZERO(pidref_from_same_root_fs(&self, &child2));
+        ASSERT_OK_ZERO(pidref_from_same_root_fs(&child2, &self));
+}
+
+TEST(pidfd_get_inode_id_self_cached) {
+        int r;
+
+        log_info("pid=" PID_FMT, getpid_cached());
+
+        uint64_t id;
+        r = pidfd_get_inode_id_self_cached(&id);
+        if (ERRNO_IS_NEG_NOT_SUPPORTED(r))
+                log_info("pidfdid not supported");
+        else {
+                assert(r >= 0);
+                log_info("pidfdid=%" PRIu64, id);
+        }
 }
 
 static int intro(void) {

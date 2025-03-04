@@ -10,6 +10,7 @@
 #include "sd-varlink.h"
 
 #include "ask-password-api.h"
+#include "bitfield.h"
 #include "blockdev-util.h"
 #include "boot-entry.h"
 #include "build.h"
@@ -2260,7 +2261,7 @@ static int show_pcr_table(EventLog *el, sd_json_variant **ret_variant) {
                 bool fully_recognized = el->registers[pcr].fully_recognized;
 
                 /* Whether any unmatched components touch this PCR */
-                bool missing_components = FLAGS_SET(el->missing_component_pcrs, UINT32_C(1) << pcr);
+                bool missing_components = BIT_SET(el->missing_component_pcrs, pcr);
 
                 const char *emoji = special_glyph(
                                 !hash_match ? SPECIAL_GLYPH_DEPRESSED_SMILEY :
@@ -2297,7 +2298,7 @@ static int show_pcr_table(EventLog *el, sd_json_variant **ret_variant) {
                 for (size_t i = 0; i < el->n_algorithms; i++) {
                         const char *color;
 
-                        color = is_unset_pcr(el->registers[pcr].banks[i].calculated.buffer, el->registers[pcr].banks[i].calculated.size) ? ANSI_GREY : NULL;
+                        color = is_unset_pcr(el->registers[pcr].banks[i].calculated.buffer, el->registers[pcr].banks[i].calculated.size) ? ansi_grey() : NULL;
 
                         if (el->registers[pcr].banks[i].calculated.size > 0) {
                                 _cleanup_free_ char *hex = NULL;
@@ -2325,8 +2326,8 @@ static int show_pcr_table(EventLog *el, sd_json_variant **ret_variant) {
                         if (!hex)
                                 return log_oom();
 
-                        color = !hash_match ? ANSI_HIGHLIGHT_RED :
-                                is_unset_pcr(el->registers[pcr].banks[i].observed.buffer, el->registers[pcr].banks[i].observed.size) ? ANSI_GREY : NULL;
+                        color = !hash_match ? ansi_highlight_red() :
+                                is_unset_pcr(el->registers[pcr].banks[i].observed.buffer, el->registers[pcr].banks[i].observed.size) ? ansi_grey() : NULL;
 
                         r = table_add_many(table,
                                            TABLE_STRING, hex,
@@ -2638,7 +2639,7 @@ static int verb_list_components(int argc, char *argv[], void *userdata) {
                         if (marker) {
                                 r = table_add_many(table,
                                                    TABLE_STRING, marker,
-                                                   TABLE_SET_COLOR, ANSI_GREY,
+                                                   TABLE_SET_COLOR, ansi_grey(),
                                                    TABLE_EMPTY);
                                 if (r < 0)
                                         return table_log_add_error(r);
@@ -2675,7 +2676,7 @@ static int event_log_pcr_mask_checks_out(EventLog *el, uint32_t mask) {
 
         for (uint32_t pcr = 0; pcr < TPM2_PCRS_MAX; pcr++) {
 
-                if (!FLAGS_SET(mask, UINT32_C(1) << pcr))
+                if (!BIT_SET(mask, pcr))
                         continue;
 
                 if (!event_log_pcr_checks_out(el, el->registers + pcr))
@@ -2815,7 +2816,7 @@ static int make_pcrlock_record_from_stream(
         for (uint32_t i = 0; i < TPM2_PCRS_MAX; i++) {
                 _cleanup_(sd_json_variant_unrefp) sd_json_variant *record = NULL;
 
-                if (!FLAGS_SET(pcr_mask, UINT32_C(1) << i))
+                if (!BIT_SET(pcr_mask, i))
                         continue;
 
                 r = sd_json_buildo(
@@ -3669,7 +3670,7 @@ static int verb_lock_pe(int argc, char *argv[], void *userdata) {
         for (uint32_t i = 0; i < TPM2_PCRS_MAX; i++) {
                 _cleanup_(sd_json_variant_unrefp) sd_json_variant *digests = NULL;
 
-                if (!FLAGS_SET(arg_pcr_mask, UINT32_C(1) << i))
+                if (!BIT_SET(arg_pcr_mask, i))
                         continue;
 
                 FOREACH_ARRAY(pa, tpm2_hash_algorithms, TPM2_N_HASH_ALGORITHMS) {
@@ -3894,7 +3895,7 @@ static int event_log_reduce_to_safe_pcrs(EventLog *el, uint32_t *pcrs) {
 
         for (uint32_t pcr = 0; pcr < TPM2_PCRS_MAX; pcr++) {
 
-                if (!FLAGS_SET(*pcrs, UINT32_C(1) << pcr))
+                if (!BIT_SET(*pcrs, pcr))
                         continue;
 
                 if (!event_log_pcr_checks_out(el, el->registers + pcr)) {
@@ -3907,7 +3908,7 @@ static int event_log_reduce_to_safe_pcrs(EventLog *el, uint32_t *pcrs) {
                         goto drop;
                 }
 
-                if (FLAGS_SET(el->missing_component_pcrs, UINT32_C(1) << pcr)) {
+                if (BIT_SET(el->missing_component_pcrs, pcr)) {
                         log_notice("PCR %" PRIu32 " (%s) is touched by component we can't find in event log. Removing from set of PCRs.", pcr, strna(tpm2_pcr_index_to_string(pcr)));
                         goto drop;
                 }
@@ -4191,7 +4192,7 @@ static int event_log_show_predictions(Tpm2PCRPrediction *context, uint16_t alg) 
 
         for (uint32_t pcr = 0; pcr < TPM2_PCRS_MAX; pcr++) {
                 Tpm2PCRPredictionResult *result;
-                if (!FLAGS_SET(context->pcrs, UINT32_C(1) << pcr))
+                if (!BIT_SET(context->pcrs, pcr))
                         continue;
 
                 if (ordered_set_isempty(context->results[pcr])) {
@@ -4240,7 +4241,7 @@ static int tpm2_pcr_prediction_run(
         for (uint32_t pcr = 0; pcr < TPM2_PCRS_MAX; pcr++) {
                 _cleanup_free_ Tpm2PCRPredictionResult *result = NULL;
 
-                if (!FLAGS_SET(context->pcrs, UINT32_C(1) << pcr))
+                if (!BIT_SET(context->pcrs, pcr))
                         continue;
 
                 result = new0(Tpm2PCRPredictionResult, 1);
@@ -4547,17 +4548,19 @@ static int make_policy(bool force, RecoveryPinMode recovery_pin_mode) {
                 if (r < 0)
                         return log_error_errno(r, "Failed to acquire PIN from environment: %m");
                 if (r == 0) {
-                        _cleanup_(strv_free_erasep) char **l = NULL;
+                        _cleanup_strv_free_erase_ char **l = NULL;
 
                         AskPasswordRequest req = {
+                                .tty_fd = -EBADF,
                                 .message = "Recovery PIN",
                                 .id = "pcrlock-recovery-pin",
                                 .credential = "pcrlock.recovery-pin",
+                                .until = USEC_INFINITY,
+                                .hup_fd = -EBADF,
                         };
 
                         r = ask_password_auto(
                                         &req,
-                                        /* until= */ 0,
                                         /* flags= */ 0,
                                         &l);
                         if (r < 0)
@@ -5266,8 +5269,9 @@ static int vl_method_read_event_log(sd_varlink *link, sd_json_variant *parameter
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
 
         el = event_log_new();
         if (!el)
@@ -5329,8 +5333,9 @@ static int vl_method_remove_policy(sd_varlink *link, sd_json_variant *parameters
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
 
         r = remove_policy();
         if (r < 0)

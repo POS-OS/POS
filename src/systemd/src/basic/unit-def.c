@@ -251,6 +251,7 @@ DEFINE_STRING_TABLE_LOOKUP(slice_state, SliceState);
 static const char* const socket_state_table[_SOCKET_STATE_MAX] = {
         [SOCKET_DEAD]             = "dead",
         [SOCKET_START_PRE]        = "start-pre",
+        [SOCKET_START_OPEN]       = "start-open",
         [SOCKET_START_CHOWN]      = "start-chown",
         [SOCKET_START_POST]       = "start-post",
         [SOCKET_LISTENING]        = "listening",
@@ -342,6 +343,20 @@ static const char* const notify_access_table[_NOTIFY_ACCESS_MAX] = {
 };
 
 DEFINE_STRING_TABLE_LOOKUP(notify_access, NotifyAccess);
+
+static const char* const job_mode_table[_JOB_MODE_MAX] = {
+        [JOB_FAIL]                 = "fail",
+        [JOB_REPLACE]              = "replace",
+        [JOB_REPLACE_IRREVERSIBLY] = "replace-irreversibly",
+        [JOB_ISOLATE]              = "isolate",
+        [JOB_FLUSH]                = "flush",
+        [JOB_IGNORE_DEPENDENCIES]  = "ignore-dependencies",
+        [JOB_IGNORE_REQUIREMENTS]  = "ignore-requirements",
+        [JOB_TRIGGERING]           = "triggering",
+        [JOB_RESTART_DEPENDENCIES] = "restart-dependencies",
+};
+
+DEFINE_STRING_TABLE_LOOKUP(job_mode, JobMode);
 
 SpecialGlyph unit_active_state_to_glyph(UnitActiveState state) {
         static const SpecialGlyph map[_UNIT_ACTIVE_STATE_MAX] = {

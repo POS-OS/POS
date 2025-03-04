@@ -13,6 +13,7 @@
 #include "alloc-util.h"
 #include "arphrd-util.h"
 #include "batadv.h"
+#include "bitfield.h"
 #include "bond.h"
 #include "bridge.h"
 #include "bus-util.h"
@@ -199,6 +200,17 @@ bool link_is_ready_to_configure(Link *link, bool allow_unmanaged) {
         return check_ready_for_all_sr_iov_ports(link, allow_unmanaged, link_is_ready_to_configure_one);
 }
 
+bool link_is_ready_to_configure_by_name(Manager *manager, const char *name, bool allow_unmanaged) {
+        assert(manager);
+        assert(name);
+
+        Link *link;
+        if (link_get_by_name(manager, name, &link) < 0)
+                return false;
+
+        return link_is_ready_to_configure(link, allow_unmanaged);
+}
+
 void link_ntp_settings_clear(Link *link) {
         link->ntp = strv_free(link->ntp);
 }
@@ -252,7 +264,7 @@ static void link_free_engines(Link *link) {
 static Link *link_free(Link *link) {
         assert(link);
 
-        (void) sysctl_clear_link_shadows(link);
+        (void) link_clear_sysctl_shadows(link);
 
         link_ntp_settings_clear(link);
         link_dns_settings_clear(link);
@@ -2309,7 +2321,7 @@ static int link_update_permanent_hardware_address(Link *link, sd_netlink_message
                 if (r != -ENODATA)
                         return log_link_debug_errno(link, r, "Failed to read IFLA_PERM_ADDRESS attribute: %m");
 
-                /* Fallback to ethtool for older kernels. */
+                /* Fallback to ethtool for kernels older than v5.6 (f74877a5457d34d604dba6dbbb13c4c05bac8b93). */
                 r = link_update_permanent_hardware_address_from_ethtool(link, message);
                 if (r < 0)
                         return r;
@@ -2988,7 +3000,7 @@ int link_flags_to_string_alloc(uint32_t flags, char **ret) {
         assert(ret);
 
         for (size_t i = 0; i < ELEMENTSOF(map); i++)
-                if (FLAGS_SET(flags, 1 << i) && map[i])
+                if (BIT_SET(flags, i) && map[i])
                         if (!strextend_with_separator(&str, ",", map[i]))
                                 return -ENOMEM;
 

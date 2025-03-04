@@ -20,7 +20,6 @@
 #include "locale-util.h"
 #include "macro.h"
 #include "manager.h"
-#include "missing_capability.h"
 #include "missing_sched.h"
 #include "mkdir.h"
 #include "nulstr-util.h"
@@ -1591,7 +1590,7 @@ static const struct security_assessor security_assessor_table[] = {
         {
                 .id = "IPAddressDeny=",
                 .json_field = "IPAddressDeny",
-                .url = "https://www.freedesktop.org/software/systemd/man/systemd.exec.html#IPAddressDeny=",
+                .url = "https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#IPAddressAllow=ADDRESS%5B/PREFIXLENGTH%5D…",
                 .weight = 1000,
                 .range = 10,
                 .assess = assess_ip_address_allow,
@@ -1599,7 +1598,7 @@ static const struct security_assessor security_assessor_table[] = {
         {
                 .id = "DeviceAllow=",
                 .json_field = "DeviceAllow",
-                .url = "https://www.freedesktop.org/software/systemd/man/systemd.exec.html#DeviceAllow=",
+                .url = "https://www.freedesktop.org/software/systemd/man/systemd.resource-control.html#DeviceAllow=",
                 .weight = 1000,
                 .range = 10,
                 .assess = assess_device_allow,
@@ -1724,16 +1723,16 @@ static int assess(const SecurityInfo *info,
         static const struct {
                 uint64_t exposure;
                 const char *name;
-                const char *color;
+                const char* (*color)(void);
                 SpecialGlyph smiley;
         } badness_table[] = {
-                { 100, "DANGEROUS", ANSI_HIGHLIGHT_RED,    SPECIAL_GLYPH_DEPRESSED_SMILEY        },
-                { 90,  "UNSAFE",    ANSI_HIGHLIGHT_RED,    SPECIAL_GLYPH_UNHAPPY_SMILEY          },
-                { 75,  "EXPOSED",   ANSI_HIGHLIGHT_YELLOW, SPECIAL_GLYPH_SLIGHTLY_UNHAPPY_SMILEY },
+                { 100, "DANGEROUS", ansi_highlight_red,    SPECIAL_GLYPH_DEPRESSED_SMILEY        },
+                { 90,  "UNSAFE",    ansi_highlight_red,    SPECIAL_GLYPH_UNHAPPY_SMILEY          },
+                { 75,  "EXPOSED",   ansi_highlight_yellow, SPECIAL_GLYPH_SLIGHTLY_UNHAPPY_SMILEY },
                 { 50,  "MEDIUM",    NULL,                  SPECIAL_GLYPH_NEUTRAL_SMILEY          },
-                { 10,  "OK",        ANSI_HIGHLIGHT_GREEN,  SPECIAL_GLYPH_SLIGHTLY_HAPPY_SMILEY   },
-                { 1,   "SAFE",      ANSI_HIGHLIGHT_GREEN,  SPECIAL_GLYPH_HAPPY_SMILEY            },
-                { 0,   "PERFECT",   ANSI_HIGHLIGHT_GREEN,  SPECIAL_GLYPH_ECSTATIC_SMILEY         },
+                { 10,  "OK",        ansi_highlight_green,  SPECIAL_GLYPH_SLIGHTLY_HAPPY_SMILEY   },
+                { 1,   "SAFE",      ansi_highlight_green,  SPECIAL_GLYPH_HAPPY_SMILEY            },
+                { 0,   "PERFECT",   ansi_highlight_green,  SPECIAL_GLYPH_ECSTATIC_SMILEY         },
         };
 
         uint64_t badness_sum = 0, weight_sum = 0, exposure;
@@ -1911,7 +1910,7 @@ static int assess(const SecurityInfo *info,
                        ansi_highlight(),
                        name,
                        ansi_normal(),
-                       colors_enabled() ? strempty(badness_table[i].color) : "",
+                       badness_table[i].color ? badness_table[i].color() : "",
                        exposure / 10, exposure % 10,
                        badness_table[i].name,
                        ansi_normal(),
@@ -1938,7 +1937,7 @@ static int assess(const SecurityInfo *info,
                                    TABLE_STRING, buf,
                                    TABLE_SET_ALIGN_PERCENT, 100,
                                    TABLE_STRING, badness_table[i].name,
-                                   TABLE_SET_COLOR, strempty(badness_table[i].color),
+                                   TABLE_SET_COLOR, badness_table[i].color ? badness_table[i].color() : "",
                                    TABLE_STRING, special_glyph(badness_table[i].smiley));
                 if (r < 0)
                         return table_log_add_error(r);
@@ -2900,7 +2899,6 @@ int verb_security(int argc, char *argv[], void *userdata) {
         _cleanup_(sd_bus_flush_close_unrefp) sd_bus *bus = NULL;
         _cleanup_(sd_json_variant_unrefp) sd_json_variant *policy = NULL;
         int r;
-        unsigned line, column;
 
         if (!arg_offline) {
                 r = acquire_bus(&bus, NULL);
@@ -2910,6 +2908,7 @@ int verb_security(int argc, char *argv[], void *userdata) {
 
         pager_open(arg_pager_flags);
 
+        unsigned line = 0, column = 0;
         if (arg_security_policy) {
                 r = sd_json_parse_file(/*f=*/ NULL, arg_security_policy, /*flags=*/ 0, &policy, &line, &column);
                 if (r < 0)

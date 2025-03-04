@@ -21,10 +21,10 @@
 #include "capsule-util.h"
 #include "chase.h"
 #include "daemon-util.h"
-#include "data-fd-util.h"
 #include "env-util.h"
 #include "fd-util.h"
 #include "format-util.h"
+#include "memfd-util.h"
 #include "memstream-util.h"
 #include "path-util.h"
 #include "socket-util.h"
@@ -51,14 +51,14 @@ int bus_log_address_error(int r, BusTransport transport) {
                                       "Failed to set bus address: %m");
 }
 
-int bus_log_connect_error(int r, BusTransport transport, RuntimeScope scope) {
+int bus_log_connect_full(int log_level, int r, BusTransport transport, RuntimeScope scope) {
         bool hint_vars = transport == BUS_TRANSPORT_LOCAL && r == -ENOMEDIUM,
              hint_addr = transport == BUS_TRANSPORT_LOCAL && ERRNO_IS_PRIVILEGE(r);
 
-        return log_error_errno(r,
-                               hint_vars ? "Failed to connect to %s scope bus via %s transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined (consider using --machine=<user>@.host --user to connect to bus of other user)" :
-                               hint_addr ? "Failed to connect to %s scope bus via %s transport: Operation not permitted (consider using --machine=<user>@.host --user to connect to bus of other user)" :
-                                           "Failed to connect to %s scope bus via %s transport: %m", runtime_scope_to_string(scope), bus_transport_to_string(transport));
+        return log_full_errno(log_level, r,
+                              hint_vars ? "Failed to connect to %s scope bus via %s transport: $DBUS_SESSION_BUS_ADDRESS and $XDG_RUNTIME_DIR not defined (consider using --machine=<user>@.host --user to connect to bus of other user)" :
+                              hint_addr ? "Failed to connect to %s scope bus via %s transport: Operation not permitted (consider using --machine=<user>@.host --user to connect to bus of other user)" :
+                                          "Failed to connect to %s scope bus via %s transport: %m", runtime_scope_to_string(scope), bus_transport_to_string(transport));
 }
 
 int bus_async_unregister_and_exit(sd_event *e, sd_bus *bus, const char *name) {
@@ -686,7 +686,7 @@ int bus_path_decode_unique(const char *path, const char *prefix, char **ret_send
         return 1;
 }
 
-int bus_track_add_name_many(sd_bus_track *t, char **l) {
+int bus_track_add_name_many(sd_bus_track *t, char * const *l) {
         int r = 0;
 
         assert(t);
@@ -696,6 +696,27 @@ int bus_track_add_name_many(sd_bus_track *t, char **l) {
         STRV_FOREACH(i, l)
                 RET_GATHER(r, sd_bus_track_add_name(t, *i));
         return r;
+}
+
+int bus_track_to_strv(sd_bus_track *t, char ***ret) {
+        _cleanup_strv_free_ char **subscribed = NULL;
+        int r;
+
+        assert(ret);
+
+        for (const char *n = sd_bus_track_first(t); n; n = sd_bus_track_next(t)) {
+                int c = sd_bus_track_count_name(t, n);
+                assert(c >= 0);
+
+                for (int j = 0; j < c; j++) {
+                        r = strv_extend(&subscribed, n);
+                        if (r < 0)
+                                return r;
+                }
+        }
+
+        *ret = TAKE_PTR(subscribed);
+        return 0;
 }
 
 int bus_open_system_watch_bind_with_description(sd_bus **ret, const char *description) {
@@ -803,7 +824,7 @@ static int method_dump_memory_state_by_fd(sd_bus_message *message, void *userdat
         if (r < 0)
                 return r;
 
-        fd = acquire_data_fd_full(dump, dump_size, /* flags = */ 0);
+        fd = memfd_new_and_seal("malloc-info", dump, dump_size);
         if (fd < 0)
                 return fd;
 
@@ -838,53 +859,6 @@ int bus_register_malloc_status(sd_bus *bus, const char *destination) {
                 return log_debug_errno(r, "Failed to subscribe to GetMallocInfo() calls on MemoryAllocation1 interface: %m");
 
         return 0;
-}
-
-static void bus_message_unref_wrapper(void *m) {
-        sd_bus_message_unref(m);
-}
-
-const struct hash_ops bus_message_hash_ops = {
-        .hash = trivial_hash_func,
-        .compare = trivial_compare_func,
-        .free_value = bus_message_unref_wrapper,
-};
-
-int bus_message_append_string_set(sd_bus_message *m, Set *set) {
-        const char *s;
-        int r;
-
-        assert(m);
-
-        r = sd_bus_message_open_container(m, 'a', "s");
-        if (r < 0)
-                return r;
-
-        SET_FOREACH(s, set) {
-                r = sd_bus_message_append(m, "s", s);
-                if (r < 0)
-                        return r;
-        }
-
-        return sd_bus_message_close_container(m);
-}
-
-int bus_property_get_string_set(
-                sd_bus *bus,
-                const char *path,
-                const char *interface,
-                const char *property,
-                sd_bus_message *reply,
-                void *userdata,
-                sd_bus_error *error) {
-
-        Set **s = ASSERT_PTR(userdata);
-
-        assert(bus);
-        assert(property);
-        assert(reply);
-
-        return bus_message_append_string_set(reply, *s);
 }
 
 int bus_creds_get_pidref(
@@ -931,32 +905,27 @@ int bus_query_sender_pidref(
         return bus_creds_get_pidref(creds, ret);
 }
 
-int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret) {
-        const void *a;
-        size_t sz;
+int bus_get_instance_id(sd_bus *bus, sd_id128_t *ret) {
+        _cleanup_(sd_bus_message_unrefp) sd_bus_message *reply = NULL;
         int r;
 
-        assert(m);
+        assert(bus);
+        assert(ret);
 
-        r = sd_bus_message_read_array(m, 'y', &a, &sz);
+        r = sd_bus_call_method(bus,
+                               "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "GetId",
+                               /* error = */ NULL, &reply,
+                               NULL);
         if (r < 0)
                 return r;
 
-        switch (sz) {
-        case 0:
-                if (ret)
-                        *ret = SD_ID128_NULL;
-                return 0;
+        const char *id;
 
-        case sizeof(sd_id128_t):
-                if (ret)
-                        memcpy(ret, a, sz);
-                return !memeqzero(a, sz); /* This mimics sd_id128_is_null(), but ret may be NULL,
-                                           * and a may be misaligned, so use memeqzero() here. */
+        r = sd_bus_message_read_basic(reply, 's', &id);
+        if (r < 0)
+                return r;
 
-        default:
-                return -EINVAL;
-        }
+        return sd_id128_from_string(id, ret);
 }
 
 static const char* const bus_transport_table[] = {

@@ -57,23 +57,21 @@ static int builtin_kmod_init(void) {
         if (ctx)
                 return 0;
 
-        log_debug("Loading kernel module index.");
-
         r = module_setup_context(&ctx);
         if (r < 0)
                 return log_error_errno(r, "Failed to initialize libkmod context: %m");
 
+        log_debug("Loaded kernel module index.");
         return 0;
 }
 
 /* called on udev shutdown and reload request */
 static void builtin_kmod_exit(void) {
-        log_debug("Unload kernel module index.");
-
         if (!ctx)
                 return;
 
         ctx = sym_kmod_unref(ctx);
+        log_debug("Unloaded kernel module index.");
 }
 
 /* called every couple of seconds during event activity; 'true' if config has changed */

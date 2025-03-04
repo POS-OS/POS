@@ -182,7 +182,7 @@ bool smbios_in_hypervisor(void) {
         return FLAGS_SET(type0->bios_characteristics_ext[1], 1 << 4);
 }
 
-const char* smbios_find_oem_string(const char *name) {
+const char* smbios_find_oem_string(const char *name, const char *after) {
         uint64_t left;
 
         assert(name);
@@ -199,9 +199,9 @@ const char* smbios_find_oem_string(const char *name) {
                 if (!e || e == p) /* Double NUL byte means we've reached the end of the OEM strings. */
                         break;
 
-                const char *eq = startswith8(p, name);
-                if (eq && *eq == '=')
-                        return eq + 1;
+                const char *suffix = startswith8(p, name);
+                if (suffix && (!after || suffix > after))
+                        return suffix;
 
                 p = e + 1;
         }
@@ -258,4 +258,18 @@ void smbios_raw_info_populate(RawSmbiosInfo *ret_info) {
                 ret_info->baseboard_manufacturer = NULL;
                 ret_info->baseboard_product = NULL;
         }
+}
+
+void smbios_raw_info_get_cached(RawSmbiosInfo *ret_info) {
+        static RawSmbiosInfo info = {};
+        static bool cached = false;
+
+        assert(ret_info);
+
+        if (!cached) {
+                smbios_raw_info_populate(&info);
+                cached = true;
+        }
+
+        *ret_info = info;
 }

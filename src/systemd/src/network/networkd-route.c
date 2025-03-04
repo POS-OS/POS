@@ -460,6 +460,23 @@ void log_route_debug(const Route *route, const char *str, Manager *manager) {
                        strna(proto), strna(scope), strna(route_type_to_string(route->type)), strna(flags));
 }
 
+static void route_forget(Manager *manager, Route *route, const char *msg) {
+        assert(manager);
+        assert(route);
+        assert(msg);
+
+        Request *req;
+        if (route_get_request(manager, route, &req) >= 0)
+                route_enter_removed(req->userdata);
+
+        if (!route->manager && route_get(manager, route, &route) < 0)
+                return;
+
+        route_enter_removed(route);
+        log_route_debug(route, msg, manager);
+        route_detach(route);
+}
+
 static int route_set_netlink_message(const Route *route, sd_netlink_message *m) {
         int r;
 
@@ -564,16 +581,8 @@ static int route_remove_handler(sd_netlink *rtnl, sd_netlink_message *m, RemoveR
                                        LOG_DEBUG : LOG_WARNING,
                                        r, "Could not drop route, ignoring");
 
-                if (route->manager) {
-                        /* If the route cannot be removed, then assume the route is already removed. */
-                        log_route_debug(route, "Forgetting", manager);
-
-                        Request *req;
-                        if (route_get_request(manager, route, &req) >= 0)
-                                route_enter_removed(req->userdata);
-
-                        route_detach(route);
-                }
+                /* If the route cannot be removed, then assume the route is already removed. */
+                route_forget(manager, route, "Forgetting");
         }
 
         return 1;
@@ -1056,7 +1065,7 @@ int link_request_static_routes(Link *link, bool only_ipv4) {
         link->static_routes_configured = false;
 
         HASHMAP_FOREACH(route, link->network->routes_by_section) {
-                if (route->gateway_from_dhcp_or_ra)
+                if (route->source != NETWORK_CONFIG_SOURCE_STATIC)
                         continue;
 
                 if (only_ipv4 && route->family != AF_INET)
@@ -1088,7 +1097,6 @@ static int process_route_one(
                 Route *tmp,
                 const struct rta_cacheinfo *cacheinfo) {
 
-        Request *req = NULL;
         Route *route = NULL;
         Link *link = NULL;
         bool is_new = false, update_dhcp4;
@@ -1099,13 +1107,15 @@ static int process_route_one(
         assert(IN_SET(type, RTM_NEWROUTE, RTM_DELROUTE));
 
         (void) route_get(manager, tmp, &route);
-        (void) route_get_request(manager, tmp, &req);
         (void) route_get_link(manager, tmp, &link);
 
         update_dhcp4 = link && tmp->family == AF_INET6 && tmp->dst_prefixlen == 0;
 
         switch (type) {
-        case RTM_NEWROUTE:
+        case RTM_NEWROUTE: {
+                Request *req = NULL;
+                (void) route_get_request(manager, tmp, &req);
+
                 if (!route) {
                         if (!manager->manage_foreign_routes && !(req && req->waiting_reply)) {
                                 route_enter_configured(tmp);
@@ -1159,20 +1169,14 @@ static int process_route_one(
                 (void) route_setup_timer(route, cacheinfo);
 
                 break;
-
+        }
         case RTM_DELROUTE:
-                if (route) {
-                        route_enter_removed(route);
-                        log_route_debug(route, "Forgetting removed", manager);
-                        route_detach(route);
-                } else
+                if (route)
+                        route_forget(manager, route, "Forgetting removed");
+                else
                         log_route_debug(tmp,
                                         manager->manage_foreign_routes ? "Kernel removed unknown" : "Ignoring received",
                                         manager);
-
-                if (req)
-                        route_enter_removed(req->userdata);
-
                 break;
 
         default:
@@ -1409,7 +1413,7 @@ bool route_can_update(const Route *existing, const Route *requesting) {
                         return false;
                 if (existing->type != requesting->type)
                         return false;
-                if (existing->flags != requesting->flags)
+                if ((existing->flags & ~RTNH_COMPARE_MASK) != (requesting->flags & ~RTNH_COMPARE_MASK))
                         return false;
                 if (!in6_addr_equal(&existing->prefsrc.in6, &requesting->prefsrc.in6))
                         return false;
@@ -1472,24 +1476,8 @@ int link_drop_routes(Link *link, bool only_static) {
                 if (!route_exists(route))
                         continue;
 
-                if (only_static) {
-                        if (route->source != NETWORK_CONFIG_SOURCE_STATIC)
-                                continue;
-                } else {
-                        /* Ignore dynamically assigned routes. */
-                        if (!IN_SET(route->source, NETWORK_CONFIG_SOURCE_FOREIGN, NETWORK_CONFIG_SOURCE_STATIC))
-                                continue;
-
-                        if (route->source == NETWORK_CONFIG_SOURCE_FOREIGN && link->network) {
-                                if (route->protocol == RTPROT_STATIC &&
-                                    FLAGS_SET(link->network->keep_configuration, KEEP_CONFIGURATION_STATIC))
-                                        continue;
-
-                                if (IN_SET(route->protocol, RTPROT_DHCP, RTPROT_RA, RTPROT_REDIRECT) &&
-                                    FLAGS_SET(link->network->keep_configuration, KEEP_CONFIGURATION_DYNAMIC))
-                                        continue;
-                        }
-                }
+                if (!link_should_mark_config(link, only_static, route->source, route->protocol))
+                        continue;
 
                 /* When we also mark foreign routes, do not mark routes assigned to other interfaces.
                  * Otherwise, routes assigned to unmanaged interfaces will be dropped.
@@ -1515,6 +1503,9 @@ int link_drop_routes(Link *link, bool only_static) {
                         continue;
 
                 HASHMAP_FOREACH(route, other->network->routes_by_section) {
+                        if (route->source != NETWORK_CONFIG_SOURCE_STATIC)
+                                continue;
+
                         if (route->family == AF_INET || ordered_set_isempty(route->nexthops)) {
                                 r = link_unmark_route(other, route, NULL);
                                 if (r < 0)
@@ -1574,13 +1565,7 @@ void link_forget_routes(Link *link) {
                 if (!IN_SET(route->type, RTN_UNICAST, RTN_BROADCAST, RTN_ANYCAST, RTN_MULTICAST))
                         continue;
 
-                Request *req;
-                if (route_get_request(link->manager, route, &req) >= 0)
-                        route_enter_removed(req->userdata);
-
-                route_enter_removed(route);
-                log_route_debug(route, "Forgetting silently removed", link->manager);
-                route_detach(route);
+                route_forget(link->manager, route, "Forgetting silently removed");
         }
 }
 
@@ -1662,7 +1647,19 @@ static int config_parse_preferred_src(
         Route *route = ASSERT_PTR(userdata);
         int r;
 
-        assert(rvalue);
+        if (isempty(rvalue)) {
+                route->prefsrc_set = false;
+                route->prefsrc = IN_ADDR_NULL;
+                return 1;
+        }
+
+        r = parse_boolean(rvalue);
+        if (r == 0) {
+                /* Accepts only no. That prohibits prefsrc set by DHCP lease. */
+                route->prefsrc_set = true;
+                route->prefsrc = IN_ADDR_NULL;
+                return 1;
+        }
 
         if (route->family == AF_UNSPEC)
                 r = in_addr_from_string_auto(rvalue, &route->family, &route->prefsrc);
@@ -1671,6 +1668,7 @@ static int config_parse_preferred_src(
         if (r < 0)
                 return log_syntax_parse_error(unit, filename, line, r, lvalue, rvalue);
 
+        route->prefsrc_set = true;
         return 1;
 }
 

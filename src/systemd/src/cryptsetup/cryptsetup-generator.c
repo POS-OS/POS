@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "alloc-util.h"
+#include "cryptsetup-util.h"
 #include "dropin.h"
 #include "escape.h"
 #include "fd-util.h"
@@ -232,7 +233,7 @@ static int print_dependencies(FILE *f, const char* device_path, const char* time
         assert(f);
         assert(device_path);
 
-        if (STR_IN_SET(device_path, "-", "none"))
+        if (!mangle_none(device_path))
                 /* None, nothing to do */
                 return 0;
 
@@ -518,7 +519,7 @@ static int create_disk(
                         "After=modprobe@loop.service\n",
                         u_escaped);
 
-        r = generator_write_timeouts(arg_dest, device, name, options, &filtered);
+        r = generator_write_device_timeout(arg_dest, device, options, &filtered);
         if (r < 0)
                 log_warning_errno(r, "Failed to write device timeout drop-in: %m");
 
@@ -795,7 +796,7 @@ static int parse_proc_cmdline_item(const char *key, const char *value, void *dat
         return 0;
 }
 
-static int add_crypttab_device(const char *name, const char *device,  const char *keyspec, const char *options) {
+static int add_crypttab_device(const char *name, const char *device, const char *keyspec, const char *options) {
         _cleanup_free_ char *keyfile = NULL, *keydev = NULL, *headerdev = NULL, *filtered_header = NULL;
         crypto_device *d = NULL;
         char *uuid;

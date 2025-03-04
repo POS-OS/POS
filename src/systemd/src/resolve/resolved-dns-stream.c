@@ -360,7 +360,8 @@ static int on_stream_io(sd_event_source *es, int fd, uint32_t revents, void *use
                 }
         }
 
-        while ((revents & (EPOLLIN|EPOLLHUP|EPOLLRDHUP)) &&
+        while (s->identified && /* Only read data once we identified the peer, because we cannot fill in the DNS packet meta info otherwise */
+               (revents & (EPOLLIN|EPOLLHUP|EPOLLRDHUP)) &&
                (!s->read_packet ||
                 s->n_read < sizeof(s->read_size) + s->read_packet->size)) {
 
@@ -612,7 +613,7 @@ DEFINE_PRIVATE_HASH_OPS_WITH_KEY_DESTRUCTOR(
                 dns_stream_unref);
 
 int dns_stream_disconnect_all(Manager *m) {
-        _cleanup_(set_freep) Set *closed = NULL;
+        _cleanup_set_free_ Set *closed = NULL;
         int r;
 
         assert(m);

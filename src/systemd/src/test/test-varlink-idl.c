@@ -11,9 +11,11 @@
 #include "varlink-idl-util.h"
 #include "varlink-io.systemd.h"
 #include "varlink-io.systemd.BootControl.h"
+#include "varlink-io.systemd.AskPassword.h"
 #include "varlink-io.systemd.Credentials.h"
 #include "varlink-io.systemd.Import.h"
 #include "varlink-io.systemd.Journal.h"
+#include "varlink-io.systemd.Login.h"
 #include "varlink-io.systemd.Machine.h"
 #include "varlink-io.systemd.MachineImage.h"
 #include "varlink-io.systemd.ManagedOOM.h"
@@ -24,6 +26,7 @@
 #include "varlink-io.systemd.PCRLock.h"
 #include "varlink-io.systemd.Resolve.h"
 #include "varlink-io.systemd.Resolve.Monitor.h"
+#include "varlink-io.systemd.Udev.h"
 #include "varlink-io.systemd.UserDatabase.h"
 #include "varlink-io.systemd.oom.h"
 #include "varlink-io.systemd.service.h"
@@ -194,6 +197,12 @@ TEST(parse_format) {
         print_separator();
         test_parse_format_one(&vl_interface_io_systemd_MachineImage);
         print_separator();
+        test_parse_format_one(&vl_interface_io_systemd_AskPassword);
+        print_separator();
+        test_parse_format_one(&vl_interface_io_systemd_Udev);
+        print_separator();
+        test_parse_format_one(&vl_interface_io_systemd_Login);
+        print_separator();
         test_parse_format_one(&vl_interface_xyz_test);
 }
 
@@ -214,7 +223,6 @@ TEST(parse) {
                                     "type Foo (b: bool, c: foo, c: int)", NULL, NULL, NULL) == -ENETUNREACH); /* unresolved type */
         assert_se(varlink_idl_parse("interface org.freedesktop.Foo\n"
                                     "type Foo ()", NULL, NULL, NULL) == -EBADMSG); /* empty struct/enum */
-
 }
 
 TEST(interface_name_is_valid) {

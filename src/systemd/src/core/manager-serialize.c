@@ -158,6 +158,7 @@ int manager_serialize(
         (void) serialize_ratelimit(f, "dump-ratelimit", &m->dump_ratelimit);
         (void) serialize_ratelimit(f, "reload-reexec-ratelimit", &m->reload_reexec_ratelimit);
 
+        (void) serialize_id128(f, "bus-id", m->bus_id);
         bus_track_serialize(m->subscribed, f, "subscribed");
 
         r = dynamic_user_serialize(m, f, fds);
@@ -185,10 +186,6 @@ int manager_serialize(
                 if (r < 0)
                         return r;
         }
-
-        r = fflush_and_check(f);
-        if (r < 0)
-                return log_error_errno(r, "Failed to flush serialization: %m");
 
         r = bus_fdset_add_all(m, fds);
         if (r < 0)
@@ -491,9 +488,14 @@ int manager_deserialize(Manager *m, FILE *f, FDSet *fds) {
                         manager_deserialize_gid_refs_one(m, val);
                 else if ((val = startswith(l, "exec-runtime=")))
                         (void) exec_shared_runtime_deserialize_one(m, val, fds);
-                else if ((val = startswith(l, "subscribed="))) {
+                else if ((val = startswith(l, "bus-id="))) {
 
-                        r = strv_extend(&m->deserialized_subscribed, val);
+                        r = sd_id128_from_string(val, &m->deserialized_bus_id);
+                        if (r < 0)
+                                return r;
+                } else if ((val = startswith(l, "subscribed="))) {
+
+                        r = strv_extend(&m->subscribed_as_strv, val);
                         if (r < 0)
                                 return r;
                 } else if ((val = startswith(l, "varlink-server-socket-address="))) {

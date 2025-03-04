@@ -385,7 +385,7 @@ static inline int tpm2_pcrlock_search_file(const char *path, FILE **ret_file, ch
 
 #endif /* HAVE_TPM2 */
 
-int tpm2_list_devices(void);
+int tpm2_list_devices(bool legend, bool quiet);
 int tpm2_find_device_auto(char **ret);
 
 int tpm2_make_pcr_json_array(uint32_t pcr_mask, sd_json_variant **ret);
@@ -394,9 +394,12 @@ int tpm2_parse_pcr_json_array(sd_json_variant *v, uint32_t *ret);
 int tpm2_make_luks2_json(int keyslot, uint32_t hash_pcr_mask, uint16_t pcr_bank, const struct iovec *pubkey, uint32_t pubkey_pcr_mask, uint16_t primary_alg, const struct iovec blobs[], size_t n_blobs, const struct iovec policy_hash[], size_t n_policy_hash, const struct iovec *salt, const struct iovec *srk, const struct iovec *pcrlock_nv, TPM2Flags flags, sd_json_variant **ret);
 int tpm2_parse_luks2_json(sd_json_variant *v, int *ret_keyslot, uint32_t *ret_hash_pcr_mask, uint16_t *ret_pcr_bank, struct iovec *ret_pubkey, uint32_t *ret_pubkey_pcr_mask, uint16_t *ret_primary_alg, struct iovec **ret_blobs, size_t *ret_n_blobs, struct iovec **ret_policy_hash, size_t *ret_n_policy_hash, struct iovec *ret_salt, struct iovec *ret_srk, struct iovec *ret_pcrlock_nv, TPM2Flags *ret_flags);
 
-/* Default to PCR 7 only */
-#define TPM2_PCR_INDEX_DEFAULT UINT32_C(7)
-#define TPM2_PCR_MASK_DEFAULT INDEX_TO_MASK(uint32_t, TPM2_PCR_INDEX_DEFAULT)
+/* Before v258 we used to bind to PCR 7 by default at various places if no explicit PCR mask was set. With
+ * v258 we stopped doing that (since the SecureBoot DB is as much subject to regular updates by tools such as
+ * fwupd as the firmware itself), but when unlocking to maintain compatibility when no mask is specified we
+ * still need to default to PCR 7. */
+#define TPM2_PCR_INDEX_DEFAULT_LEGACY TPM2_PCR_SECURE_BOOT_POLICY
+#define TPM2_PCR_MASK_DEFAULT_LEGACY INDEX_TO_MASK(uint32_t, TPM2_PCR_INDEX_DEFAULT_LEGACY)
 
 /* We want the helpers below to work also if TPM2 libs are not available, hence define these four defines if
  * they are missing. */
@@ -479,7 +482,7 @@ static inline bool tpm2_is_fully_supported(void) {
 int verb_has_tpm2_generic(bool quiet);
 
 int tpm2_parse_pcr_argument(const char *arg, Tpm2PCRValue **ret_pcr_values, size_t *ret_n_pcr_values);
-int tpm2_parse_pcr_argument_append(const char *arg, Tpm2PCRValue **ret_pcr_values, size_t *ret_n_pcr_values);
+int tpm2_parse_pcr_argument_append(const char *arg, Tpm2PCRValue **pcr_values, size_t *n_pcr_values);
 int tpm2_parse_pcr_argument_to_mask(const char *arg, uint32_t *mask);
 
 int tpm2_load_pcr_signature(const char *path, sd_json_variant **ret);

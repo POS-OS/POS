@@ -14,6 +14,7 @@
 
 #include "alloc-util.h"
 #include "chase.h"
+#include "extract-word.h"
 #include "fd-util.h"
 #include "fileio.h"
 #include "fs-util.h"
@@ -243,16 +244,12 @@ static int write_string_file_atomic_at(
         }
 
         r = fopen_temporary_at(dir_fd, fn, &f, &p);
+        if (call_label_ops_post)
+                /* If fopen_temporary_at() failed in the above, propagate the error code, and ignore failures
+                 * in label_ops_post(). */
+                RET_GATHER(r, label_ops_post(f ? fileno(f) : dir_fd, f ? NULL : fn, /* created= */ !!f));
         if (r < 0)
                 goto fail;
-
-        if (call_label_ops_post) {
-                call_label_ops_post = false;
-
-                r = label_ops_post(fileno(f), /* path= */ NULL, /* created= */ true);
-                if (r < 0)
-                        goto fail;
-        }
 
         r = write_string_stream_full(f, line, flags, ts);
         if (r < 0)
@@ -276,9 +273,6 @@ static int write_string_file_atomic_at(
         return 0;
 
 fail:
-        if (call_label_ops_post)
-                (void) label_ops_post(f ? fileno(f) : dir_fd, f ? NULL : fn, /* created= */ !!f);
-
         if (f)
                 (void) unlinkat(dir_fd, p, 0);
         return r;
@@ -292,24 +286,27 @@ int write_string_file_full(
                 const struct timespec *ts,
                 const char *label_fn) {
 
-        bool call_label_ops_post = false, made_file = false;
+        bool made_file = false;
         _cleanup_fclose_ FILE *f = NULL;
         _cleanup_close_ int fd = -EBADF;
         int r;
 
-        assert(fn);
+        assert(dir_fd == AT_FDCWD || dir_fd >= 0);
         assert(line);
 
         /* We don't know how to verify whether the file contents was already on-disk. */
         assert(!((flags & WRITE_STRING_FILE_VERIFY_ON_FAILURE) && (flags & WRITE_STRING_FILE_SYNC)));
 
         if (flags & WRITE_STRING_FILE_MKDIR_0755) {
+                assert(fn);
+
                 r = mkdirat_parents(dir_fd, fn, 0755);
                 if (r < 0)
                         return r;
         }
 
         if (flags & WRITE_STRING_FILE_ATOMIC) {
+                assert(fn);
                 assert(flags & WRITE_STRING_FILE_CREATE);
 
                 r = write_string_file_atomic_at(dir_fd, fn, line, flags, ts);
@@ -319,37 +316,39 @@ int write_string_file_full(
                 return r;
         }
 
-        mode_t mode = write_string_file_flags_to_mode(flags);
-
-        if (FLAGS_SET(flags, WRITE_STRING_FILE_LABEL|WRITE_STRING_FILE_CREATE)) {
-                r = label_ops_pre(dir_fd, label_fn ?: fn, mode);
-                if (r < 0)
-                        goto fail;
-
-                call_label_ops_post = true;
-        }
-
         /* We manually build our own version of fopen(..., "we") that works without O_CREAT and with O_NOFOLLOW if needed. */
-        fd = openat_report_new(
-                        dir_fd, fn, O_CLOEXEC | O_NOCTTY |
-                        (FLAGS_SET(flags, WRITE_STRING_FILE_NOFOLLOW) ? O_NOFOLLOW : 0) |
-                        (FLAGS_SET(flags, WRITE_STRING_FILE_CREATE) ? O_CREAT : 0) |
-                        (FLAGS_SET(flags, WRITE_STRING_FILE_TRUNCATE) ? O_TRUNC : 0) |
-                        (FLAGS_SET(flags, WRITE_STRING_FILE_SUPPRESS_REDUNDANT_VIRTUAL) ? O_RDWR : O_WRONLY),
-                        mode,
-                        &made_file);
-        if (fd < 0) {
-                r = fd;
+        if (isempty(fn))
+                r = fd = fd_reopen(
+                                ASSERT_FD(dir_fd), O_CLOEXEC | O_NOCTTY |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_TRUNCATE) ? O_TRUNC : 0) |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_SUPPRESS_REDUNDANT_VIRTUAL) ? O_RDWR : O_WRONLY));
+        else {
+                mode_t mode = write_string_file_flags_to_mode(flags);
+                bool call_label_ops_post = false;
+
+                if (FLAGS_SET(flags, WRITE_STRING_FILE_LABEL|WRITE_STRING_FILE_CREATE)) {
+                        r = label_ops_pre(dir_fd, label_fn ?: fn, mode);
+                        if (r < 0)
+                                goto fail;
+
+                        call_label_ops_post = true;
+                }
+
+                r = fd = openat_report_new(
+                                dir_fd, fn, O_CLOEXEC | O_NOCTTY |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_NOFOLLOW) ? O_NOFOLLOW : 0) |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_CREATE) ? O_CREAT : 0) |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_TRUNCATE) ? O_TRUNC : 0) |
+                                (FLAGS_SET(flags, WRITE_STRING_FILE_SUPPRESS_REDUNDANT_VIRTUAL) ? O_RDWR : O_WRONLY),
+                                mode,
+                                &made_file);
+                if (call_label_ops_post)
+                        /* If openat_report_new() failed in the above, propagate the error code, and ignore
+                         * failures in label_ops_post(). */
+                        RET_GATHER(r, label_ops_post(fd >= 0 ? fd : dir_fd, fd >= 0 ? NULL : fn, made_file));
+        }
+        if (r < 0)
                 goto fail;
-        }
-
-        if (call_label_ops_post) {
-                call_label_ops_post = false;
-
-                r = label_ops_post(fd, /* path= */ NULL, made_file);
-                if (r < 0)
-                        goto fail;
-        }
 
         r = take_fdopen_unlocked(&fd, "w", &f);
         if (r < 0)
@@ -365,9 +364,6 @@ int write_string_file_full(
         return 0;
 
 fail:
-        if (call_label_ops_post)
-                (void) label_ops_post(fd >= 0 ? fd : dir_fd, fd >= 0 ? NULL : fn, made_file);
-
         if (made_file)
                 (void) unlinkat(dir_fd, fn, 0);
 
@@ -379,7 +375,7 @@ fail:
 
         /* OK, the operation failed, but let's see if the right contents in place already. If so, eat up the
          * error. */
-        if (verify_file(fn, line, !(flags & WRITE_STRING_FILE_AVOID_NEWLINE) || (flags & WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE)) > 0)
+        if (verify_file_at(dir_fd, fn, line, !(flags & WRITE_STRING_FILE_AVOID_NEWLINE) || (flags & WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE)) > 0)
                 return 0;
 
         return r;
@@ -441,7 +437,6 @@ int verify_file_at(int dir_fd, const char *fn, const char *blob, bool accept_ext
         size_t l, k;
         int r;
 
-        assert(fn);
         assert(blob);
 
         l = strlen(blob);
@@ -453,7 +448,7 @@ int verify_file_at(int dir_fd, const char *fn, const char *blob, bool accept_ext
         if (!buf)
                 return -ENOMEM;
 
-        r = fopen_unlocked_at(dir_fd, fn, "re", 0, &f);
+        r = fopen_unlocked_at(dir_fd, strempty(fn), "re", 0, &f);
         if (r < 0)
                 return r;
 
@@ -473,7 +468,13 @@ int verify_file_at(int dir_fd, const char *fn, const char *blob, bool accept_ext
         return 1;
 }
 
-int read_virtual_file_fd(int fd, size_t max_size, char **ret_contents, size_t *ret_size) {
+int read_virtual_file_at(
+                int dir_fd,
+                const char *filename,
+                size_t max_size,
+                char **ret_contents,
+                size_t *ret_size) {
+
         _cleanup_free_ char *buf = NULL;
         size_t n, size;
         int n_retries;
@@ -492,8 +493,16 @@ int read_virtual_file_fd(int fd, size_t max_size, char **ret_contents, size_t *r
          * contents* may be returned. (Though the read is still done using one syscall.) Returns 0 on
          * partial success, 1 if untruncated contents were read. */
 
-        assert(fd >= 0);
+        assert(dir_fd >= 0 || dir_fd == AT_FDCWD);
         assert(max_size <= READ_VIRTUAL_BYTES_MAX || max_size == SIZE_MAX);
+
+        _cleanup_close_ int fd = -EBADF;
+        if (isempty(filename))
+                fd = fd_reopen(ASSERT_FD(dir_fd), O_RDONLY | O_NOCTTY | O_CLOEXEC);
+        else
+                fd = RET_NERRNO(openat(dir_fd, filename, O_RDONLY | O_NOCTTY | O_CLOEXEC));
+        if (fd < 0)
+                return fd;
 
         /* Limit the number of attempts to read the number of bytes returned by fstat(). */
         n_retries = 3;
@@ -618,31 +627,6 @@ int read_virtual_file_fd(int fd, size_t max_size, char **ret_contents, size_t *r
         return !truncated;
 }
 
-int read_virtual_file_at(
-                int dir_fd,
-                const char *filename,
-                size_t max_size,
-                char **ret_contents,
-                size_t *ret_size) {
-
-        _cleanup_close_ int fd = -EBADF;
-
-        assert(dir_fd >= 0 || dir_fd == AT_FDCWD);
-
-        if (!filename) {
-                if (dir_fd == AT_FDCWD)
-                        return -EBADF;
-
-                return read_virtual_file_fd(dir_fd, max_size, ret_contents, ret_size);
-        }
-
-        fd = openat(dir_fd, filename, O_RDONLY | O_NOCTTY | O_CLOEXEC);
-        if (fd < 0)
-                return -errno;
-
-        return read_virtual_file_fd(fd, max_size, ret_contents, ret_size);
-}
-
 int read_full_stream_full(
                 FILE *f,
                 const char *filename,
@@ -722,7 +706,7 @@ int read_full_stream_full(
                 size_t k;
 
                 /* If we shall fail when reading overly large data, then read exactly one byte more than the
-                 * specified size at max, since that'll tell us if there's anymore data beyond the limit*/
+                 * specified size at max, since that'll tell us if there's anymore data beyond the limit. */
                 if (FLAGS_SET(flags, READ_FULL_FILE_FAIL_WHEN_LARGER) && n_next > size)
                         n_next = size + 1;
 
@@ -856,35 +840,49 @@ int read_full_file_full(
         return read_full_stream_full(f, filename, offset, size, flags, ret_contents, ret_size);
 }
 
-int executable_is_script(const char *path, char **interpreter) {
-        _cleanup_free_ char *line = NULL;
-        size_t len;
-        char *ans;
+int script_get_shebang_interpreter(const char *path, char **ret) {
+        _cleanup_fclose_ FILE *f = NULL;
         int r;
 
         assert(path);
 
-        r = read_one_line_file(path, &line);
-        if (r == -ENOBUFS) /* First line overly long? if so, then it's not a script */
-                return 0;
+        f = fopen(path, "re");
+        if (!f)
+                return -errno;
+
+        char c;
+        r = safe_fgetc(f, &c);
+        if (r < 0)
+                return r;
+        if (r == 0)
+                return -EBADMSG;
+        if (c != '#')
+                return -EMEDIUMTYPE;
+        r = safe_fgetc(f, &c);
+        if (r < 0)
+                return r;
+        if (r == 0)
+                return -EBADMSG;
+        if (c != '!')
+                return -EMEDIUMTYPE;
+
+        _cleanup_free_ char *line = NULL;
+        r = read_line(f, LONG_LINE_MAX, &line);
         if (r < 0)
                 return r;
 
-        if (!startswith(line, "#!"))
-                return 0;
+        _cleanup_free_ char *p = NULL;
+        const char *s = line;
 
-        ans = strstrip(line + 2);
-        len = strcspn(ans, " \t");
+        r = extract_first_word(&s, &p, /* separators = */ NULL, /* flags = */ 0);
+        if (r < 0)
+                return r;
+        if (r == 0)
+                return -ENOEXEC;
 
-        if (len == 0)
-                return 0;
-
-        ans = strndup(ans, len);
-        if (!ans)
-                return -ENOMEM;
-
-        *interpreter = ans;
-        return 1;
+        if (ret)
+                *ret = TAKE_PTR(p);
+        return 0;
 }
 
 /**
@@ -957,19 +955,21 @@ int get_proc_field(const char *filename, const char *pattern, const char *termin
         return 0;
 }
 
-DIR *xopendirat(int fd, const char *name, int flags) {
-        _cleanup_close_ int nfd = -EBADF;
+DIR* xopendirat(int dir_fd, const char *name, int flags) {
+        _cleanup_close_ int fd = -EBADF;
 
-        assert(!(flags & O_CREAT));
+        assert(dir_fd >= 0 || dir_fd == AT_FDCWD);
+        assert(name);
+        assert(!(flags & (O_CREAT|O_TMPFILE)));
 
-        if (fd == AT_FDCWD && flags == 0)
+        if (dir_fd == AT_FDCWD && flags == 0)
                 return opendir(name);
 
-        nfd = openat(fd, name, O_RDONLY|O_NONBLOCK|O_DIRECTORY|O_CLOEXEC|flags, 0);
-        if (nfd < 0)
+        fd = openat(dir_fd, name, O_NONBLOCK|O_DIRECTORY|O_CLOEXEC|flags);
+        if (fd < 0)
                 return NULL;
 
-        return take_fdopendir(&nfd);
+        return take_fdopendir(&fd);
 }
 
 int fopen_mode_to_flags(const char *mode) {

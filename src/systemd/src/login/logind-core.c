@@ -39,6 +39,7 @@ void manager_reset_config(Manager *m) {
         m->remove_ipc = true;
         m->inhibit_delay_max = 5 * USEC_PER_SEC;
         m->user_stop_delay = 10 * USEC_PER_SEC;
+        m->enable_wall_messages = true;
 
         m->handle_action_sleep_mask = HANDLE_ACTION_SLEEP_MASK_DEFAULT;
 
@@ -190,7 +191,7 @@ int manager_add_user_by_name(
         assert(m);
         assert(name);
 
-        r = userdb_by_name(name, USERDB_SUPPRESS_SHADOW, &ur);
+        r = userdb_by_name(name, /* match= */ NULL, USERDB_SUPPRESS_SHADOW, &ur);
         if (r < 0)
                 return r;
 
@@ -208,7 +209,7 @@ int manager_add_user_by_uid(
         assert(m);
         assert(uid_is_valid(uid));
 
-        r = userdb_by_uid(uid, USERDB_SUPPRESS_SHADOW, &ur);
+        r = userdb_by_uid(uid, /* match= */ NULL, USERDB_SUPPRESS_SHADOW, &ur);
         if (r < 0)
                 return r;
 
@@ -407,11 +408,15 @@ int manager_get_user_by_pid(Manager *m, pid_t pid, User **ret) {
 int manager_get_idle_hint(Manager *m, dual_timestamp *t) {
         Session *s;
         bool idle_hint;
-        dual_timestamp ts = DUAL_TIMESTAMP_NULL;
+        dual_timestamp ts;
 
         assert(m);
 
-        idle_hint = !manager_is_inhibited(m, INHIBIT_IDLE, /* block= */ true, t, false, false, 0, NULL);
+        /* Initialize the baseline timestamp with the time the manager got initialized to avoid reporting
+         * unreasonable large idle periods starting with the Unix epoch. */
+        ts = m->init_ts;
+
+        idle_hint = !manager_is_inhibited(m, INHIBIT_IDLE, t, /* flags= */ 0, UID_INVALID, NULL);
 
         HASHMAP_FOREACH(s, m->sessions) {
                 dual_timestamp k;

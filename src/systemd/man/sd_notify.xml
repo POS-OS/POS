@@ -140,9 +140,12 @@
     <para><function>sd_pid_notify()</function> and <function>sd_pid_notifyf()</function> are similar to
     <function>sd_notify()</function> and <function>sd_notifyf()</function> but take a process ID (PID) to use
     as originating PID for the message as first argument. This is useful to send notification messages on
-    behalf of other processes, provided the appropriate privileges are available. If the PID argument is
-    specified as 0, the process ID of the calling process is used, in which case the calls are fully
-    equivalent to <function>sd_notify()</function> and <function>sd_notifyf()</function>.</para>
+    behalf of other processes, provided the appropriate privileges are available. Effectively, this means
+    that a privileged invocation of <command>sd_pid_notify()</command> may circumvent
+    <varname>NotifyAccess=main</varname> or <varname>NotifyAccess=exec</varname> restrictions enforced for a
+    service. If the PID argument is specified as 0, the process ID of the calling process is used, in which
+    case the calls are fully equivalent to <function>sd_notify()</function> and
+    <function>sd_notifyf()</function>.</para>
 
     <para><function>sd_pid_notify_with_fds()</function> is similar to <function>sd_pid_notify()</function>
     but takes an additional array of file descriptors. These file descriptors are sent along the notification
@@ -292,7 +295,7 @@
         <term>MAINPID=…</term>
 
         <listitem><para>Change the main process ID (PID) of the service. This is especially useful in the case
-        where the real main process isn't directly forked off by the service manager.
+        where the real main process is not directly forked off by the service manager.
         Example: <literal>MAINPID=4711</literal>.</para>
 
         <xi:include href="version-info.xml" xpointer="v233"/></listitem>
@@ -303,7 +306,8 @@
 
         <listitem><para>The pidfd inode number of the new main process (specified through <varname>MAINPID=</varname>).
         This information can be acquired through
-        <citerefentry project='man-pages'><refentrytitle>fstat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        <citerefentry project='man-pages'><refentrytitle>name_to_handle_at</refentrytitle><manvolnum>2</manvolnum></citerefentry>
+        or <citerefentry project='man-pages'><refentrytitle>fstat</refentrytitle><manvolnum>2</manvolnum></citerefentry>
         on the pidfd and is used to identify the process in a race-free fashion. Alternatively,
         a pidfd can be sent directly to the service manager (see <varname>MAINPIDFD=1</varname> below).</para>
 
@@ -362,7 +366,7 @@
 
         <listitem><para>Tells the service manager to extend the startup, runtime or shutdown service timeout
         corresponding the current state. The value specified is a time in microseconds during which the
-        service must send a new message. A service timeout will occur if the message isn't received, but only
+        service must send a new message. A service timeout will occur if the message is not received, but only
         if the runtime of the current state is beyond the original maximum times of
         <varname>TimeoutStartSec=</varname>, <varname>RuntimeMaxSec=</varname>, and
         <varname>TimeoutStopSec=</varname>.  See

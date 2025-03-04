@@ -64,6 +64,7 @@
 #include "uid-classification.h"
 #include "user-util.h"
 #include "varlink-io.systemd.Journal.h"
+#include "varlink-io.systemd.service.h"
 #include "varlink-util.h"
 
 #define USER_JOURNALS_MAX 1024
@@ -1109,7 +1110,7 @@ static void server_dispatch_message_real(
                          * Let's use a heap allocation for this one. */
                         cmdline1 = set_iovec_string_field(iovec, &n, "_CMDLINE=", c->cmdline);
 
-                IOVEC_ADD_STRING_FIELD(iovec, n, c->capeff, "_CAP_EFFECTIVE"); /* Read from /proc/.../status */
+                IOVEC_ADD_NUMERIC_FIELD(iovec, n, c->capability_quintet.effective, uint64_t, capability_is_set, "%" PRIx64, "_CAP_EFFECTIVE");
                 IOVEC_ADD_SIZED_FIELD(iovec, n, c->label, c->label_size, "_SELINUX_CONTEXT");
                 IOVEC_ADD_NUMERIC_FIELD(iovec, n, c->auditid, uint32_t, audit_session_is_valid, "%" PRIu32, "_AUDIT_SESSION");
                 IOVEC_ADD_NUMERIC_FIELD(iovec, n, c->loginuid, uid_t, uid_is_valid, UID_FMT, "_AUDIT_LOGINUID");
@@ -1144,7 +1145,7 @@ static void server_dispatch_message_real(
                 if (o->cmdline)
                         cmdline2 = set_iovec_string_field(iovec, &n, "OBJECT_CMDLINE=", o->cmdline);
 
-                IOVEC_ADD_STRING_FIELD(iovec, n, o->capeff, "OBJECT_CAP_EFFECTIVE");
+                IOVEC_ADD_NUMERIC_FIELD(iovec, n, o->capability_quintet.effective, uint64_t, capability_is_set, "%" PRIx64, "OBJECT_CAP_EFFECTIVE");
                 IOVEC_ADD_SIZED_FIELD(iovec, n, o->label, o->label_size, "OBJECT_SELINUX_CONTEXT");
                 IOVEC_ADD_NUMERIC_FIELD(iovec, n, o->auditid, uint32_t, audit_session_is_valid, "%" PRIu32, "OBJECT_AUDIT_SESSION");
                 IOVEC_ADD_NUMERIC_FIELD(iovec, n, o->loginuid, uid_t, uid_is_valid, UID_FMT, "OBJECT_AUDIT_LOGINUID");
@@ -2222,8 +2223,9 @@ static int vl_method_synchronize(sd_varlink *link, sd_json_variant *parameters, 
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
 
         log_info("Received client request to sync journal.");
 
@@ -2258,11 +2260,13 @@ static int vl_method_synchronize(sd_varlink *link, sd_json_variant *parameters, 
 
 static int vl_method_rotate(sd_varlink *link, sd_json_variant *parameters, sd_varlink_method_flags_t flags, void *userdata) {
         Server *s = ASSERT_PTR(userdata);
+        int r;
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
 
         log_info("Received client request to rotate journal, rotating.");
         server_full_rotate(s);
@@ -2272,11 +2276,14 @@ static int vl_method_rotate(sd_varlink *link, sd_json_variant *parameters, sd_va
 
 static int vl_method_flush_to_var(sd_varlink *link, sd_json_variant *parameters, sd_varlink_method_flags_t flags, void *userdata) {
         Server *s = ASSERT_PTR(userdata);
+        int r;
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
+
         if (s->namespace)
                 return sd_varlink_error(link, "io.systemd.Journal.NotSupportedByNamespaces", NULL);
 
@@ -2288,11 +2295,14 @@ static int vl_method_flush_to_var(sd_varlink *link, sd_json_variant *parameters,
 
 static int vl_method_relinquish_var(sd_varlink *link, sd_json_variant *parameters, sd_varlink_method_flags_t flags, void *userdata) {
         Server *s = ASSERT_PTR(userdata);
+        int r;
 
         assert(link);
 
-        if (sd_json_variant_elements(parameters) > 0)
-                return sd_varlink_error_invalid_parameter(link, parameters);
+        r = sd_varlink_dispatch(link, parameters, /* dispatch_table = */ NULL, /* userdata = */ NULL);
+        if (r != 0)
+                return r;
+
         if (s->namespace)
                 return sd_varlink_error(link, "io.systemd.Journal.NotSupportedByNamespaces", NULL);
 
@@ -2334,16 +2344,22 @@ static int server_open_varlink(Server *s, const char *socket, int fd) {
         if (r < 0)
                 return log_error_errno(r, "Failed to allocate varlink server object: %m");
 
-        r = sd_varlink_server_add_interface(s->varlink_server, &vl_interface_io_systemd_Journal);
+        r = sd_varlink_server_add_interface_many(
+                        s->varlink_server,
+                        &vl_interface_io_systemd_Journal,
+                        &vl_interface_io_systemd_service);
         if (r < 0)
                 return log_error_errno(r, "Failed to add Journal interface to varlink server: %m");
 
         r = sd_varlink_server_bind_method_many(
                         s->varlink_server,
-                        "io.systemd.Journal.Synchronize",   vl_method_synchronize,
-                        "io.systemd.Journal.Rotate",        vl_method_rotate,
-                        "io.systemd.Journal.FlushToVar",    vl_method_flush_to_var,
-                        "io.systemd.Journal.RelinquishVar", vl_method_relinquish_var);
+                        "io.systemd.Journal.Synchronize",    vl_method_synchronize,
+                        "io.systemd.Journal.Rotate",         vl_method_rotate,
+                        "io.systemd.Journal.FlushToVar",     vl_method_flush_to_var,
+                        "io.systemd.Journal.RelinquishVar",  vl_method_relinquish_var,
+                        "io.systemd.service.Ping",           varlink_method_ping,
+                        "io.systemd.service.SetLogLevel",    varlink_method_set_log_level,
+                        "io.systemd.service.GetEnvironment", varlink_method_get_environment);
         if (r < 0)
                 return r;
 

@@ -5,8 +5,10 @@
 #include <linux/veth.h>
 #include <net/if.h>
 #include <sys/eventfd.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+#include <utmpx.h>
 
 #include "sd-daemon.h"
 #include "sd-netlink.h"
@@ -22,7 +24,6 @@
 #include "lock-util.h"
 #include "main-func.h"
 #include "missing_magic.h"
-#include "missing_mount.h"
 #include "missing_syscall.h"
 #include "mount-util.h"
 #include "mountpoint-util.h"
@@ -361,13 +362,13 @@ static int uid_is_available(
         if (r > 0)
                 return false;
 
-        r = userdb_by_uid(candidate, USERDB_AVOID_MULTIPLEXER, NULL);
+        r = userdb_by_uid(candidate, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
         if (r >= 0)
                 return false;
         if (r != -ESRCH)
                 return r;
 
-        r = groupdb_by_gid(candidate, USERDB_AVOID_MULTIPLEXER, NULL);
+        r = groupdb_by_gid(candidate, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
         if (r >= 0)
                 return false;
         if (r != -ESRCH)
@@ -398,13 +399,13 @@ static int name_is_available(
         if (!user_name)
                 return -ENOMEM;
 
-        r = userdb_by_name(user_name, USERDB_AVOID_MULTIPLEXER, NULL);
+        r = userdb_by_name(user_name, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
         if (r >= 0)
                 return false;
         if (r != -ESRCH)
                 return r;
 
-        r = groupdb_by_name(user_name, USERDB_AVOID_MULTIPLEXER, NULL);
+        r = groupdb_by_name(user_name, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
         if (r >= 0)
                 return false;
         if (r != -ESRCH)
@@ -608,8 +609,34 @@ static int test_userns_api_support(sd_varlink *link) {
         return 0;
 }
 
-static int validate_name(sd_varlink *link, const char *name, char **ret) {
-        _cleanup_free_ char *un = NULL;
+static char* random_name(void) {
+        char *s = NULL;
+
+        /* Make up a random name for this userns. Make sure the random name fits into utmpx even if prefixed
+         * with "ns-", the peer's UID, "-", and suffixed by "-65535". */
+        assert_cc(STRLEN("ns-65535-") + 16 + STRLEN("-65535") < sizeof_field(struct utmpx, ut_user));
+
+        if (asprintf(&s, "%016" PRIx64, random_u64()) < 0)
+                return NULL;
+
+        return s;
+}
+
+static char *shorten_name(const char *name) {
+
+        /* Shorten the specified name, so that it works as a userns name */
+
+        char *n = strdup(name);
+        if (!n)
+                return NULL;
+
+        /* make sure the truncated name fits into utmpx even if prefixed with "ns-" and suffixed by "-65535" */
+        strshorten(n, sizeof_field(struct utmpx, ut_user) - STRLEN("ns-") - STRLEN("-65536") - 1);
+
+        return n;
+}
+
+static int validate_name(sd_varlink *link, const char *name, bool mangle, char **ret) {
         int r;
 
         assert(link);
@@ -621,22 +648,65 @@ static int validate_name(sd_varlink *link, const char *name, char **ret) {
         if (r < 0)
                 return r;
 
+        _cleanup_free_ char *un = NULL;
         if (peer_uid == 0) {
-                if (!userns_name_is_valid(name))
-                        return sd_varlink_error_invalid_parameter_name(link, "name");
+                /* If the client is root, we'll not prefix it, but we will make sure it's suitable for
+                 * inclusion in a user name */
+                if (userns_name_is_valid(name)) {
+                        un = strdup(name);
+                        if (!un)
+                                return -ENOMEM;
+                } else {
+                        if (!mangle)
+                                return sd_varlink_error_invalid_parameter_name(link, "name");
 
-                un = strdup(name);
-                if (!un)
-                        return -ENOMEM;
+                        un = shorten_name(name);
+                        if (!un)
+                                return -ENOMEM;
+
+                        /* Let's see if shortening was enough? (It might not be, for example because an empty
+                         * string was provided – which no truncation would make valid.) */
+                        if (!userns_name_is_valid(un)) {
+                                free(un);
+
+                                /* if not, make up a random name */
+                                un = random_name();
+                                if (!un)
+                                        return -ENOMEM;
+                        }
+                }
         } else {
-                /* The the client is not root then prefix the name with the UID of the peer, so that they
-                 * live in separate namespaces and cannot steal each other's names. */
+                /* If the client is not root then prefix the name with the UID of the peer, so that they live
+                 * in separate namespaces and cannot interfere with each other's names. */
 
                 if (asprintf(&un, UID_FMT "-%s", peer_uid, name) < 0)
                         return -ENOMEM;
 
-                if (!userns_name_is_valid(un))
-                        return sd_varlink_error_invalid_parameter_name(link, "name");
+                if (!userns_name_is_valid(un)) {
+                        if (!mangle)
+                                return sd_varlink_error_invalid_parameter_name(link, "name");
+
+                        _cleanup_free_ char *c = shorten_name(un);
+                        if (!c)
+                                return -ENOMEM;
+
+                        /* Let's see if shortening was enough? */
+                        if (userns_name_is_valid(c))
+                                free_and_replace(un, c);
+                        else  {
+                                free(c);
+                                c = random_name();
+                                if (!c)
+                                        return -ENOMEM;
+
+                                un = mfree(un);
+                                if (asprintf(&un, UID_FMT "-%s", peer_uid, c) < 0)
+                                        return -ENOMEM;
+
+                                if (!userns_name_is_valid(un))
+                                        return sd_varlink_error_invalid_parameter_name(link, "name");
+                        }
+                }
         }
 
         *ret = TAKE_PTR(un);
@@ -666,7 +736,7 @@ static int validate_userns(sd_varlink *link, int userns_fd) {
                 return log_debug_errno(r, "User namespace file descriptor has unsafe flags set: %m");
 
         /* Validate this is actually a valid user namespace fd */
-        r = fd_is_ns(userns_fd, CLONE_NEWUSER);
+        r = fd_is_namespace(userns_fd, NAMESPACE_USER);
         if (r < 0)
                 return log_debug_errno(r, "Failed to check if user namespace fd is actually a user namespace: %m");
         if (r == 0)
@@ -727,6 +797,7 @@ typedef struct AllocateParameters {
         unsigned size;
         unsigned target;
         unsigned userns_fd_idx;
+        bool mangle_name;
 } AllocateParameters;
 
 static int vl_method_allocate_user_range(sd_varlink *link, sd_json_variant *parameters, sd_varlink_method_flags_t flags, void *userdata) {
@@ -736,6 +807,7 @@ static int vl_method_allocate_user_range(sd_varlink *link, sd_json_variant *para
                 { "size",                        _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uint,         offsetof(AllocateParameters, size),          SD_JSON_MANDATORY },
                 { "target",                      _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uint,         offsetof(AllocateParameters, target),        0                 },
                 { "userNamespaceFileDescriptor", _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uint,         offsetof(AllocateParameters, userns_fd_idx), SD_JSON_MANDATORY },
+                { "mangleName",                  SD_JSON_VARIANT_BOOLEAN,       sd_json_dispatch_stdbool,      offsetof(AllocateParameters, mangle_name),   0                 },
                 {}
         };
 
@@ -761,7 +833,7 @@ static int vl_method_allocate_user_range(sd_varlink *link, sd_json_variant *para
         if (r != 0)
                 return r;
 
-        r = validate_name(link, p.name, &userns_name);
+        r = validate_name(link, p.name, p.mangle_name, &userns_name);
         if (r != 0)
                 return r;
 
@@ -856,7 +928,7 @@ static int vl_method_allocate_user_range(sd_varlink *link, sd_json_variant *para
         /* Note, we'll not return UID values from the host, since the child might not run in the same
          * user namespace as us. If they want to know the ranges they should read them off the userns fd, so
          * that they are translated into their PoV */
-        return sd_varlink_replyb(link, SD_JSON_BUILD_EMPTY_OBJECT);
+        return sd_varlink_replybo(link, SD_JSON_BUILD_PAIR_STRING("name", userns_name));
 
 fail:
         /* Note: we don't have to clean-up the BPF maps in the error path: the bpf map type used will
@@ -928,6 +1000,7 @@ static int validate_userns_is_safe(sd_varlink *link, int userns_fd) {
 typedef struct RegisterParameters {
         const char *name;
         unsigned userns_fd_idx;
+        bool mangle_name;
 } RegisterParameters;
 
 static int vl_method_register_user_namespace(sd_varlink *link, sd_json_variant *parameters, sd_varlink_method_flags_t flags, void *userdata) {
@@ -935,6 +1008,7 @@ static int vl_method_register_user_namespace(sd_varlink *link, sd_json_variant *
         static const sd_json_dispatch_field dispatch_table[] = {
                 { "name",                        SD_JSON_VARIANT_STRING,        sd_json_dispatch_const_string, offsetof(RegisterParameters, name),          SD_JSON_MANDATORY },
                 { "userNamespaceFileDescriptor", _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uint,         offsetof(RegisterParameters, userns_fd_idx), SD_JSON_MANDATORY },
+                { "mangleName",                  SD_JSON_VARIANT_BOOLEAN,       sd_json_dispatch_stdbool,      offsetof(AllocateParameters, mangle_name),   0                 },
                 {}
         };
 
@@ -959,7 +1033,7 @@ static int vl_method_register_user_namespace(sd_varlink *link, sd_json_variant *
         if (r != 0)
                 return r;
 
-        r = validate_name(link, p.name, &userns_name);
+        r = validate_name(link, p.name, p.mangle_name, &userns_name);
         if (r != 0)
                 return r;
 
@@ -1044,7 +1118,7 @@ static int vl_method_register_user_namespace(sd_varlink *link, sd_json_variant *
         if (r < 0)
                 goto fail;
 
-        return sd_varlink_replyb(link, SD_JSON_BUILD_EMPTY_OBJECT);
+        return sd_varlink_replybo(link, SD_JSON_BUILD_PAIR_STRING("name", userns_name));
 
 fail:
         userns_registry_remove(registry_dir_fd, userns_info);
@@ -1348,7 +1422,7 @@ static void hash_ether_addr(UserNamespaceInfo *userns_info, const char *ifname, 
         siphash24_compress_string(strempty(ifname), &state);
         siphash24_compress_byte(0, &state); /* separator */
         n = htole64(n); /* add the 'index' to the mix in an endianess-independent fashion */
-        siphash24_compress(&n, sizeof(n), &state);
+        siphash24_compress_typesafe(n, &state);
 
         h = htole64(siphash24_finalize(&state));
 
@@ -1455,7 +1529,7 @@ static int validate_netns(sd_varlink *link, int userns_fd, int netns_fd) {
                 return log_debug_errno(r, "Network namespace file descriptor has unsafe flags set: %m");
 
         /* Validate this is actually a valid network namespace fd */
-        r = fd_is_ns(netns_fd, CLONE_NEWNET);
+        r = fd_is_namespace(netns_fd, NAMESPACE_NET);
         if (r < 0)
                 return r;
         if (r == 0)
@@ -1637,14 +1711,6 @@ static int process_connection(sd_varlink_server *server, int _fd) {
         TAKE_FD(fd);
         vl = sd_varlink_ref(vl);
 
-        r = sd_varlink_set_allow_fd_passing_input(vl, true);
-        if (r < 0)
-                return log_error_errno(r, "Failed to enable fd passing for read: %m");
-
-        r = sd_varlink_set_allow_fd_passing_output(vl, true);
-        if (r < 0)
-                return log_error_errno(r, "Failed to enable fd passing for write: %m");
-
         for (;;) {
                 r = sd_varlink_process(vl);
                 if (r == -ENOTCONN) {
@@ -1690,7 +1756,11 @@ static int run(int argc, char *argv[]) {
         if (r < 0)
                 return log_error_errno(r, "Failed to turn off non-blocking mode for listening socket: %m");
 
-        r = varlink_server_new(&server, SD_VARLINK_SERVER_INHERIT_USERDATA, NULL);
+        r = varlink_server_new(
+                        &server,
+                        SD_VARLINK_SERVER_INHERIT_USERDATA|
+                        SD_VARLINK_SERVER_ALLOW_FD_PASSING_INPUT|SD_VARLINK_SERVER_ALLOW_FD_PASSING_OUTPUT,
+                        NULL);
         if (r < 0)
                 return log_error_errno(r, "Failed to allocate varlink server: %m");
 

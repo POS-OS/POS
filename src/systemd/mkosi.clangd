@@ -1,5 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: LGPL-2.1-or-later
+set -e
 
 if command -v flatpak-spawn >/dev/null; then
     SPAWN=(flatpak-spawn --host)
@@ -7,21 +8,20 @@ else
     SPAWN=()
 fi
 
-MKOSI_CONFIG="$("${SPAWN[@]}" --host mkosi --json summary | jq -r .Images[-1])"
-DISTRIBUTION="$(jq -r .Distribution <<< "$MKOSI_CONFIG")"
-RELEASE="$(jq -r .Release <<< "$MKOSI_CONFIG")"
-ARCH="$(jq -r .Architecture <<< "$MKOSI_CONFIG")"
+MKOSI_CONFIG="$("${SPAWN[@]}" mkosi --json summary | jq -r .Images[-1])"
+BUILDDIR="$(jq -r .BuildDirectory <<< "$MKOSI_CONFIG")"
+BUILDSUBDIR="$(jq -r .BuildSubdirectory <<< "$MKOSI_CONFIG")"
 
 exec "${SPAWN[@]}" mkosi \
     --incremental=strict \
     --build-sources-ephemeral=no \
     --format=none \
     build \
+    -- \
     clangd \
     --compile-commands-dir=/work/build \
     --path-mappings="\
 $(pwd)=/work/src,\
-$(pwd)/build/mkosi.builddir/$DISTRIBUTION~$RELEASE~$ARCH/=/work/build,\
-$(pwd)/build/mkosi.cache/$DISTRIBUTION~$RELEASE~$ARCH~build.cache/usr/include/=/usr/include" \
+$BUILDDIR/$BUILDSUBDIR=/work/build"\
     "$@"
 

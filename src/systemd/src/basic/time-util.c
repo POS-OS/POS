@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <sys/timerfd.h>
 #include <sys/types.h>
+#include <threads.h>
 #include <unistd.h>
 
 #include "alloc-util.h"
@@ -17,8 +18,6 @@
 #include "io-util.h"
 #include "log.h"
 #include "macro.h"
-#include "missing_threads.h"
-#include "missing_timerfd.h"
 #include "parse-util.h"
 #include "path-util.h"
 #include "process-util.h"
@@ -1137,19 +1136,14 @@ static const char* extract_multiplier(const char *p, usec_t *ret) {
 
 int parse_time(const char *t, usec_t *ret, usec_t default_unit) {
         const char *p, *s;
-        usec_t usec = 0;
-        bool something = false;
 
         assert(t);
         assert(default_unit > 0);
 
-        p = t;
-
-        p += strspn(p, WHITESPACE);
+        p = skip_leading_chars(t, /* bad = */ NULL);
         s = startswith(p, "infinity");
         if (s) {
-                s += strspn(s, WHITESPACE);
-                if (*s != 0)
+                if (!in_charset(s, WHITESPACE))
                         return -EINVAL;
 
                 if (ret)
@@ -1157,13 +1151,14 @@ int parse_time(const char *t, usec_t *ret, usec_t default_unit) {
                 return 0;
         }
 
-        for (;;) {
+        usec_t usec = 0;
+
+        for (bool something = false;;) {
                 usec_t multiplier = default_unit, k;
                 long long l;
                 char *e;
 
-                p += strspn(p, WHITESPACE);
-
+                p = skip_leading_chars(p, /* bad = */ NULL);
                 if (*p == 0) {
                         if (!something)
                                 return -EINVAL;
@@ -1640,7 +1635,7 @@ int mktime_or_timegm_usec(
 
         assert(tm);
 
-        if (tm->tm_year < 69) /* early check for negative (i.e. before 1970) time_t (Note that in some timezones the epoch is in the year 1969!)*/
+        if (tm->tm_year < 69) /* early check for negative (i.e. before 1970) time_t (Note that in some timezones the epoch is in the year 1969!) */
                 return -ERANGE;
         if ((usec_t) tm->tm_year > CONST_MIN(USEC_INFINITY / USEC_PER_YEAR, (usec_t) TIME_T_MAX / (365U * 24U * 60U * 60U)) - 1900) /* early check for possible overrun of usec_t or time_t */
                 return -ERANGE;

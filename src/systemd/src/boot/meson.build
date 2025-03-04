@@ -7,6 +7,7 @@ libefitest = static_library(
         'efitest',
         files(
                 'bcd.c',
+                'chid.c',
                 'efi-string.c',
         ),
         build_by_default : false,
@@ -25,6 +26,20 @@ efitest_base = {
 efi_test_template = test_template + efitest_base
 efi_fuzz_template = fuzz_template + efitest_base
 
+generate_hwids_section_py = find_program('generate-hwids-section.py')
+
+if conf.get('ENABLE_UKIFY') == 1
+        test_hwids_section_c = custom_target(
+                'test-hwids-section.c',
+                input : ['hwids/device1.json', 'hwids/device2.json', 'hwids/device3.json', 'hwids/device4.json'],
+                output : 'test-hwids-section.c',
+                command : [generate_hwids_section_py, meson.current_source_dir()/'hwids'],
+                capture : true,
+                build_by_default : want_tests != 'false')
+else
+        test_hwids_section_c = ''
+endif
+
 executables += [
         efi_test_template + {
                 'sources' : files('test-bcd.c'),
@@ -34,6 +49,11 @@ executables += [
         efi_test_template + {
                 'sources' : files('test-efi-string.c'),
                 'conditions' : ['ENABLE_BOOTLOADER'],
+        },
+        efi_test_template + {
+                'sources' : files('test-chid-match.c') +
+                            test_hwids_section_c,
+                'conditions' : ['ENABLE_BOOTLOADER', 'ENABLE_UKIFY'],
         },
         efi_fuzz_template + {
                 'sources' : files('fuzz-bcd.c'),
@@ -54,6 +74,12 @@ if conf.get('ENABLE_BOOTLOADER') != 1
 endif
 
 efi_conf = configuration_data()
+
+# import several configs from userspace
+foreach name : ['HAVE_WARNING_ZERO_LENGTH_BOUNDS', 'HAVE_WARNING_ZERO_AS_NULL_POINTER_CONSTANT']
+        efi_conf.set10(name, conf.get(name) == 1)
+endforeach
+
 efi_conf.set10('ENABLE_TPM', get_option('tpm'))
 
 foreach ctype : ['color-normal', 'color-entry', 'color-highlight', 'color-edit']
@@ -259,6 +285,7 @@ libefi_sources = files(
         'device-path-util.c',
         'devicetree.c',
         'drivers.c',
+        'efi-firmware.c',
         'efi-string.c',
         'efivars.c',
         'export-vars.c',
@@ -273,12 +300,14 @@ libefi_sources = files(
         'shim.c',
         'smbios.c',
         'ticks.c',
+        'url-discovery.c',
         'util.c',
         'vmm.c',
 )
 
 systemd_boot_sources = files(
         'boot.c',
+        'line-edit.c',
 )
 
 stub_sources = files(
@@ -424,7 +453,7 @@ foreach efi_elf_binary : efi_elf_binaries
         test('check-alignment-@0@'.format(name),
              check_efi_alignment_py,
              args : exe.full_path(),
-             suite : 'efi')
+             suite : 'boot')
 endforeach
 
 alias_target('systemd-boot', boot_targets)

@@ -137,6 +137,7 @@ simple_tests += files(
         'test-open-file.c',
         'test-ordered-set.c',
         'test-os-util.c',
+        'test-osc-context.c',
         'test-parse-argument.c',
         'test-parse-helpers.c',
         'test-path-lookup.c',
@@ -374,6 +375,11 @@ executables += [
         test_template + {
                 'sources' : files('test-parse-util.c'),
                 'dependencies' : libm,
+        },
+        test_template + {
+                'sources' : files('test-shift-uid.c'),
+                'dependencies' : libacl,
+                'type' : 'manual',
         },
         test_template + {
                 'sources' : files('test-process-util.c'),

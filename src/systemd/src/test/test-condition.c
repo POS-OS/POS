@@ -1095,6 +1095,24 @@ TEST(condition_test_os_release) {
         ASSERT_OK_POSITIVE(condition_test(condition, environ));
         condition_free(condition);
 
+        /* Test shell style globs */
+
+        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_LIKE$=*THISHOPEFULLYWONTEXIST*", false, false));
+        ASSERT_OK_ZERO(condition_test(condition, environ));
+        condition_free(condition);
+
+        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_THISHOPEFULLYWONTEXIST$=*rhel*", false, false));
+        ASSERT_OK_ZERO(condition_test(condition, environ));
+        condition_free(condition);
+
+        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_LIKE!$=*THISHOPEFULLYWONTEXIST*", false, false));
+        ASSERT_OK_POSITIVE(condition_test(condition, environ));
+        condition_free(condition);
+
+        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_THISHOPEFULLYWONTEXIST!$=*rhel*", false, false));
+        ASSERT_OK_POSITIVE(condition_test(condition, environ));
+        condition_free(condition);
+
         /* load_os_release_pairs() removes quotes, we have to add them back,
          * otherwise we get a string: "PRETTY_NAME=Debian GNU/Linux 10 (buster)"
          * which is wrong, as the value is not quoted anymore. */
@@ -1305,6 +1323,39 @@ TEST(condition_test_psi) {
 
         ASSERT_NOT_NULL(condition = condition_new(CONDITION_IO_PRESSURE, "-.slice:0.0%", false, false));
         ASSERT_OK(condition_test(condition, environ));
+        condition_free(condition);
+}
+
+TEST(condition_test_kernel_module_loaded) {
+        Condition *condition;
+        int r;
+
+        condition = condition_new(CONDITION_KERNEL_MODULE_LOADED, "", /* trigger= */ false, /* negate= */ false);
+        assert_se(condition);
+        ASSERT_OK_ZERO(condition_test(condition, environ));
+        condition_free(condition);
+
+        condition = condition_new(CONDITION_KERNEL_MODULE_LOADED, "..", /* trigger= */ false, /* negate= */ false);
+        assert_se(condition);
+        ASSERT_OK_ZERO(condition_test(condition, environ));
+        condition_free(condition);
+
+        if (access("/sys/module/", F_OK) < 0)
+                return (void) log_tests_skipped("/sys/module not available, skipping.");
+
+        FOREACH_STRING(m, "random", "vfat", "fat", "cec", "binfmt_misc", "binfmt-misc") {
+                condition = condition_new(CONDITION_KERNEL_MODULE_LOADED, m, /* trigger= */ false, /* negate= */ false);
+                assert_se(condition);
+                r = condition_test(condition, environ);
+                ASSERT_OK(r);
+                condition_free(condition);
+
+                log_notice("kmod %s is loaded: %s", m, yes_no(r));
+        }
+
+        condition = condition_new(CONDITION_KERNEL_MODULE_LOADED, "idefinitelydontexist", /* trigger= */ false, /* negate= */ false);
+        assert_se(condition);
+        ASSERT_OK_ZERO(condition_test(condition, environ));
         condition_free(condition);
 }
 

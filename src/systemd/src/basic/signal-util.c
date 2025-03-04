@@ -2,11 +2,11 @@
 
 #include <errno.h>
 #include <stdarg.h>
+#include <threads.h>
 
 #include "errno-util.h"
 #include "macro.h"
 #include "missing_syscall.h"
-#include "missing_threads.h"
 #include "parse-util.h"
 #include "signal-util.h"
 #include "stdio-util.h"
@@ -300,6 +300,11 @@ const struct sigaction sigaction_ignore = {
 const struct sigaction sigaction_default = {
         .sa_handler = SIG_DFL,
         .sa_flags = SA_RESTART,
+};
+
+const struct sigaction sigaction_nop_nocldstop = {
+        .sa_handler = nop_signal_handler,
+        .sa_flags = SA_NOCLDSTOP|SA_RESTART,
 };
 
 int parse_signo(const char *s, int *ret) {

@@ -78,6 +78,7 @@ struct Manager {
         UseDomains dhcp6_use_domains;
         UseDomains ndisc_use_domains;
 
+        DHCPClientIdentifier dhcp_client_identifier;
         DUID dhcp_duid;
         DUID dhcp6_duid;
         DUID duid_product_uuid;
@@ -116,8 +117,6 @@ struct Manager {
         usec_t speed_meter_interval_usec;
         usec_t speed_meter_usec_new;
         usec_t speed_meter_usec_old;
-
-        bool bridge_mdb_on_master_not_supported;
 
         FirewallContext *fw_ctx;
 

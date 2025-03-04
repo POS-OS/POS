@@ -28,9 +28,24 @@ blk="$(mktemp)"
 dd if=/dev/zero of="$blk" bs=1M count=1
 loopdev="$(losetup --show -f "$blk")"
 
+# Wait for devices created in the above being processed.
+udevadm settle --timeout 30
+
 udevadm -h
 
+udevadm cat
+udevadm cat 99-systemd
+udevadm cat 99-systemd.rules
+udevadm cat /usr/lib/udev/rules.d/99-systemd.rules
+udevadm cat /usr/lib/udev/rules.d
+(! udevadm cat /dev/null)
+udevadm cat --config
+udevadm cat -h
+
+INVOCATION_ID=$(systemctl show --property InvocationID --value systemd-udevd.service)
 udevadm control -e
+# Wait for systemd-udevd.service being restarted.
+timeout 30 bash -ec "while [[ \"\$(systemctl show --property InvocationID --value systemd-udevd.service)\" == \"$INVOCATION_ID\" ]]; do sleep .5; done"
 udevadm control -l emerg
 udevadm control -l alert
 udevadm control -l crit
@@ -46,6 +61,8 @@ udevadm control -R
 udevadm control -p HELLO=world
 udevadm control -m 42
 udevadm control --ping -t 5
+udevadm control --trace yes
+udevadm control --trace no
 udevadm control --load-credentials
 udevadm control -h
 
@@ -97,6 +114,11 @@ udevadm info -e --initialized-nomatch >/dev/null
 # udevadm info -c
 udevadm info -w /sys/class/net/$netdev
 udevadm info --wait-for-initialization=5 /sys/class/net/$netdev
+pushd /dev
+udevadm info null >/dev/null
+udevadm info ./null >/dev/null
+popd
+udevadm info /usr/../dev/null >/dev/null
 udevadm info -h
 
 assert_rc 124 timeout 1 udevadm monitor
@@ -130,6 +152,11 @@ udevadm test -N early /sys/class/net/$netdev
 udevadm test -N late /sys/class/net/$netdev
 udevadm test --resolve-names never /sys/class/net/$netdev
 (! udevadm test -N hello /sys/class/net/$netdev)
+udevadm test -v /sys/class/net/$netdev
+udevadm test --json=off /sys/class/net/$netdev
+udevadm test --json=pretty /sys/class/net/$netdev | jq . >/dev/null
+udevadm test --json=short /sys/class/net/$netdev | jq . >/dev/null
+udevadm test --json=help
 udevadm test -h
 
 # udevadm test-builtin path_id "$loopdev"

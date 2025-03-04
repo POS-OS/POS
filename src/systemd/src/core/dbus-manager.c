@@ -7,14 +7,15 @@
 
 #include "alloc-util.h"
 #include "architecture.h"
+#include "bitfield.h"
 #include "build.h"
 #include "bus-common-errors.h"
 #include "bus-get-properties.h"
 #include "bus-log-control-api.h"
+#include "bus-message-util.h"
 #include "bus-util.h"
 #include "chase.h"
 #include "confidential-virt.h"
-#include "data-fd-util.h"
 #include "dbus-cgroup.h"
 #include "dbus-execute.h"
 #include "dbus-job.h"
@@ -33,6 +34,7 @@
 #include "locale-util.h"
 #include "log.h"
 #include "manager-dump.h"
+#include "memfd-util.h"
 #include "os-util.h"
 #include "parse-util.h"
 #include "path-util.h"
@@ -47,10 +49,6 @@
 #include "version.h"
 #include "virt.h"
 #include "watchdog.h"
-
-/* Require 16MiB free in /run/systemd for reloading/reexecing. After all we need to serialize our state
- * there, and if we can't we'll fail badly. */
-#define RELOAD_DISK_SPACE_MIN (UINT64_C(16) * UINT64_C(1024) * UINT64_C(1024))
 
 static UnitFileFlags unit_file_bools_to_flags(bool runtime, bool force) {
         return (runtime ? UNIT_FILE_RUNTIME : 0) |
@@ -963,11 +961,17 @@ static int method_attach_processes_to_unit(sd_bus_message *message, void *userda
         return method_generic_unit_operation(message, userdata, error, bus_unit_method_attach_processes, GENERIC_UNIT_VALIDATE_LOADED);
 }
 
+static int method_remove_subgroup_from_unit(sd_bus_message *message, void *userdata, sd_bus_error *error) {
+        /* Don't allow removal of subgroups from units that aren't loaded. But allow loading the unit, since
+         * this is clean-up work, that is OK to do when the unit is stopped already. */
+        return method_generic_unit_operation(message, userdata, error, bus_unit_method_remove_subgroup, GENERIC_UNIT_LOAD|GENERIC_UNIT_VALIDATE_LOADED);
+}
+
 static int transient_unit_from_message(
                 Manager *m,
                 sd_bus_message *message,
                 const char *name,
-                Unit **unit,
+                Unit **ret_unit,
                 sd_bus_error *error) {
 
         UnitType t;
@@ -1018,7 +1022,8 @@ static int transient_unit_from_message(
         unit_add_to_load_queue(u);
         manager_dispatch_load_queue(m);
 
-        *unit = u;
+        if (ret_unit)
+                *ret_unit = u;
 
         return 0;
 }
@@ -1038,14 +1043,13 @@ static int transient_aux_units_from_message(
                 return r;
 
         while ((r = sd_bus_message_enter_container(message, 'r', "sa(sv)")) > 0) {
-                const char *name = NULL;
-                Unit *u;
+                const char *name;
 
                 r = sd_bus_message_read(message, "s", &name);
                 if (r < 0)
                         return r;
 
-                r = transient_unit_from_message(m, message, name, &u, error);
+                r = transient_unit_from_message(m, message, name, /* unit = */ NULL, error);
                 if (r < 0)
                         return r;
 
@@ -1447,7 +1451,7 @@ static int method_dump(sd_bus_message *message, void *userdata, sd_bus_error *er
 static int reply_dump_by_fd(sd_bus_message *message, char *dump) {
         _cleanup_close_ int fd = -EBADF;
 
-        fd = acquire_data_fd(dump);
+        fd = memfd_new_and_seal_string("dump", dump);
         if (fd < 0)
                 return fd;
 
@@ -1485,73 +1489,6 @@ static int method_refuse_snapshot(sd_bus_message *message, void *userdata, sd_bu
         return sd_bus_error_set(error, SD_BUS_ERROR_NOT_SUPPORTED, "Support for snapshots has been removed.");
 }
 
-static int get_run_space(uint64_t *ret, sd_bus_error *error) {
-        struct statvfs svfs;
-
-        assert(ret);
-
-        if (statvfs("/run/systemd", &svfs) < 0)
-                return sd_bus_error_set_errnof(error, errno, "Failed to statvfs(/run/systemd): %m");
-
-        *ret = (uint64_t) svfs.f_bfree * (uint64_t) svfs.f_bsize;
-        return 0;
-}
-
-static int verify_run_space(const char *message, sd_bus_error *error) {
-        uint64_t available = 0; /* unnecessary, but used to trick out gcc's incorrect maybe-uninitialized warning */
-        int r;
-
-        assert(message);
-
-        r = get_run_space(&available, error);
-        if (r < 0)
-                return r;
-
-        if (available < RELOAD_DISK_SPACE_MIN)
-                return sd_bus_error_setf(error,
-                                         BUS_ERROR_DISK_FULL,
-                                         "%s, not enough space available on /run/systemd/. "
-                                         "Currently, %s are free, but a safety buffer of %s is enforced.",
-                                         message,
-                                         FORMAT_BYTES(available),
-                                         FORMAT_BYTES(RELOAD_DISK_SPACE_MIN));
-
-        return 0;
-}
-
-int verify_run_space_and_log(const char *message) {
-        _cleanup_(sd_bus_error_free) sd_bus_error error = SD_BUS_ERROR_NULL;
-        int r;
-
-        assert(message);
-
-        r = verify_run_space(message, &error);
-        if (r < 0)
-                return log_error_errno(r, "%s", bus_error_message(&error, r));
-
-        return 0;
-}
-
-static int verify_run_space_permissive(const char *message, sd_bus_error *error) {
-        uint64_t available = 0; /* unnecessary, but used to trick out gcc's incorrect maybe-uninitialized warning */
-        int r;
-
-        assert(message);
-
-        r = get_run_space(&available, error);
-        if (r < 0)
-                return r;
-
-        if (available < RELOAD_DISK_SPACE_MIN)
-                log_warning("Dangerously low amount of free space on /run/systemd/, %s.\n"
-                            "Currently, %s are free, but %s are suggested. Proceeding anyway.",
-                            message,
-                            FORMAT_BYTES(available),
-                            FORMAT_BYTES(RELOAD_DISK_SPACE_MIN));
-
-        return 0;
-}
-
 static void log_caller(sd_bus_message *message, Manager *manager, const char *method) {
         _cleanup_(sd_bus_creds_unrefp) sd_bus_creds *creds = NULL;
         _cleanup_(pidref_done) PidRef pidref = PIDREF_NULL;
@@ -1584,10 +1521,6 @@ static int method_reload(sd_bus_message *message, void *userdata, sd_bus_error *
         int r;
 
         assert(message);
-
-        r = verify_run_space("Refusing to reload", error);
-        if (r < 0)
-                return r;
 
         r = mac_selinux_access_check(message, "reload", error);
         if (r < 0)
@@ -1630,10 +1563,6 @@ static int method_reexecute(sd_bus_message *message, void *userdata, sd_bus_erro
         int r;
 
         assert(message);
-
-        r = verify_run_space("Refusing to reexecute", error);
-        if (r < 0)
-                return r;
 
         r = mac_selinux_access_check(message, "reload", error);
         if (r < 0)
@@ -1717,10 +1646,6 @@ static int method_soft_reboot(sd_bus_message *message, void *userdata, sd_bus_er
         if (!MANAGER_IS_SYSTEM(m))
                 return sd_bus_error_set(error, SD_BUS_ERROR_NOT_SUPPORTED,
                                         "Soft reboot is only supported by system manager.");
-
-        r = verify_run_space_permissive("soft reboot may fail", error);
-        if (r < 0)
-                return r;
 
         r = mac_selinux_access_check(message, "reboot", error);
         if (r < 0)
@@ -1825,10 +1750,6 @@ static int method_switch_root(sd_bus_message *message, void *userdata, sd_bus_er
         if (!MANAGER_IS_SYSTEM(m))
                 return sd_bus_error_set(error, SD_BUS_ERROR_NOT_SUPPORTED,
                                         "Root switching is only supported by system manager.");
-
-        r = verify_run_space_permissive("root switching may fail", error);
-        if (r < 0)
-                return r;
 
         r = mac_selinux_access_check(message, "reboot", error);
         if (r < 0)
@@ -2172,9 +2093,9 @@ static int method_enqueue_marked_jobs(sd_bus_message *message, void *userdata, s
                         continue;
 
                 BusUnitQueueFlags flags;
-                if (FLAGS_SET(u->markers, 1u << UNIT_MARKER_NEEDS_RESTART))
+                if (BIT_SET(u->markers, UNIT_MARKER_NEEDS_RESTART))
                         flags = 0;
-                else if (FLAGS_SET(u->markers, 1u << UNIT_MARKER_NEEDS_RELOAD))
+                else if (BIT_SET(u->markers, UNIT_MARKER_NEEDS_RELOAD))
                         flags = BUS_UNIT_QUEUE_RELOAD_IF_POSSIBLE;
                 else
                         continue;
@@ -2760,7 +2681,7 @@ static int method_add_dependency_unit_files(sd_bus_message *message, void *userd
         flags = unit_file_bools_to_flags(runtime, force);
 
         dep = unit_dependency_from_string(type);
-        if (dep < 0)
+        if (dep < 0 || !IN_SET(dep, UNIT_WANTS, UNIT_REQUIRES))
                 return -EINVAL;
 
         r = unit_file_add_dependency(m->runtime_scope, flags, NULL, l, target, dep, &changes, &n_changes);
@@ -3331,6 +3252,11 @@ const sd_bus_vtable bus_manager_vtable[] = {
                                 SD_BUS_ARGS("s", unit_name, "s", subcgroup, "au", pids),
                                 SD_BUS_NO_RESULT,
                                 method_attach_processes_to_unit,
+                                SD_BUS_VTABLE_UNPRIVILEGED),
+        SD_BUS_METHOD_WITH_ARGS("RemoveSubgroupFromUnit",
+                                SD_BUS_ARGS("s", unit_name, "s", subcgroup, "t", flags),
+                                SD_BUS_NO_RESULT,
+                                method_remove_subgroup_from_unit,
                                 SD_BUS_VTABLE_UNPRIVILEGED),
         SD_BUS_METHOD_WITH_ARGS("AbandonScope",
                                 SD_BUS_ARGS("s", name),

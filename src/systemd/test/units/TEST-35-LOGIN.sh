@@ -639,7 +639,7 @@ EOF
 
     journalctl --sync
     assert_eq "$(journalctl -b -u systemd-logind.service --since="$ts" --grep "Session \"$id\" of user \"logind-test-user\" is idle, stopping." | wc -l)" 1
-    assert_eq "$(loginctl --no-legend | grep -v manager | grep -c "logind-test-user")" 0
+    assert_eq "$(loginctl --no-legend | grep -v manager | grep tty | grep -c "logind-test-user")" 0
 }
 
 testcase_ambient_caps() {
@@ -701,15 +701,22 @@ background_at_return() {
 
 testcase_background() {
 
-    local uid TRANSIENTUNIT1 TRANSIENTUNIT2
+    local uid TRANSIENTUNIT0 TRANSIENTUNIT1 TRANSIENTUNIT2
 
     uid=$(id -u logind-test-user)
 
     systemctl stop user@"$uid".service
 
     PAMSERVICE="pamserv$RANDOM"
+    TRANSIENTUNIT0="none$RANDOM.service"
     TRANSIENTUNIT1="bg$RANDOM.service"
     TRANSIENTUNIT2="bgg$RANDOM.service"
+    TRANSIENTUNIT3="bggg$RANDOM.service"
+    TRANSIENTUNIT4="bgggg$RANDOM.service"
+    RUN0UNIT0="run0$RANDOM.service"
+    RUN0UNIT1="runn0$RANDOM.service"
+    RUN0UNIT2="runnn0$RANDOM.service"
+    RUN0UNIT3="runnnn0$RANDOM.service"
 
     trap background_at_return RETURN
 
@@ -721,6 +728,13 @@ account required   pam_permit.so
 session optional   pam_systemd.so debug
 session required   pam_unix.so
 EOF
+
+    systemd-run -u "$TRANSIENTUNIT0" -p PAMName="$PAMSERVICE" -p "Environment=XDG_SESSION_CLASS=none" -p Type=exec -p User=logind-test-user sleep infinity
+
+    # This was a 'none' service, so logind should take no action
+    (! systemctl is-active user@"$uid".service )
+
+    systemctl stop "$TRANSIENTUNIT0"
 
     systemd-run -u "$TRANSIENTUNIT1" -p PAMName="$PAMSERVICE" -p "Environment=XDG_SESSION_CLASS=background-light" -p Type=exec -p User=logind-test-user sleep infinity
 
@@ -737,6 +751,38 @@ EOF
     systemctl stop "$TRANSIENTUNIT2"
 
     systemctl stop user@"$uid".service
+
+    # Now check that system users automatically get the light session class assigned
+    systemd-sysusers --inline "u lightuser"
+
+    systemd-run -u "$TRANSIENTUNIT3" -p PAMName="$PAMSERVICE" -p "Environment=XDG_SESSION_TYPE=unspecified" -p Type=exec -p User=lightuser sleep infinity
+    loginctl | grep lightuser | grep -q background-light
+    systemctl stop "$TRANSIENTUNIT3"
+
+    systemd-run -u "$TRANSIENTUNIT4" -p PAMName="$PAMSERVICE" -p "Environment=XDG_SESSION_TYPE=tty" -p Type=exec -p User=lightuser sleep infinity
+    loginctl | grep lightuser | grep -q user-light
+    systemctl stop "$TRANSIENTUNIT4"
+
+    # Now check that run0's session class control works
+    systemd-run --service-type=notify run0 -u lightuser --unit="$RUN0UNIT0" sleep infinity
+    loginctl | grep lightuser | grep -q "background-light "
+    systemctl stop "$RUN0UNIT0"
+
+    systemd-run --service-type=notify run0 -u lightuser --unit="$RUN0UNIT1" --lightweight=yes sleep infinity
+    loginctl | grep lightuser | grep -q "background-light "
+    systemctl stop "$RUN0UNIT1"
+
+    systemd-run --service-type=notify run0 -u lightuser --unit="$RUN0UNIT2" --lightweight=no sleep infinity
+    loginctl | grep lightuser | grep -q "background "
+    systemctl stop "$RUN0UNIT2"
+
+    systemd-run --service-type=notify run0 -u root --unit="$RUN0UNIT3" sleep infinity
+    loginctl | grep root | grep -q "background-light "
+    systemctl stop "$RUN0UNIT3"
+}
+
+testcase_varlink() {
+    varlinkctl introspect /run/systemd/io.systemd.Login
 }
 
 setup_test_user

@@ -42,9 +42,12 @@ int pam_release_bus_connection(pam_handle_t *handle, const char *module_name);
 int pam_get_bus_data(pam_handle_t *handle, const char *module_name, PamBusData **ret);
 
 void pam_cleanup_free(pam_handle_t *handle, void *data, int error_status);
+void pam_cleanup_close(pam_handle_t *handle, void *data, int error_status);
 
 int pam_get_item_many_internal(pam_handle_t *handle, ...);
-
 #define pam_get_item_many(handle, ...) pam_get_item_many_internal(handle, __VA_ARGS__, -1)
+
+int pam_get_data_many_internal(pam_handle_t *handle, ...) _sentinel_;
+#define pam_get_data_many(handle, ...) pam_get_data_many_internal(handle, __VA_ARGS__, NULL)
 
 int pam_prompt_graceful(pam_handle_t *handle, int style, char **ret_response, const char *fmt, ...) _printf_(4,5);

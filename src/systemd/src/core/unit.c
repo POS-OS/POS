@@ -403,7 +403,7 @@ void unit_release_resources(Unit *u) {
                 return;
 
         state = unit_active_state(u);
-        if (!IN_SET(state, UNIT_INACTIVE, UNIT_FAILED))
+        if (!UNIT_IS_INACTIVE_OR_FAILED(state))
                 return;
 
         if (unit_will_restart(u))
@@ -646,12 +646,10 @@ static void unit_clear_dependencies(Unit *u) {
 
 static void unit_remove_transient(Unit *u) {
         assert(u);
+        assert(u->manager);
 
         if (!u->transient)
                 return;
-
-        if (u->fragment_path)
-                (void) unlink(u->fragment_path);
 
         STRV_FOREACH(i, u->dropin_paths) {
                 _cleanup_free_ char *p = NULL, *pp = NULL;
@@ -668,6 +666,17 @@ static void unit_remove_transient(Unit *u) {
 
                 (void) unlink(*i);
                 (void) rmdir(p);
+        }
+
+        if (u->fragment_path) {
+                (void) unlink(u->fragment_path);
+                (void) unit_file_remove_from_name_map(
+                                &u->manager->lookup_paths,
+                                &u->manager->unit_cache_timestamp_hash,
+                                &u->manager->unit_id_map,
+                                &u->manager->unit_name_map,
+                                &u->manager->unit_path_cache,
+                                u->fragment_path);
         }
 }
 
@@ -3511,6 +3520,32 @@ int unit_load_related_unit(Unit *u, const char *type, Unit **_found) {
         return r;
 }
 
+static int signal_name_owner_changed_install_handler(sd_bus_message *message, void *userdata, sd_bus_error *error) {
+        Unit *u = ASSERT_PTR(userdata);
+        const sd_bus_error *e;
+        int r;
+
+        e = sd_bus_message_get_error(message);
+        if (!e) {
+                log_unit_trace(u, "Successfully installed NameOwnerChanged signal match.");
+                return 0;
+        }
+
+        r = sd_bus_error_get_errno(e);
+        log_unit_error_errno(u, r,
+                             "Unexpected error response on installing NameOwnerChanged signal match: %s",
+                             bus_error_message(e, r));
+
+        /* If we failed to install NameOwnerChanged signal, also unref the bus slot of GetNameOwner(). */
+        u->match_bus_slot = sd_bus_slot_unref(u->match_bus_slot);
+        u->get_name_owner_slot = sd_bus_slot_unref(u->get_name_owner_slot);
+
+        if (UNIT_VTABLE(u)->bus_name_owner_change)
+                UNIT_VTABLE(u)->bus_name_owner_change(u, NULL);
+
+        return 0;
+}
+
 static int signal_name_owner_changed(sd_bus_message *message, void *userdata, sd_bus_error *error) {
         const char *new_owner;
         Unit *u = ASSERT_PTR(userdata);
@@ -3593,10 +3628,10 @@ int unit_install_bus_match(Unit *u, sd_bus *bus, const char *name) {
         r = bus_add_match_full(
                         bus,
                         &u->match_bus_slot,
-                        true,
+                        /* asynchronous = */ true,
                         match,
                         signal_name_owner_changed,
-                        NULL,
+                        signal_name_owner_changed_install_handler,
                         u,
                         timeout_usec);
         if (r < 0)
@@ -3623,7 +3658,6 @@ int unit_install_bus_match(Unit *u, sd_bus *bus, const char *name) {
                         get_name_owner_handler,
                         u,
                         timeout_usec);
-
         if (r < 0) {
                 u->match_bus_slot = sd_bus_slot_unref(u->match_bus_slot);
                 return r;
@@ -5091,14 +5125,28 @@ void unit_warn_if_dir_nonempty(Unit *u, const char* where) {
                         "WHERE=%s", where);
 }
 
-int unit_fail_if_noncanonical(Unit *u, const char* where) {
-        _cleanup_free_ char *canonical_where = NULL;
+int unit_log_noncanonical_mount_path(Unit *u, const char *where) {
+        assert(u);
+        assert(where);
+
+        /* No need to mention "." or "..", they would already have been rejected by unit_name_from_path() */
+        log_unit_struct(u, LOG_ERR,
+                        "MESSAGE_ID=" SD_MESSAGE_NON_CANONICAL_MOUNT_STR,
+                        LOG_UNIT_INVOCATION_ID(u),
+                        LOG_UNIT_MESSAGE(u, "Mount path %s is not canonical (contains a symlink).", where),
+                        "WHERE=%s", where);
+
+        return -ELOOP;
+}
+
+int unit_fail_if_noncanonical_mount_path(Unit *u, const char* where) {
         int r;
 
         assert(u);
         assert(where);
 
-        r = chase(where, NULL, CHASE_NONEXISTENT, &canonical_where, NULL);
+        _cleanup_free_ char *canonical_where = NULL;
+        r = chase(where, /* root= */ NULL, CHASE_NONEXISTENT, &canonical_where, /* ret_fd= */ NULL);
         if (r < 0) {
                 log_unit_debug_errno(u, r, "Failed to check %s for symlinks, ignoring: %m", where);
                 return 0;
@@ -5108,14 +5156,7 @@ int unit_fail_if_noncanonical(Unit *u, const char* where) {
         if (path_equal(where, canonical_where))
                 return 0;
 
-        /* No need to mention "." or "..", they would already have been rejected by unit_name_from_path() */
-        log_unit_struct(u, LOG_ERR,
-                        "MESSAGE_ID=" SD_MESSAGE_OVERMOUNTING_STR,
-                        LOG_UNIT_INVOCATION_ID(u),
-                        LOG_UNIT_MESSAGE(u, "Mount path %s is not canonical (contains a symlink).", where),
-                        "WHERE=%s", where);
-
-        return -ELOOP;
+        return unit_log_noncanonical_mount_path(u, where);
 }
 
 bool unit_is_pristine(Unit *u) {
@@ -5982,7 +6023,7 @@ bool unit_needs_console(Unit *u) {
         return exec_context_may_touch_console(ec);
 }
 
-int unit_pid_attachable(Unit *u, const PidRef *pid, sd_bus_error *error) {
+int unit_pid_attachable(Unit *u, PidRef *pid, sd_bus_error *error) {
         int r;
 
         assert(u);

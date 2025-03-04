@@ -5,12 +5,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#if HAVE_AUDIT
-#include <libaudit.h>
-#endif
-
 #include "sd-bus.h"
 
+#include "audit-util.h"
 #include "alloc-util.h"
 #include "bus-error.h"
 #include "bus-locator.h"
@@ -30,20 +27,14 @@
 
 typedef struct Context {
         sd_bus *bus;
-#if HAVE_AUDIT
         int audit_fd;
-#endif
 } Context;
 
 static void context_clear(Context *c) {
         assert(c);
 
         c->bus = sd_bus_flush_close_unref(c->bus);
-#if HAVE_AUDIT
-        if (c->audit_fd >= 0)
-                audit_close(c->audit_fd);
-        c->audit_fd = -EBADF;
-#endif
+        c->audit_fd = close_audit_fd(c->audit_fd);
 }
 
 static int get_startup_monotonic_time(Context *c, usec_t *ret) {
@@ -52,6 +43,12 @@ static int get_startup_monotonic_time(Context *c, usec_t *ret) {
 
         assert(c);
         assert(ret);
+
+        if (!c->bus) {
+                r = bus_connect_system_systemd(&c->bus);
+                if (r < 0)
+                        return log_warning_errno(r, "Failed to get D-Bus connection, ignoring: %m");
+        }
 
         r = bus_get_property_trivial(
                         c->bus,
@@ -94,10 +91,13 @@ static int get_current_runlevel(Context *c) {
                                 UINT64_C(100) * USEC_PER_MSEC +
                                 random_u64_range(UINT64_C(1900) * USEC_PER_MSEC * n_attempts / MAX_ATTEMPTS);
                         (void) usleep_safe(usec);
+                }
 
+                if (!c->bus) {
                         r = bus_connect_system_systemd(&c->bus);
                         if (r == -ECONNREFUSED && n_attempts < 64) {
-                                log_debug_errno(r, "Failed to reconnect to system bus, retrying after a slight delay: %m");
+                                log_debug_errno(r, "Failed to %s to system bus, retrying after a slight delay: %m",
+                                                n_attempts <= 1 ? "connect" : "reconnect");
                                 continue;
                         }
                         if (r < 0)
@@ -247,26 +247,14 @@ static int run(int argc, char *argv[]) {
         };
 
         _cleanup_(context_clear) Context c = {
-#if HAVE_AUDIT
                 .audit_fd = -EBADF,
-#endif
         };
-        int r;
 
         log_setup();
 
         umask(0022);
 
-#if HAVE_AUDIT
-        /* If the kernel lacks netlink or audit support, don't worry about it. */
-        c.audit_fd = audit_open();
-        if (c.audit_fd < 0)
-                log_full_errno(IN_SET(errno, EAFNOSUPPORT, EPROTONOSUPPORT) ? LOG_DEBUG : LOG_WARNING,
-                               errno, "Failed to connect to audit log, ignoring: %m");
-#endif
-        r = bus_connect_system_systemd(&c.bus);
-        if (r < 0)
-                return log_error_errno(r, "Failed to get D-Bus connection: %m");
+        c.audit_fd = open_audit_fd_or_warn();
 
         return dispatch_verb(argc, argv, verbs, &c);
 }

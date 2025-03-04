@@ -11,6 +11,7 @@
 #include <sys/time.h>
 #include <sys/uio.h>
 #include <sys/un.h>
+#include <threads.h>
 #include <unistd.h>
 
 #include "sd-messages.h"
@@ -26,7 +27,6 @@
 #include "log.h"
 #include "macro.h"
 #include "missing_syscall.h"
-#include "missing_threads.h"
 #include "parse-util.h"
 #include "proc-cmdline.h"
 #include "process-util.h"
@@ -50,7 +50,7 @@ static void *log_syntax_callback_userdata = NULL;
 
 static LogTarget log_target = LOG_TARGET_CONSOLE;
 static int log_max_level = LOG_INFO;
-static int log_target_max_level[] = {
+static int log_target_max_level[_LOG_TARGET_SINGLE_MAX] = {
         [LOG_TARGET_CONSOLE] = INT_MAX,
         [LOG_TARGET_KMSG]    = INT_MAX,
         [LOG_TARGET_SYSLOG]  = INT_MAX,
@@ -397,7 +397,7 @@ void log_forget_fds(void) {
 }
 
 int log_set_max_level(int level) {
-        assert(level == LOG_NULL || LOG_PRI(level) == level);
+        assert(level == LOG_NULL || log_level_is_valid(level));
 
         int old = log_max_level;
         log_max_level = level;
@@ -681,10 +681,10 @@ static int log_do_header(
                      error ? "ERRNO=" : "",
                      error ? 1 : 0, error,
                      error ? "\n" : "",
-                     isempty(object) ? "" : object_field,
+                     isempty(object) ? "" : ASSERT_PTR(object_field),
                      isempty(object) ? "" : object,
                      isempty(object) ? "" : "\n",
-                     isempty(extra) ? "" : extra_field,
+                     isempty(extra) ? "" : ASSERT_PTR(extra_field),
                      isempty(extra) ? "" : extra,
                      isempty(extra) ? "" : "\n",
                      program_invocation_short_name);
@@ -1406,14 +1406,29 @@ static bool should_parse_proc_cmdline(void) {
 
 void log_parse_environment_variables(void) {
         const char *e;
+        int r;
 
         e = getenv("SYSTEMD_LOG_TARGET");
         if (e && log_set_target_from_string(e) < 0)
                 log_warning("Failed to parse log target '%s', ignoring.", e);
 
         e = getenv("SYSTEMD_LOG_LEVEL");
-        if (e && log_set_max_level_from_string(e) < 0)
-                log_warning("Failed to parse log level '%s', ignoring.", e);
+        if (e) {
+                r = log_set_max_level_from_string(e);
+                if (r < 0)
+                        log_warning_errno(r, "Failed to parse log level '%s', ignoring: %m", e);
+        } else {
+                /* If no explicit log level is specified then let's see if this is a debug invocation, and if
+                 * so raise the log level to debug too. Note that this is not symmetric: just because
+                 * DEBUG_INVOCATION is explicitly set to 0 we won't lower the log level below debug. This
+                 * follows the logic that debug logging is an opt-in thing anyway, and if there's any reason
+                 * to enable it we should not disable it here automatically. */
+                r = getenv_bool("DEBUG_INVOCATION");
+                if (r < 0 && r != -ENXIO)
+                        log_warning_errno(r, "Failed to parse $DEBUG_INVOCATION value, ignoring: %m");
+                else if (r > 0)
+                        log_set_max_level(LOG_DEBUG);
+        }
 
         e = getenv("SYSTEMD_LOG_COLOR");
         if (e && log_show_color_from_string(e) < 0)

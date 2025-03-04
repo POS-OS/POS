@@ -2,6 +2,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <linux/prctl.h>
 #include <poll.h>
 #include <sys/file.h>
 #include <sys/mman.h>
@@ -13,13 +14,12 @@
 #include <unistd.h>
 #include <utmpx.h>
 
-#include <linux/fs.h> /* Must be included after <sys/mount.h> */
-
 #include "sd-messages.h"
 
 #include "af-list.h"
 #include "alloc-util.h"
 #include "async.h"
+#include "bitfield.h"
 #include "cap-list.h"
 #include "capability-util.h"
 #include "cgroup-setup.h"
@@ -38,6 +38,7 @@
 #include "format-util.h"
 #include "glob-util.h"
 #include "hexdecoct.h"
+#include "io-util.h"
 #include "ioprio-util.h"
 #include "lock-util.h"
 #include "log.h"
@@ -46,9 +47,9 @@
 #include "manager-dump.h"
 #include "memory-util.h"
 #include "missing_fs.h"
-#include "missing_prctl.h"
 #include "mkdir-label.h"
 #include "namespace.h"
+#include "osc-context.h"
 #include "parse-util.h"
 #include "path-util.h"
 #include "process-util.h"
@@ -128,11 +129,12 @@ int exec_context_apply_tty_size(
                                 rows == UINT_MAX ? &rows : NULL,
                                 cols == UINT_MAX ? &cols : NULL);
 
-        /* If we got nothing so far and we are talking to a physical device, and the TTY reset logic is on,
-         * then let's query dimensions from the ANSI driver. */
+        /* If we got nothing so far and we are talking to a physical device, then let's query dimensions from
+         * the ANSI terminal driver. Note that we will not bother with this in case terminal reset via ansi
+         * sequences is not enabled, as the DSR logic relies on ANSI sequences after all, and if we shall not
+         * use those during initialization we need to skip it. */
         if (rows == UINT_MAX && cols == UINT_MAX &&
-            context->tty_reset &&
-            terminal_is_pty_fd(output_fd) == 0 &&
+            exec_context_shall_ansi_seq_reset(context) &&
             isatty_safe(input_fd)) {
                 r = terminal_get_size_by_dsr(input_fd, output_fd, &rows, &cols);
                 if (r < 0)
@@ -142,7 +144,7 @@ int exec_context_apply_tty_size(
         return terminal_set_size_fd(output_fd, tty_path, rows, cols);
 }
 
-void exec_context_tty_reset(const ExecContext *context, const ExecParameters *p) {
+void exec_context_tty_reset(const ExecContext *context, const ExecParameters *p, sd_id128_t invocation_id) {
         _cleanup_close_ int _fd = -EBADF, lock_fd = -EBADF;
         int fd, r;
 
@@ -177,11 +179,31 @@ void exec_context_tty_reset(const ExecContext *context, const ExecParameters *p)
                 log_warning_errno(lock_fd, "Failed to lock /dev/console, proceeding without lock: %m");
 
         if (context->tty_reset)
-                (void) terminal_reset_defensive(fd, /* switch_to_text= */ true);
+                (void) terminal_reset_defensive(
+                                fd,
+                                TERMINAL_RESET_SWITCH_TO_TEXT |
+                                (exec_context_shall_ansi_seq_reset(context) ? TERMINAL_RESET_FORCE_ANSI_SEQ : TERMINAL_RESET_AVOID_ANSI_SEQ));
 
         r = exec_context_apply_tty_size(context, fd, fd, path);
         if (r < 0)
                 log_debug_errno(r, "Failed to configure TTY dimensions, ignoring: %m");
+
+        if (!sd_id128_is_null(invocation_id)) {
+                sd_id128_t context_id;
+
+                r = osc_context_id_from_invocation_id(invocation_id, &context_id);
+                if (r < 0)
+                        log_debug_errno(r, "Failed to derive context ID from invocation ID, ignoring: %m");
+                else {
+                        _cleanup_free_ char *seq = NULL;
+
+                        r = osc_context_close(context_id, &seq);
+                        if (r < 0)
+                                log_debug_errno(r, "Failed to acquire OSC close sequence, ignoring: %m");
+                        else
+                                (void) loop_write(fd, seq, SIZE_MAX);
+                }
+        }
 
         if (context->tty_vhangup)
                 (void) terminal_vhangup_fd(fd);
@@ -346,6 +368,28 @@ bool exec_needs_mount_namespace(
         return false;
 }
 
+const char* exec_get_private_notify_socket_path(const ExecContext *context, const ExecParameters *params, bool needs_sandboxing) {
+        assert(context);
+        assert(params);
+
+        if (!params->notify_socket)
+                return NULL;
+
+        if (!needs_sandboxing)
+                return NULL;
+
+        if (!context->root_directory && !context->root_image)
+                return NULL;
+
+        if (!exec_context_get_effective_mount_apivfs(context))
+                return NULL;
+
+        if (!FLAGS_SET(params->flags, EXEC_APPLY_CHROOT))
+                return NULL;
+
+        return "/run/host/notify";
+}
+
 bool exec_directory_is_private(const ExecContext *context, ExecDirectoryType type) {
         assert(context);
 
@@ -494,8 +538,9 @@ int exec_spawn(
         if (r < 0)
                 return log_unit_error_errno(unit, r, "Failed to serialize parameters: %m");
 
-        if (fseeko(f, 0, SEEK_SET) < 0)
-                return log_unit_error_errno(unit, errno, "Failed to reseek on serialization stream: %m");
+        r = finish_serialization_file(f);
+        if (r < 0)
+                return log_unit_error_errno(unit, r, "Failed to finish serialization stream: %m");
 
         r = fd_cloexec(fileno(f), false);
         if (r < 0)
@@ -587,6 +632,7 @@ void exec_context_init(ExecContext *c) {
                 .timeout_clean_usec = USEC_INFINITY,
                 .capability_bounding_set = CAP_MASK_UNSET,
                 .restrict_namespaces = NAMESPACE_FLAGS_INITIAL,
+                .delegate_namespaces = NAMESPACE_FLAGS_INITIAL,
                 .log_level_max = -1,
 #if HAVE_SECCOMP
                 .syscall_errno = SECCOMP_ERROR_NUMBER_KILL,
@@ -701,6 +747,8 @@ void exec_context_done(ExecContext *c) {
         c->root_image_policy = image_policy_free(c->root_image_policy);
         c->mount_image_policy = image_policy_free(c->mount_image_policy);
         c->extension_image_policy = image_policy_free(c->extension_image_policy);
+
+        c->private_hostname = mfree(c->private_hostname);
 }
 
 int exec_context_destroy_runtime_directory(const ExecContext *c, const char *runtime_prefix) {
@@ -750,7 +798,7 @@ int exec_context_destroy_mount_ns_dir(Unit *u) {
         if (!p)
                 return -ENOMEM;
 
-        /* This is only filled transiently (see mount_in_namespace()), should be empty or even non-existent*/
+        /* This is only filled transiently (see mount_in_namespace()), should be empty or even non-existent. */
         if (rmdir(p) < 0 && errno != ENOENT)
                 log_unit_debug_errno(u, errno, "Unable to remove propagation dir '%s', ignoring: %m", p);
 
@@ -948,6 +996,22 @@ bool exec_context_may_touch_console(const ExecContext *ec) {
                tty_may_match_dev_console(exec_context_tty_path(ec));
 }
 
+bool exec_context_shall_ansi_seq_reset(const ExecContext *c) {
+        assert(c);
+
+        /* Determines whether ANSI sequences shall be used during any terminal initialisation:
+         *
+         * 1. If the reset logic is enabled at all, this is an immediate no.
+         *
+         * 2. If $TERM is set to anything other than "dumb", it's a yes.
+         */
+
+        if (!c->tty_reset)
+                return false;
+
+        return !streq_ptr(strv_env_get(c->environment, "TERM"), "dumb");
+}
+
 static void strv_fprintf(FILE *f, char **l) {
         assert(f);
 
@@ -1044,7 +1108,7 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
                 "%sRestrictRealtime: %s\n"
                 "%sRestrictSUIDSGID: %s\n"
                 "%sKeyringMode: %s\n"
-                "%sProtectHostname: %s\n"
+                "%sProtectHostname: %s%s%s\n"
                 "%sProtectProc: %s\n"
                 "%sProcSubset: %s\n",
                 prefix, c->umask,
@@ -1071,7 +1135,7 @@ void exec_context_dump(const ExecContext *c, FILE* f, const char *prefix) {
                 prefix, yes_no(c->restrict_realtime),
                 prefix, yes_no(c->restrict_suid_sgid),
                 prefix, exec_keyring_mode_to_string(c->keyring_mode),
-                prefix, yes_no(c->protect_hostname),
+                prefix, protect_hostname_to_string(c->protect_hostname), c->private_hostname ? ":" : "", strempty(c->private_hostname),
                 prefix, protect_proc_to_string(c->protect_proc),
                 prefix, proc_subset_to_string(c->proc_subset));
 
@@ -1584,7 +1648,7 @@ void exec_context_free_log_extra_fields(ExecContext *c) {
         c->n_log_extra_fields = 0;
 }
 
-void exec_context_revert_tty(ExecContext *c) {
+void exec_context_revert_tty(ExecContext *c, sd_id128_t invocation_id) {
         _cleanup_close_ int fd = -EBADF;
         const char *path;
         struct stat st;
@@ -1593,7 +1657,7 @@ void exec_context_revert_tty(ExecContext *c) {
         assert(c);
 
         /* First, reset the TTY (possibly kicking everybody else from the TTY) */
-        exec_context_tty_reset(c, /* parameters= */ NULL);
+        exec_context_tty_reset(c, /* parameters= */ NULL, invocation_id);
 
         /* And then undo what chown_terminal() did earlier. Note that we only do this if we have a path
          * configured. If the TTY was passed to us as file descriptor we assume the TTY is opened and managed
@@ -1641,7 +1705,7 @@ int exec_context_get_clean_directories(
         assert(ret);
 
         for (ExecDirectoryType t = 0; t < _EXEC_DIRECTORY_TYPE_MAX; t++) {
-                if (!FLAGS_SET(mask, 1U << t))
+                if (!BIT_SET(mask, t))
                         continue;
 
                 if (!prefix[t])

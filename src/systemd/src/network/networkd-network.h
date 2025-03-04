@@ -297,6 +297,8 @@ struct Network {
         uint32_t cost;
         uint16_t priority;
         MulticastRouter multicast_router;
+        int bridge_locked;
+        int bridge_mac_authentication_bypass;
 
         /* Bridge VLAN */
         uint16_t bridge_vlan_pvid;
@@ -343,6 +345,7 @@ struct Network {
         IPv4ForceIgmpVersion ipv4_force_igmp_version;
         int ipv6_proxy_ndp;
         Set *ipv6_proxy_ndp_addresses;
+        int mpls_input;
 
         /* NDisc support */
         int ndisc;

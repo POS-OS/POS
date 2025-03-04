@@ -49,7 +49,7 @@ static inline int path_get_mnt_id(const char *path, int *ret) {
         return path_get_mnt_id_at(AT_FDCWD, path, ret);
 }
 
-int fd_is_mount_point(int fd, const char *filename, int flags);
+int is_mount_point_at(int fd, const char *filename, int flags);
 int path_is_mount_point_full(const char *path, const char *root, int flags);
 static inline int path_is_mount_point(const char *path) {
         return path_is_mount_point_full(path, NULL, 0);
@@ -62,7 +62,7 @@ bool fstype_is_blockdev_backed(const char *fstype);
 bool fstype_is_ro(const char *fsype);
 bool fstype_can_discard(const char *fstype);
 bool fstype_can_uid_gid(const char *fstype);
-bool fstype_can_umask(const char *fstype);
+bool fstype_can_fmask_dmask(const char *fstype);
 
 const char* fstype_norecovery_option(const char *fstype);
 

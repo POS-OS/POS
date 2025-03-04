@@ -134,9 +134,10 @@ int posix_fallocate_loop(int fd, uint64_t offset, uint64_t size);
 int parse_cifs_service(const char *s, char **ret_host, char **ret_service, char **ret_path);
 
 typedef enum XOpenFlags {
-        XO_LABEL     = 1 << 0,
-        XO_SUBVOLUME = 1 << 1,
-        XO_NOCOW     = 1 << 2,
+        XO_LABEL     = 1 << 0, /* When creating: relabel */
+        XO_SUBVOLUME = 1 << 1, /* When creating as directory: make it a subvolume */
+        XO_NOCOW     = 1 << 2, /* Enable NOCOW mode after opening */
+        XO_REGULAR   = 1 << 3, /* Fail if the inode is not a regular file */
 } XOpenFlags;
 
 int open_mkdir_at_full(int dirfd, const char *path, int flags, XOpenFlags xopen_flags, mode_t mode);
@@ -162,3 +163,21 @@ static inline int xopenat_lock(int dir_fd, const char *path, int open_flags, Loc
 int link_fd(int fd, int newdirfd, const char *newpath);
 
 int linkat_replace(int olddirfd, const char *oldpath, int newdirfd, const char *newpath);
+
+static inline int at_flags_normalize_nofollow(int flags) {
+        if (FLAGS_SET(flags, AT_SYMLINK_FOLLOW)) {
+                assert(!FLAGS_SET(flags, AT_SYMLINK_NOFOLLOW));
+                flags &= ~AT_SYMLINK_FOLLOW;
+        } else
+                flags |= AT_SYMLINK_NOFOLLOW;
+        return flags;
+}
+
+static inline int at_flags_normalize_follow(int flags) {
+        if (FLAGS_SET(flags, AT_SYMLINK_NOFOLLOW)) {
+                assert(!FLAGS_SET(flags, AT_SYMLINK_FOLLOW));
+                flags &= ~AT_SYMLINK_NOFOLLOW;
+        } else
+                flags |= AT_SYMLINK_FOLLOW;
+        return flags;
+}

@@ -147,9 +147,11 @@ static int bus_append_string(sd_bus_message *m, const char *field, const char *e
         return 1;
 }
 
-static int bus_append_strv(sd_bus_message *m, const char *field, const char *eq, ExtractFlags flags) {
-        const char *p;
+static int bus_append_strv(sd_bus_message *m, const char *field, const char *eq, const char *separator, ExtractFlags flags) {
         int r;
+
+        assert(m);
+        assert(field);
 
         r = sd_bus_message_open_container(m, 'r', "sv");
         if (r < 0)
@@ -167,16 +169,16 @@ static int bus_append_strv(sd_bus_message *m, const char *field, const char *eq,
         if (r < 0)
                 return bus_log_create_error(r);
 
-        for (p = eq;;) {
+        for (const char *p = eq;;) {
                 _cleanup_free_ char *word = NULL;
 
-                r = extract_first_word(&p, &word, NULL, flags);
-                if (r == 0)
-                        break;
+                r = extract_first_word(&p, &word, separator, flags);
                 if (r == -ENOMEM)
                         return log_oom();
                 if (r < 0)
                         return log_error_errno(r, "Invalid syntax: %s", eq);
+                if (r == 0)
+                        break;
 
                 r = sd_bus_message_append_basic(m, 's', word);
                 if (r < 0)
@@ -266,7 +268,7 @@ static int bus_append_parse_size(sd_bus_message *m, const char *field, const cha
 }
 
 static int bus_append_exec_command(sd_bus_message *m, const char *field, const char *eq) {
-        bool explicit_path = false, done = false;
+        bool explicit_path = false, done = false, ambient_hack = false;
         _cleanup_strv_free_ char **l = NULL, **ex_opts = NULL;
         _cleanup_free_ char *path = NULL, *upgraded_name = NULL;
         ExecCommandFlags flags = 0;
@@ -304,7 +306,7 @@ static int bus_append_exec_command(sd_bus_message *m, const char *field, const c
                         break;
 
                 case '+':
-                        if (flags & (EXEC_COMMAND_FULLY_PRIVILEGED|EXEC_COMMAND_NO_SETUID|EXEC_COMMAND_AMBIENT_MAGIC))
+                        if ((flags & (EXEC_COMMAND_FULLY_PRIVILEGED|EXEC_COMMAND_NO_SETUID)) != 0 || ambient_hack)
                                 done = true;
                         else {
                                 flags |= EXEC_COMMAND_FULLY_PRIVILEGED;
@@ -313,12 +315,18 @@ static int bus_append_exec_command(sd_bus_message *m, const char *field, const c
                         break;
 
                 case '!':
-                        if (flags & (EXEC_COMMAND_FULLY_PRIVILEGED|EXEC_COMMAND_AMBIENT_MAGIC))
+                        if (FLAGS_SET(flags, EXEC_COMMAND_FULLY_PRIVILEGED) || ambient_hack)
                                 done = true;
                         else if (FLAGS_SET(flags, EXEC_COMMAND_NO_SETUID)) {
+                                /* Compatibility with the old !! ambient caps hack (removed in v258). Since
+                                 * we don't support that anymore and !! was a noop on non-supporting systems,
+                                 * we'll just turn off the EXEC_COMMAND_NO_SETUID flag again and be done with
+                                 * it. */
                                 flags &= ~EXEC_COMMAND_NO_SETUID;
-                                flags |= EXEC_COMMAND_AMBIENT_MAGIC;
                                 eq++;
+                                ambient_hack = true;
+
+                                log_notice("!! modifier for %s= fields is no longer supported and is now ignored.", field);
                         } else {
                                 flags |= EXEC_COMMAND_NO_SETUID;
                                 eq++;
@@ -331,7 +339,7 @@ static int bus_append_exec_command(sd_bus_message *m, const char *field, const c
                 }
         } while (!done);
 
-        if (!is_ex_prop && (flags & (EXEC_COMMAND_NO_ENV_EXPAND|EXEC_COMMAND_FULLY_PRIVILEGED|EXEC_COMMAND_NO_SETUID|EXEC_COMMAND_AMBIENT_MAGIC))) {
+        if (!is_ex_prop && (flags & (EXEC_COMMAND_NO_ENV_EXPAND|EXEC_COMMAND_FULLY_PRIVILEGED|EXEC_COMMAND_NO_SETUID))) {
                 /* Upgrade the ExecXYZ= property to ExecXYZEx= for convenience */
                 is_ex_prop = true;
                 upgraded_name = strjoin(field, "Ex");
@@ -607,12 +615,12 @@ static int bus_append_cgroup_property(sd_bus_message *m, const char *field, cons
                 return bus_append_cg_blkio_weight_parse(m, field, eq);
 
         if (streq(field, "DisableControllers"))
-                return bus_append_strv(m, "DisableControllers", eq, EXTRACT_UNQUOTE);
+                return bus_append_strv(m, "DisableControllers", eq, /* separator= */ NULL, EXTRACT_UNQUOTE);
 
         if (streq(field, "Delegate")) {
                 r = parse_boolean(eq);
                 if (r < 0)
-                        return bus_append_strv(m, "DelegateControllers", eq, EXTRACT_UNQUOTE);
+                        return bus_append_strv(m, "DelegateControllers", eq, /* separator= */ NULL, EXTRACT_UNQUOTE);
 
                 r = sd_bus_message_append(m, "(sv)", "Delegate", "b", r);
                 if (r < 0)
@@ -1110,7 +1118,7 @@ static int bus_append_execute_property(sd_bus_message *m, const char *field, con
                               "ConfigurationDirectory",
                               "SupplementaryGroups",
                               "SystemCallArchitectures"))
-                return bus_append_strv(m, field, eq, EXTRACT_UNQUOTE);
+                return bus_append_strv(m, field, eq, /* separator= */ NULL, EXTRACT_UNQUOTE);
 
         if (STR_IN_SET(field, "SyslogLevel",
                               "LogLevelMax"))
@@ -1169,7 +1177,7 @@ static int bus_append_execute_property(sd_bus_message *m, const char *field, con
         if (STR_IN_SET(field, "Environment",
                               "UnsetEnvironment",
                               "PassEnvironment"))
-                return bus_append_strv(m, field, eq, EXTRACT_UNQUOTE|EXTRACT_CUNESCAPE);
+                return bus_append_strv(m, field, eq, /* separator= */ NULL, EXTRACT_UNQUOTE|EXTRACT_CUNESCAPE);
 
         if (streq(field, "EnvironmentFile")) {
                 if (isempty(eq))
@@ -1659,7 +1667,8 @@ static int bus_append_execute_property(sd_bus_message *m, const char *field, con
                 return 1;
         }
 
-        if (streq(field, "RestrictNamespaces")) {
+        if (STR_IN_SET(field, "RestrictNamespaces",
+                              "DelegateNamespaces")) {
                 bool invert = false;
                 unsigned long flags;
 
@@ -2268,6 +2277,24 @@ static int bus_append_execute_property(sd_bus_message *m, const char *field, con
                 return 1;
         }
 
+        if (streq(field, "ProtectHostnameEx")) {
+                const char *colon = strchr(eq, ':');
+                if (colon) {
+                        if (isempty(colon + 1))
+                                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Failed to parse argument: %s=%s", field, eq);
+
+                        _cleanup_free_ char *p = strndup(eq, colon - eq);
+                        if (!p)
+                                return -ENOMEM;
+
+                        r = sd_bus_message_append(m, "(sv)", field, "(ss)", p, colon + 1);
+                } else
+                        r = sd_bus_message_append(m, "(sv)", field, "(ss)", eq, NULL);
+                if (r < 0)
+                        return bus_log_create_error(r);
+
+                return 1;
+        }
         return 0;
 }
 
@@ -2591,7 +2618,7 @@ static int bus_append_socket_property(sd_bus_message *m, const char *field, cons
                 return bus_append_string(m, field, eq);
 
         if (streq(field, "Symlinks"))
-                return bus_append_strv(m, field, eq, EXTRACT_UNQUOTE);
+                return bus_append_strv(m, field, eq, /* separator= */ NULL, EXTRACT_UNQUOTE);
 
         if (streq(field, "SocketProtocol"))
                 return bus_append_parse_ip_protocol(m, field, eq);
@@ -2725,7 +2752,7 @@ static int bus_append_unit_property(sd_bus_message *m, const char *field, const 
                               "RequiresMountsFor",
                               "WantsMountsFor",
                               "Markers"))
-                return bus_append_strv(m, field, eq, EXTRACT_UNQUOTE);
+                return bus_append_strv(m, field, eq, /* separator= */ NULL, EXTRACT_UNQUOTE);
 
         t = condition_type_from_string(field);
         if (t >= 0)

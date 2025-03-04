@@ -5,6 +5,7 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 
+#include "async.h"
 #include "bus-error.h"
 #include "bus-util.h"
 #include "dbus-path.h"
@@ -169,7 +170,7 @@ void path_spec_unwatch(PathSpec *s) {
         assert(s);
 
         s->event_source = sd_event_source_disable_unref(s->event_source);
-        s->inotify_fd = safe_close(s->inotify_fd);
+        s->inotify_fd = asynchronous_close(s->inotify_fd);
 }
 
 int path_spec_fd_event(PathSpec *s, uint32_t revents) {
@@ -591,7 +592,7 @@ static void path_enter_waiting(Path *p, bool initial, bool from_trigger_notify) 
         }
 
         if (path_check_good(p, initial, from_trigger_notify, &trigger_path)) {
-                log_unit_debug(UNIT(p), "Got triggered.");
+                log_unit_debug(UNIT(p), "Got triggered by '%s'.", trigger_path);
                 path_enter_running(p, trigger_path);
                 return;
         }
@@ -608,7 +609,7 @@ static void path_enter_waiting(Path *p, bool initial, bool from_trigger_notify) 
          * recheck */
 
         if (path_check_good(p, false, from_trigger_notify, &trigger_path)) {
-                log_unit_debug(UNIT(p), "Got triggered.");
+                log_unit_debug(UNIT(p), "Got triggered by '%s'.", trigger_path);
                 path_enter_running(p, trigger_path);
                 return;
         }

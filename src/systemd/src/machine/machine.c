@@ -24,6 +24,7 @@
 #include "machine-dbus.h"
 #include "machine.h"
 #include "mkdir-label.h"
+#include "namespace-util.h"
 #include "parse-util.h"
 #include "path-util.h"
 #include "process-util.h"
@@ -610,6 +611,9 @@ bool machine_may_gc(Machine *m, bool drop_not_started) {
         if (m->class == MACHINE_HOST)
                 return false;
 
+        if (!pidref_is_set(&m->leader))
+                return true;
+
         if (drop_not_started && !m->started)
                 return true;
 
@@ -665,38 +669,19 @@ int machine_kill(Machine *m, KillWhom whom, int signo) {
         return manager_kill_unit(m->manager, m->unit, signo, NULL);
 }
 
-int machine_openpt(Machine *m, int flags, char **ret_slave) {
+int machine_openpt(Machine *m, int flags, char **ret_peer) {
         assert(m);
 
         switch (m->class) {
 
         case MACHINE_HOST:
-                return openpt_allocate(flags, ret_slave);
+                return openpt_allocate(flags, ret_peer);
 
         case MACHINE_CONTAINER:
                 if (!pidref_is_set(&m->leader))
                         return -EINVAL;
 
-                return openpt_allocate_in_namespace(m->leader.pid, flags, ret_slave);
-
-        default:
-                return -EOPNOTSUPP;
-        }
-}
-
-int machine_open_terminal(Machine *m, const char *path, int mode) {
-        assert(m);
-
-        switch (m->class) {
-
-        case MACHINE_HOST:
-                return open_terminal(path, mode);
-
-        case MACHINE_CONTAINER:
-                if (!pidref_is_set(&m->leader))
-                        return -EINVAL;
-
-                return open_terminal_in_namespace(m->leader.pid, path, mode);
+                return openpt_allocate_in_namespace(&m->leader, flags, ret_peer);
 
         default:
                 return -EOPNOTSUPP;
@@ -801,11 +786,7 @@ int machine_start_shell(
         if (!p || !utmp_id)
                 return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "Path of pseudo TTY has unexpected prefix");
 
-        /* First try to get an fd for the PTY peer via the new racefree ioctl(), directly. Otherwise go via
-         * joining the namespace, because it goes by path */
-        pty_fd = pty_open_peer_racefree(ptmx_fd, O_RDWR|O_NOCTTY|O_CLOEXEC);
-        if (ERRNO_IS_NEG_NOT_SUPPORTED(pty_fd))
-                pty_fd = machine_open_terminal(m, ptmx_name, O_RDWR|O_NOCTTY|O_CLOEXEC);
+        pty_fd = pty_open_peer(ptmx_fd, O_RDWR|O_NOCTTY|O_CLOEXEC);
         if (pty_fd < 0)
                 return log_debug_errno(pty_fd, "Failed to open terminal: %m");
 
@@ -971,6 +952,131 @@ char** machine_default_shell_args(const char *user) {
         }
 
         return TAKE_PTR(args);
+}
+
+int machine_copy_from_to_operation(
+                Manager *manager,
+                Machine *machine,
+                const char *host_path,
+                const char *container_path,
+                bool copy_from_container,
+                CopyFlags copy_flags,
+                Operation **ret) {
+
+        _cleanup_close_ int host_fd = -EBADF, target_mntns_fd = -EBADF, source_mntns_fd = -EBADF;
+        _cleanup_close_pair_ int errno_pipe_fd[2] = EBADF_PAIR;
+        _cleanup_free_ char *host_basename = NULL, *container_basename = NULL;
+        _cleanup_(sigkill_waitp) pid_t child = 0;
+        uid_t uid_shift;
+        int r;
+
+        assert(manager);
+        assert(machine);
+        assert(ret);
+
+        if (isempty(host_path) || isempty(container_path))
+                return -EINVAL;
+
+        r = path_extract_filename(host_path, &host_basename);
+        if (r < 0)
+                return log_debug_errno(r, "Failed to extract file name of '%s' path: %m", host_path);
+
+        r = path_extract_filename(container_path, &container_basename);
+        if (r < 0)
+                return log_debug_errno(r, "Failed to extract file name of '%s' path: %m", container_path);
+
+        host_fd = open_parent(host_path, O_CLOEXEC, 0);
+        if (host_fd < 0)
+                return log_debug_errno(host_fd, "Failed to open host directory '%s': %m", host_path);
+
+        r = machine_get_uid_shift(machine, &uid_shift);
+        if (r < 0)
+                return log_debug_errno(r, "Failed to get UID shift of machine '%s': %m", machine->name);
+
+        target_mntns_fd = pidref_namespace_open_by_type(&machine->leader, NAMESPACE_MOUNT);
+        if (target_mntns_fd < 0)
+                return log_debug_errno(target_mntns_fd, "Failed to open mount namespace of machine '%s': %m", machine->name);
+
+        source_mntns_fd = namespace_open_by_type(NAMESPACE_MOUNT);
+        if (source_mntns_fd < 0)
+                return log_debug_errno(source_mntns_fd, "Failed to open our own mount namespace: %m");
+
+        if (pipe2(errno_pipe_fd, O_CLOEXEC|O_NONBLOCK) < 0)
+                return log_debug_errno(errno, "Failed to create pipe: %m");
+
+        r = namespace_fork("(sd-copyns)",
+                           "(sd-copy)",
+                           /* except_fds = */ NULL,
+                           /* n_except_fds = */ 0,
+                           FORK_RESET_SIGNALS|FORK_DEATHSIG_SIGKILL,
+                           /* pidns_fd = */ -EBADF,
+                           target_mntns_fd,
+                           /* netns_fd = */ -EBADF,
+                           /* userns_fd = */ -EBADF,
+                           /* root_fd = */ -EBADF,
+                           &child);
+        if (r < 0)
+                return log_debug_errno(r, "Failed to fork into mount namespace of machine '%s': %m", machine->name);
+        if (r == 0) {
+                errno_pipe_fd[0] = safe_close(errno_pipe_fd[0]);
+
+                _cleanup_close_ int container_fd = -EBADF;
+                container_fd = open_parent(container_path, O_CLOEXEC, 0);
+                if (container_fd < 0) {
+                        log_debug_errno(container_fd, "Failed to open container directory: %m");
+                        report_errno_and_exit(errno_pipe_fd[1], container_fd);
+                }
+
+                /* Rejoin the host namespace, so that /proc/self/fd/… works, which copy_tree_at() relies on
+                 * in some cases (by means of fd_reopen()) */
+                if (setns(source_mntns_fd, CLONE_NEWNS) < 0) {
+                        r = log_debug_errno(errno, "Failed to rejoin namespace of host: %m");
+                        report_errno_and_exit(errno_pipe_fd[1], r);
+                }
+
+                /* Run the actual copy operation. Note that when a UID shift is set we'll either clamp the UID/GID to
+                 * 0 or to the actual UID shift depending on the direction we copy. If no UID shift is set we'll copy
+                 * the UID/GIDs as they are. */
+                if (copy_from_container)
+                        r = copy_tree_at(
+                                        container_fd,
+                                        container_basename,
+                                        host_fd,
+                                        host_basename,
+                                        uid_shift == 0 ? UID_INVALID : 0,
+                                        uid_shift == 0 ? GID_INVALID : 0,
+                                        copy_flags,
+                                        /* denylist = */ NULL,
+                                        /* subvolumes = */ NULL);
+                else
+                        r = copy_tree_at(
+                                        host_fd,
+                                        host_basename,
+                                        container_fd,
+                                        container_basename,
+                                        uid_shift == 0 ? UID_INVALID : uid_shift,
+                                        uid_shift == 0 ? GID_INVALID : uid_shift,
+                                        copy_flags,
+                                        /* denylist = */ NULL,
+                                        /* subvolumes = */ NULL);
+                if (r < 0)
+                        log_debug_errno(r, "Failed to copy tree: %m");
+
+                report_errno_and_exit(errno_pipe_fd[1], r);
+        }
+
+        errno_pipe_fd[1] = safe_close(errno_pipe_fd[1]);
+
+        Operation *operation;
+        r = operation_new(manager, machine, child, errno_pipe_fd[0], &operation);
+        if (r < 0)
+                return r;
+
+        TAKE_FD(errno_pipe_fd[0]);
+        TAKE_PID(child);
+
+        *ret = operation;
+        return 0;
 }
 
 void machine_release_unit(Machine *m) {
@@ -1214,6 +1320,99 @@ int machine_translate_uid(Machine *machine, gid_t uid, gid_t *ret_host_uid) {
 
 int machine_translate_gid(Machine *machine, gid_t gid, gid_t *ret_host_gid) {
         return machine_translate_uid_internal(machine, "gid_map", (uid_t) gid, (uid_t*) ret_host_gid);
+}
+
+int machine_open_root_directory(Machine *machine) {
+        int r;
+
+        assert(machine);
+
+        switch (machine->class) {
+        case MACHINE_HOST: {
+                int fd = open("/", O_RDONLY|O_CLOEXEC|O_DIRECTORY);
+                if (fd < 0)
+                        return log_debug_errno(errno, "Failed to open host root directory: %m");
+
+                return fd;
+        }
+
+        case MACHINE_CONTAINER: {
+                _cleanup_close_ int mntns_fd = -EBADF, root_fd = -EBADF;
+                _cleanup_close_pair_ int errno_pipe_fd[2] = EBADF_PAIR, fd_pass_socket[2] = EBADF_PAIR;
+                pid_t child;
+
+                r = pidref_namespace_open(&machine->leader,
+                                          /* ret_pidns_fd = */ NULL,
+                                          &mntns_fd,
+                                          /* ret_netns_fd = */ NULL,
+                                          /* ret_userns_fd = */ NULL,
+                                          &root_fd);
+                if (r < 0)
+                        return log_debug_errno(r, "Failed to open mount namespace of machine '%s': %m", machine->name);
+
+                if (pipe2(errno_pipe_fd, O_CLOEXEC|O_NONBLOCK) < 0)
+                        return log_debug_errno(errno, "Failed to open pipe: %m");
+
+                if (socketpair(AF_UNIX, SOCK_DGRAM|SOCK_CLOEXEC, 0, fd_pass_socket) < 0)
+                        return log_debug_errno(errno, "Failed to create socket pair: %m");
+
+                r = namespace_fork(
+                                "(sd-openrootns)",
+                                "(sd-openroot)",
+                                /* except_fds = */ NULL,
+                                /* n_except_fds = */ 0,
+                                FORK_RESET_SIGNALS|FORK_DEATHSIG_SIGKILL,
+                                /* pidns_fd = */  -EBADF,
+                                mntns_fd,
+                                /* netns_fd = */  -EBADF,
+                                /* userns_fd = */ -EBADF,
+                                root_fd,
+                                &child);
+                if (r < 0)
+                        return log_debug_errno(r, "Failed to fork into mount namespace of machine '%s': %m", machine->name);
+                if (r == 0) {
+                        _cleanup_close_ int dfd = -EBADF;
+
+                        errno_pipe_fd[0] = safe_close(errno_pipe_fd[0]);
+                        fd_pass_socket[0] = safe_close(fd_pass_socket[0]);
+
+                        dfd = open("/", O_RDONLY|O_CLOEXEC|O_DIRECTORY);
+                        if (dfd < 0) {
+                                log_debug_errno(errno, "Failed to open root directory of machine '%s': %m", machine->name);
+                                report_errno_and_exit(errno_pipe_fd[1], -errno);
+                        }
+
+                        r = send_one_fd(fd_pass_socket[1], dfd, /* flags = */ 0);
+                        dfd = safe_close(dfd);
+                        if (r < 0) {
+                                log_debug_errno(r, "Failed to send FD over socket: %m");
+                                report_errno_and_exit(errno_pipe_fd[1], r);
+                        }
+
+                        _exit(EXIT_SUCCESS);
+                }
+
+                errno_pipe_fd[1] = safe_close(errno_pipe_fd[1]);
+                fd_pass_socket[1] = safe_close(fd_pass_socket[1]);
+
+                r = wait_for_terminate_and_check("(sd-openrootns)", child, /* flags = */ 0);
+                if (r < 0)
+                        return log_debug_errno(r, "Failed to wait for child: %m");
+
+                r = read_errno(errno_pipe_fd[0]); /* the function does debug reporting */
+                if (r < 0)
+                        return r;
+
+                int fd = receive_one_fd(fd_pass_socket[0], MSG_DONTWAIT);
+                if (fd < 0)
+                        return log_debug_errno(fd, "Failed to receive FD from child: %m");
+
+                return fd;
+        }
+
+        default:
+                return -EOPNOTSUPP;
+        }
 }
 
 static const char* const machine_class_table[_MACHINE_CLASS_MAX] = {

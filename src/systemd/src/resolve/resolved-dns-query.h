@@ -25,6 +25,7 @@ struct DnsQueryCandidate {
         DnsSearchDomain *search_domain;
 
         Set *transactions;
+        sd_event_source *timeout_event_source;
 
         LIST_FIELDS(DnsQueryCandidate, candidates_by_query);
         LIST_FIELDS(DnsQueryCandidate, candidates_by_scope);
@@ -156,6 +157,8 @@ DEFINE_TRIVIAL_CLEANUP_FUNC(DnsQuery*, dns_query_free);
 bool dns_query_fully_authenticated(DnsQuery *q);
 bool dns_query_fully_confidential(DnsQuery *q);
 bool dns_query_fully_authoritative(DnsQuery *q);
+
+int validate_and_mangle_query_flags(Manager *manager, uint64_t *flags, const char *name, uint64_t ok);
 
 static inline uint64_t dns_query_reply_flags_make(DnsQuery *q) {
         assert(q);

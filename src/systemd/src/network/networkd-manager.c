@@ -230,9 +230,6 @@ static int manager_listen_fds(Manager *m, int *ret_rtnl_fd) {
         if (n < 0)
                 return n;
 
-        if (strv_length(names) != (size_t) n)
-                return -EINVAL;
-
         for (int i = 0; i < n; i++) {
                 int fd = i + SD_LISTEN_FDS_START;
 
@@ -280,6 +277,7 @@ static int manager_connect_genl(Manager *m) {
         if (r < 0)
                 return r;
 
+        /* If the kernel is built without CONFIG_WIRELESS, the below will fail with -EOPNOTSUPP. */
         r = genl_add_match(m->genl, NULL, NL80211_GENL_NAME, NL80211_MULTICAST_GROUP_CONFIG, 0,
                            &manager_genl_process_nl80211_config, NULL, m, "network-genl_process_nl80211_config");
         if (r < 0 && r != -EOPNOTSUPP)
@@ -647,6 +645,7 @@ int manager_new(Manager **ret, bool test_mode) {
                 .dhcp_use_domains = _USE_DOMAINS_INVALID,
                 .dhcp6_use_domains = _USE_DOMAINS_INVALID,
                 .ndisc_use_domains = _USE_DOMAINS_INVALID,
+                .dhcp_client_identifier = DHCP_CLIENT_ID_DUID,
                 .dhcp_duid.type = DUID_TYPE_EN,
                 .dhcp6_duid.type = DUID_TYPE_EN,
                 .duid_product_uuid.type = DUID_TYPE_UUID,
@@ -666,7 +665,7 @@ Manager* manager_free(Manager *m) {
         if (!m)
                 return NULL;
 
-        sysctl_remove_monitor(m);
+        manager_remove_sysctl_monitor(m);
 
         free(m->state_file);
 
@@ -694,7 +693,7 @@ Manager* manager_free(Manager *m) {
         m->wiphy_by_name = hashmap_free(m->wiphy_by_name);
         m->wiphy_by_index = hashmap_free_with_destructor(m->wiphy_by_index, wiphy_free);
 
-        ordered_set_free_free(m->address_pools);
+        ordered_set_free(m->address_pools);
 
         hashmap_free(m->route_table_names_by_number);
         hashmap_free(m->route_table_numbers_by_name);
@@ -705,10 +704,6 @@ Manager* manager_free(Manager *m) {
         sd_netlink_unref(m->genl);
         sd_resolve_unref(m->resolve);
 
-        /* reject (e.g. unreachable) type routes are managed by Manager, but may be referenced by a
-         * link. E.g., DHCP6 with prefix delegation creates unreachable routes, and they are referenced
-         * by the upstream link. And the links may be referenced by netlink slots. Hence, two
-         * set_free() must be called after the above sd_netlink_unref(). */
         m->routes = set_free(m->routes);
 
         m->nexthops_by_id = hashmap_free(m->nexthops_by_id);
@@ -746,7 +741,7 @@ int manager_start(Manager *m) {
 
         log_debug("Starting...");
 
-        (void) sysctl_add_monitor(m);
+        (void) manager_install_sysctl_monitor(m);
 
         /* Loading BPF programs requires CAP_SYS_ADMIN and CAP_BPF.
          * Drop the capabilities here, regardless if the load succeeds or not. */
@@ -1055,12 +1050,14 @@ int manager_enumerate(Manager *m) {
         if (r < 0)
                 return log_error_errno(r, "Could not enumerate links: %m");
 
+        /* If the kernel is built without CONFIG_NET_SCHED, the below will fail with -EOPNOTSUPP. */
         r = manager_enumerate_qdisc(m);
         if (r == -EOPNOTSUPP)
                 log_debug_errno(r, "Could not enumerate QDiscs, ignoring: %m");
         else if (r < 0)
                 return log_error_errno(r, "Could not enumerate QDisc: %m");
 
+        /* If the kernel is built without CONFIG_NET_CLS, the below will fail with -EOPNOTSUPP. */
         r = manager_enumerate_tclass(m);
         if (r == -EOPNOTSUPP)
                 log_debug_errno(r, "Could not enumerate TClasses, ignoring: %m");
@@ -1075,25 +1072,22 @@ int manager_enumerate(Manager *m) {
         if (r < 0)
                 return log_error_errno(r, "Could not enumerate neighbors: %m");
 
-        /* NextHop support is added in kernel v5.3 (65ee00a9409f751188a8cdc0988167858eb4a536),
-         * and older kernels return -EOPNOTSUPP, or -EINVAL if SELinux is enabled. */
         r = manager_enumerate_nexthop(m);
-        if (r == -EOPNOTSUPP || (r == -EINVAL && mac_selinux_enforcing()))
-                log_debug_errno(r, "Could not enumerate nexthops, ignoring: %m");
-        else if (r < 0)
+        if (r < 0)
                 return log_error_errno(r, "Could not enumerate nexthops: %m");
 
         r = manager_enumerate_routes(m);
         if (r < 0)
                 return log_error_errno(r, "Could not enumerate routes: %m");
 
-        /* If kernel is built with CONFIG_FIB_RULES=n, it returns -EOPNOTSUPP. */
+        /* If the kernel is built without CONFIG_FIB_RULES, the below will fail with -EOPNOTSUPP. */
         r = manager_enumerate_rules(m);
         if (r == -EOPNOTSUPP)
                 log_debug_errno(r, "Could not enumerate routing policy rules, ignoring: %m");
         else if (r < 0)
                 return log_error_errno(r, "Could not enumerate routing policy rules: %m");
 
+        /* If the kernel is built without CONFIG_WIRELESS, the below will fail with -EOPNOTSUPP. */
         r = manager_enumerate_nl80211_wiphy(m);
         if (r == -EOPNOTSUPP)
                 log_debug_errno(r, "Could not enumerate wireless LAN phy, ignoring: %m");

@@ -3,10 +3,13 @@
 
 #include "efi.h"
 #include "efi-string.h"
-#include "log.h"
 #include "memory-util-fundamental.h"
-#include "proto/file-io.h"
 #include "string-util-fundamental.h"
+
+#if SD_BOOT
+
+#include "log.h"
+#include "proto/file-io.h"
 
 /* This is provided by the linker. */
 extern uint8_t __executable_start[];
@@ -137,6 +140,8 @@ static inline void file_closep(EFI_FILE **handle) {
         (*handle)->Close(*handle);
 }
 
+#define _cleanup_file_close_ _cleanup_(file_closep)
+
 static inline void unload_imagep(EFI_HANDLE *image) {
         if (*image)
                 (void) BS->UnloadImage(*image);
@@ -163,6 +168,8 @@ char16_t **strv_free(char16_t **l);
 static inline void strv_freep(char16_t ***p) {
         strv_free(*p);
 }
+
+#define _cleanup_strv_free_ _cleanup_(strv_freep)
 
 EFI_STATUS open_directory(EFI_FILE *root_dir, const char16_t *path, EFI_FILE **ret);
 
@@ -236,3 +243,13 @@ char16_t *get_extra_dir(const EFI_DEVICE_PATH *file_path);
 
 #define bswap_16(x) __builtin_bswap16(x)
 #define bswap_32(x) __builtin_bswap32(x)
+
+#else
+
+#include "alloc-util.h"
+
+#define xnew0(type, n) ASSERT_PTR(new0(type, n))
+
+#endif
+
+char16_t *url_replace_last_component(const char16_t *url, const char16_t *filename);

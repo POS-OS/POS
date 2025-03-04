@@ -5,7 +5,6 @@
 #include "fd-util.h"
 #include "fileio.h"
 #include "fs-util.h"
-#include "missing_syscall.h"
 #include "mountpoint-util.h"
 #include "recurse-dir.h"
 #include "sort-util.h"
@@ -26,14 +25,9 @@ static bool ignore_dirent(const struct dirent *de, RecurseDirFlags flags) {
                 dot_or_dot_dot(de->d_name);
 }
 
-int readdir_all(int dir_fd,
-                RecurseDirFlags flags,
-                DirectoryEntries **ret) {
-
+int readdir_all(int dir_fd, RecurseDirFlags flags, DirectoryEntries **ret) {
         _cleanup_free_ DirectoryEntries *de = NULL;
-        struct dirent *entry;
         DirectoryEntries *nde;
-        size_t add, sz, j;
         int r;
 
         assert(dir_fd >= 0);
@@ -56,7 +50,7 @@ int readdir_all(int dir_fd,
                 bs = MIN(MALLOC_SIZEOF_SAFE(de) - offsetof(DirectoryEntries, buffer), (size_t) SSIZE_MAX);
                 assert(bs > de->buffer_size);
 
-                n = getdents64(dir_fd, (uint8_t*) de->buffer + de->buffer_size, bs - de->buffer_size);
+                n = posix_getdents(dir_fd, (uint8_t*) de->buffer + de->buffer_size, bs - de->buffer_size, /* flags = */ 0);
                 if (n < 0)
                         return -errno;
                 if (n == 0)
@@ -77,11 +71,11 @@ int readdir_all(int dir_fd,
                 nde = realloc(de, bs);
                 if (!nde)
                         return -ENOMEM;
-
                 de = nde;
         }
 
         de->n_entries = 0;
+        struct dirent *entry;
         FOREACH_DIRENT_IN_BUFFER(entry, de->buffer, de->buffer_size) {
                 if (ignore_dirent(entry, flags))
                         continue;
@@ -98,16 +92,17 @@ int readdir_all(int dir_fd,
                 de->n_entries++;
         }
 
+        size_t sz, j;
+
         sz = ALIGN(offsetof(DirectoryEntries, buffer) + de->buffer_size);
-        add = sizeof(struct dirent*) * de->n_entries;
-        if (add > SIZE_MAX - add)
+        if (!INC_SAFE(&sz, sizeof(struct dirent*) * de->n_entries))
                 return -ENOMEM;
 
-        nde = realloc(de, sz + add);
+        nde = realloc(de, sz);
         if (!nde)
                 return -ENOMEM;
-
         de = nde;
+
         de->entries = (struct dirent**) ((uint8_t*) de + ALIGN(offsetof(DirectoryEntries, buffer) + de->buffer_size));
 
         j = 0;
@@ -155,7 +150,7 @@ int recurse_dir(
                 void *userdata) {
 
         _cleanup_free_ DirectoryEntries *de = NULL;
-        STRUCT_STATX_DEFINE(root_sx);
+        struct statx root_sx;
         int r;
 
         assert(dir_fd >= 0);
@@ -171,9 +166,8 @@ int recurse_dir(
 
         if (FLAGS_SET(flags, RECURSE_DIR_TOPLEVEL)) {
                 if (statx_mask != 0) {
-                        r = statx_fallback(dir_fd, "", AT_EMPTY_PATH, statx_mask, &root_sx);
-                        if (r < 0)
-                                return r;
+                        if (statx(dir_fd, "", AT_EMPTY_PATH, statx_mask, &root_sx) < 0)
+                                return -errno;
                 }
 
                 r = func(RECURSE_DIR_ENTER,
@@ -197,7 +191,7 @@ int recurse_dir(
         for (size_t i = 0; i < de->n_entries; i++) {
                 _cleanup_close_ int inode_fd = -EBADF, subdir_fd = -EBADF;
                 _cleanup_free_ char *joined = NULL;
-                STRUCT_STATX_DEFINE(sx);
+                struct statx sx;
                 bool sx_valid = false;
                 const char *p;
 
@@ -251,9 +245,8 @@ int recurse_dir(
                                 de->entries[i]->d_type = DT_DIR;
 
                                 if (statx_mask != 0 || (flags & RECURSE_DIR_SAME_MOUNT)) {
-                                        r = statx_fallback(subdir_fd, "", AT_EMPTY_PATH, statx_mask, &sx);
-                                        if (r < 0)
-                                                return r;
+                                        if (statx(subdir_fd, "", AT_EMPTY_PATH, statx_mask, &sx) < 0)
+                                                return -errno;
 
                                         sx_valid = true;
                                 }
@@ -293,9 +286,8 @@ int recurse_dir(
                                  * assume. Let's guarantee that we never pass statx data of a directory where
                                  * caller expects a non-directory */
 
-                                r = statx_fallback(inode_fd, "", AT_EMPTY_PATH, statx_mask | STATX_TYPE, &sx);
-                                if (r < 0)
-                                        return r;
+                                if (statx(inode_fd, "", AT_EMPTY_PATH, statx_mask | STATX_TYPE, &sx) < 0)
+                                        return -errno;
 
                                 assert(sx.stx_mask & STATX_TYPE);
                                 sx_valid = true;
@@ -315,15 +307,15 @@ int recurse_dir(
 
                         } else if (statx_mask != 0 || (de->entries[i]->d_type == DT_UNKNOWN && (flags & RECURSE_DIR_ENSURE_TYPE))) {
 
-                                r = statx_fallback(dir_fd, de->entries[i]->d_name, AT_SYMLINK_NOFOLLOW, statx_mask | STATX_TYPE, &sx);
-                                if (r == -ENOENT) /* Vanished by now? Go for next file immediately */
-                                        continue;
-                                if (r < 0) {
-                                        log_debug_errno(r, "Failed to stat directory entry '%s': %m", p);
+                                if (statx(dir_fd, de->entries[i]->d_name, AT_SYMLINK_NOFOLLOW, statx_mask | STATX_TYPE, &sx) < 0) {
+                                        if (errno == ENOENT) /* Vanished by now? Go for next file immediately */
+                                                continue;
+
+                                        log_debug_errno(errno, "Failed to stat directory entry '%s': %m", p);
 
                                         assert(errno <= RECURSE_DIR_SKIP_STAT_INODE_ERROR_MAX - RECURSE_DIR_SKIP_STAT_INODE_ERROR_BASE);
 
-                                        r = func(RECURSE_DIR_SKIP_STAT_INODE_ERROR_BASE + -r,
+                                        r = func(RECURSE_DIR_SKIP_STAT_INODE_ERROR_BASE + errno,
                                                  p,
                                                  dir_fd,
                                                  -1,
@@ -351,7 +343,7 @@ int recurse_dir(
                                          * guarantee that RECURSE_DIR_ENTRY is strictly issued for
                                          * non-directory dirents. */
 
-                                        log_debug_errno(r, "Non-directory entry '%s' suddenly became a directory: %m", p);
+                                        log_debug("Non-directory entry '%s' suddenly became a directory.", p);
 
                                         r = func(RECURSE_DIR_SKIP_STAT_INODE_ERROR_BASE + EISDIR,
                                                  p,
@@ -388,7 +380,7 @@ int recurse_dir(
                                 if (sx_valid && FLAGS_SET(sx.stx_attributes_mask, STATX_ATTR_MOUNT_ROOT))
                                         is_mount = FLAGS_SET(sx.stx_attributes, STATX_ATTR_MOUNT_ROOT);
                                 else {
-                                        r = fd_is_mount_point(dir_fd, de->entries[i]->d_name, 0);
+                                        r = is_mount_point_at(dir_fd, de->entries[i]->d_name, 0);
                                         if (r < 0)
                                                 log_debug_errno(r, "Failed to determine whether %s is a submount, assuming not: %m", p);
 

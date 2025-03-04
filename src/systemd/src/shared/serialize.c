@@ -164,10 +164,13 @@ int serialize_dual_timestamp(FILE *f, const char *name, const dual_timestamp *t)
         return serialize_item_format(f, name, USEC_FMT " " USEC_FMT, t->realtime, t->monotonic);
 }
 
-int serialize_strv(FILE *f, const char *key, char **l) {
+int serialize_strv(FILE *f, const char *key, char * const *l) {
         int ret = 0, r;
 
         /* Returns the first error, or positive if anything was serialized, 0 otherwise. */
+
+        assert(f);
+        assert(key);
 
         STRV_FOREACH(i, l) {
                 r = serialize_item_escaped(f, key, *i);
@@ -177,6 +180,16 @@ int serialize_strv(FILE *f, const char *key, char **l) {
         }
 
         return ret;
+}
+
+int serialize_id128(FILE *f, const char *key, sd_id128_t id) {
+        assert(f);
+        assert(key);
+
+        if (sd_id128_is_null(id))
+                return 0;
+
+        return serialize_item_format(f, key, SD_ID128_FORMAT_STR, SD_ID128_FORMAT_VAL(id));
 }
 
 int serialize_pidref(FILE *f, FDSet *fds, const char *key, PidRef *pidref) {
@@ -267,8 +280,7 @@ int serialize_item_base64mem(FILE *f, const char *key, const void *p, size_t l) 
         return 1;
 }
 
-int serialize_string_set(FILE *f, const char *key, Set *s) {
-        const char *e;
+int serialize_string_set(FILE *f, const char *key, const Set *s) {
         int r;
 
         assert(f);
@@ -279,6 +291,7 @@ int serialize_string_set(FILE *f, const char *key, Set *s) {
 
         /* Serialize as individual items, as each element might contain separators and escapes */
 
+        const char *e;
         SET_FOREACH(e, s) {
                 r = serialize_item(f, key, e);
                 if (r < 0)
@@ -547,21 +560,13 @@ void deserialize_ratelimit(RateLimit *rl, const char *name, const char *value) {
 }
 
 int open_serialization_fd(const char *ident) {
-        int fd;
+        assert(ident);
 
-        fd = memfd_create_wrapper(ident, MFD_CLOEXEC | MFD_NOEXEC_SEAL);
-        if (fd < 0) {
-                const char *path;
+        int fd = memfd_new_full(ident, MFD_ALLOW_SEALING);
+        if (fd < 0)
+                return fd;
 
-                path = getpid_cached() == 1 ? "/run/systemd" : "/tmp";
-                fd = open_tmpfile_unlinkable(path, O_RDWR|O_CLOEXEC);
-                if (fd < 0)
-                        return fd;
-
-                log_debug("Serializing %s to %s.", ident, path);
-        } else
-                log_debug("Serializing %s to memfd.", ident);
-
+        log_debug("Serializing %s to memfd.", ident);
         return fd;
 }
 
@@ -580,6 +585,33 @@ int open_serialization_file(const char *ident, FILE **ret) {
                 return -errno;
 
         *ret = TAKE_PTR(f);
-
         return 0;
+}
+
+int finish_serialization_fd(int fd) {
+        assert(fd >= 0);
+
+        if (lseek(fd, 0, SEEK_SET) < 0)
+                return -errno;
+
+        return memfd_set_sealed(fd);
+}
+
+int finish_serialization_file(FILE *f) {
+        int r;
+
+        assert(f);
+
+        r = fflush_and_check(f);
+        if (r < 0)
+                return r;
+
+        if (fseeko(f, 0, SEEK_SET) < 0)
+                return -errno;
+
+        int fd = fileno(f);
+        if (fd < 0)
+                return -EBADF;
+
+        return memfd_set_sealed(fd);
 }

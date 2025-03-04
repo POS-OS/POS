@@ -297,22 +297,28 @@ static int move_submounts(const char *src, const char *dst) {
 
                 assert_se(suffix = path_startswith(m->path, src));
 
+                if (fstat(m->mount_fd, &st) < 0)
+                        return log_error_errno(errno, "Failed to stat %s: %m", m->path);
+
                 t = path_join(dst, suffix);
                 if (!t)
                         return log_oom();
 
-                if (fstat(m->mount_fd, &st) < 0)
-                        return log_error_errno(errno, "Failed to stat %s: %m", m->path);
-
-                r = mkdir_parents(t, 0755);
+                _cleanup_free_ char *fn = NULL;
+                _cleanup_close_ int fd = -EBADF;
+                r = chase(t, /* root= */ NULL, CHASE_PARENT|CHASE_EXTRACT_FILENAME|CHASE_PROHIBIT_SYMLINKS|CHASE_MKDIR_0755, &fn, &fd);
                 if (r < 0)
-                        return log_error_errno(r, "Failed to create parent directories of %s: %m", t);
+                        return log_error_errno(r, "Failed to create and pin parent directory of %s: %m", t);
 
-                r = make_mount_point_inode_from_stat(&st, t, 0755);
+                r = make_mount_point_inode_from_mode(fd, fn, st.st_mode, 0755);
                 if (r < 0 && r != -EEXIST)
                         return log_error_errno(r, "Failed to create mountpoint %s: %m", t);
 
-                r = mount_follow_verbose(LOG_ERR, m->path, t, NULL, MS_BIND|MS_REC, NULL);
+                _cleanup_close_ int child_fd = openat(fd, fn, O_PATH|O_CLOEXEC);
+                if (child_fd < 0)
+                        return log_error_errno(errno, "Failed to pin mountpoint %s: %m", t);
+
+                r = mount_follow_verbose(LOG_ERR, m->path, FORMAT_PROC_FD_PATH(child_fd), /* fstype= */ NULL, MS_BIND|MS_REC, /* options= */ NULL);
                 if (r < 0)
                         return r;
 
@@ -2031,7 +2037,7 @@ static int image_discover_and_read_metadata(
         if (!images)
                 return log_oom();
 
-        r = image_discover(image_class, arg_root, images);
+        r = image_discover(RUNTIME_SCOPE_SYSTEM, image_class, arg_root, images);
         if (r < 0)
                 return log_error_errno(r, "Failed to discover images: %m");
 
@@ -2278,7 +2284,7 @@ static int verb_list(int argc, char **argv, void *userdata) {
         if (!images)
                 return log_oom();
 
-        r = image_discover(arg_image_class, arg_root, images);
+        r = image_discover(RUNTIME_SCOPE_SYSTEM, arg_image_class, arg_root, images);
         if (r < 0)
                 return log_error_errno(r, "Failed to discover images: %m");
 
@@ -2339,7 +2345,7 @@ static int vl_method_list(sd_varlink *link, sd_json_variant *parameters, sd_varl
         if (!images)
                 return -ENOMEM;
 
-        r = image_discover(image_class, arg_root, images);
+        r = image_discover(RUNTIME_SCOPE_SYSTEM, image_class, arg_root, images);
         if (r < 0)
                 return r;
 

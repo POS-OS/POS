@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: LGPL-2.1-or-later */
 
+#include "bitfield.h"
 #include "bpf-restrict-ifaces.h"
 #include "bpf-socket-bind.h"
 #include "bus-util.h"
@@ -21,10 +22,11 @@ static int serialize_markers(FILE *f, unsigned markers) {
         if (markers == 0)
                 return 0;
 
+        bool space = false;
+
         fputs("markers=", f);
-        for (UnitMarker m = 0; m < _UNIT_MARKER_MAX; m++)
-                if (FLAGS_SET(markers, 1u << m))
-                        fputs(unit_marker_to_string(m), f);
+        BIT_FOREACH(m, markers)
+                fputs_with_separator(f, unit_marker_to_string(m), /* separator = */ NULL, &space);
         fputc('\n', f);
         return 0;
 }
@@ -115,8 +117,7 @@ int unit_serialize_state(Unit *u, FILE *f, FDSet *fds, bool switching_root) {
         if (gid_is_valid(u->ref_gid))
                 (void) serialize_item_format(f, "ref-gid", GID_FMT, u->ref_gid);
 
-        if (!sd_id128_is_null(u->invocation_id))
-                (void) serialize_item_format(f, "invocation-id", SD_ID128_FORMAT_STR, SD_ID128_FORMAT_VAL(u->invocation_id));
+        (void) serialize_id128(f, "invocation-id", u->invocation_id);
 
         (void) serialize_item(f, "freezer-state", freezer_state_to_string(u->freezer_state));
 
@@ -494,9 +495,8 @@ void unit_dump(Unit *u, FILE *f, const char *prefix) {
         if (u->markers != 0) {
                 fprintf(f, "%s\tMarkers:", prefix);
 
-                for (UnitMarker marker = 0; marker < _UNIT_MARKER_MAX; marker++)
-                        if (FLAGS_SET(u->markers, 1u << marker))
-                                fprintf(f, " %s", unit_marker_to_string(marker));
+                BIT_FOREACH(marker, u->markers)
+                        fprintf(f, " %s", unit_marker_to_string(marker));
                 fputs("\n", f);
         }
 

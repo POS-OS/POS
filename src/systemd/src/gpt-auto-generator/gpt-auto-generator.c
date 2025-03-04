@@ -39,7 +39,7 @@
 
 static const char *arg_dest = NULL;
 static bool arg_enabled = true;
-static bool arg_root_enabled = true;
+static int arg_root_enabled = -1; /* tristate */
 static bool arg_swap_enabled = true;
 static char *arg_root_fstype = NULL;
 static char *arg_root_options = NULL;
@@ -51,9 +51,12 @@ STATIC_DESTRUCTOR_REGISTER(arg_image_policy, image_policy_freep);
 STATIC_DESTRUCTOR_REGISTER(arg_root_fstype, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_root_options, freep);
 
+#define LOADER_PARTITION_IDLE_USEC (120 * USEC_PER_SEC)
+
 static int add_cryptsetup(
                 const char *id,
                 const char *what,
+                const char *mount_opts,
                 bool rw,
                 bool require,
                 bool measure,
@@ -126,6 +129,10 @@ static int add_cryptsetup(
         if (r < 0)
                 return log_error_errno(r, "Failed to write file %s: %m", n);
 
+        r = generator_write_device_timeout(arg_dest, what, mount_opts, /* filtered = */ NULL);
+        if (r < 0)
+                return r;
+
         r = generator_add_symlink(arg_dest, d, "wants", n);
         if (r < 0)
                 return r;
@@ -178,7 +185,7 @@ static int add_mount(
                 const char *description,
                 const char *post) {
 
-        _cleanup_free_ char *unit = NULL, *crypto_what = NULL;
+        _cleanup_free_ char *unit = NULL, *crypto_what = NULL, *opts_filtered = NULL;
         _cleanup_fclose_ FILE *f = NULL;
         int r;
 
@@ -194,7 +201,9 @@ static int add_mount(
         log_debug("Adding %s: %s fstype=%s", where, what, fstype ?: "(any)");
 
         if (streq_ptr(fstype, "crypto_LUKS")) {
-                r = add_cryptsetup(id, what, rw, /* require= */ true, measure, &crypto_what);
+                /* Mount options passed are determined by partition_pick_mount_options(), whose result
+                 * is known to not contain timeout options. */
+                r = add_cryptsetup(id, what, /* mount_opts = */ NULL, rw, /* require= */ true, measure, &crypto_what);
                 if (r < 0)
                         return r;
 
@@ -210,6 +219,10 @@ static int add_mount(
                                         "Refusing to automatically mount uncommon file system '%s' to '%s'.",
                                         fstype, where);
         }
+
+        r = generator_write_device_timeout(arg_dest, what, options, &opts_filtered);
+        if (r < 0)
+                return r;
 
         r = unit_name_from_path(where, ".mount", &unit);
         if (r < 0)
@@ -246,8 +259,12 @@ static int add_mount(
         if (fstype)
                 fprintf(f, "Type=%s\n", fstype);
 
-        if (options)
-                fprintf(f, "Options=%s\n", options);
+        if (opts_filtered)
+                fprintf(f, "Options=%s\n", opts_filtered);
+
+        r = generator_write_mount_timeout(f, where, opts_filtered);
+        if (r < 0)
+                return r;
 
         r = fflush_and_check(f);
         if (r < 0)
@@ -366,7 +383,7 @@ static int add_partition_swap(DissectedPartition *p) {
         }
 
         if (streq_ptr(p->fstype, "crypto_LUKS")) {
-                r = add_cryptsetup("swap", p->node, /* rw= */ true, /* require= */ true, /* measure= */ false, &crypto_what);
+                r = add_cryptsetup("swap", p->node, /* mount_opts = */ NULL, /* rw= */ true, /* require= */ true, /* measure= */ false, &crypto_what);
                 if (r < 0)
                         return r;
                 what = crypto_what;
@@ -499,7 +516,7 @@ static int add_partition_xbootldr(DissectedPartition *p) {
                         /* growfs= */ false,
                         options,
                         "Boot Loader Partition",
-                        120 * USEC_PER_SEC);
+                        LOADER_PARTITION_IDLE_USEC);
 }
 
 #if ENABLE_EFI
@@ -566,7 +583,7 @@ static int add_partition_esp(DissectedPartition *p, bool has_xbootldr) {
                         /* growfs= */ false,
                         options,
                         "EFI System Partition Automount",
-                        120 * USEC_PER_SEC);
+                        LOADER_PARTITION_IDLE_USEC);
 }
 #else
 static int add_partition_esp(DissectedPartition *p, bool has_xbootldr) {
@@ -644,7 +661,7 @@ static int add_root_cryptsetup(void) {
         /* If a device /dev/gpt-auto-root-luks appears, then make it pull in systemd-cryptsetup-root.service, which
          * sets it up, and causes /dev/gpt-auto-root to appear which is all we are looking for. */
 
-        return add_cryptsetup("root", "/dev/gpt-auto-root-luks", /* rw= */ true, /* require= */ false, /* measure= */ true, NULL);
+        return add_cryptsetup("root", "/dev/gpt-auto-root-luks", arg_root_options, /* rw= */ true, /* require= */ false, /* measure= */ true, NULL);
 #else
         return 0;
 #endif
@@ -656,21 +673,29 @@ static int add_root_mount(void) {
         _cleanup_free_ char *options = NULL;
         int r;
 
-        if (!is_efi_boot()) {
-                log_debug("Not an EFI boot, not creating root mount.");
+        /* Explicitly disabled? Then exit immediately */
+        if (arg_root_enabled == 0)
                 return 0;
+
+        /* Neither explicitly enabled nor disabled? Then decide based on the EFI partition variables to be set */
+        if (arg_root_enabled < 0) {
+                if (!is_efi_boot()) {
+                        log_debug("Not an EFI boot, not creating root mount.");
+                        return 0;
+                }
+
+                r = efi_loader_get_device_part_uuid(/* ret_uuid= */ NULL);
+                if (r == -ENOENT) {
+                        log_notice("EFI loader partition unknown, exiting.\n"
+                                   "(The boot loader did not set EFI variable LoaderDevicePartUUID.)");
+                        return 0;
+                }
+                if (r < 0)
+                        return log_error_errno(r, "Failed to read loader partition UUID: %m");
         }
 
-        r = efi_loader_get_device_part_uuid(NULL);
-        if (r == -ENOENT) {
-                log_notice("EFI loader partition unknown, exiting.\n"
-                           "(The boot loader did not set EFI variable LoaderDevicePartUUID.)");
-                return 0;
-        } else if (r < 0)
-                return log_error_errno(r, "Failed to read loader partition UUID: %m");
-
-        /* OK, we have an ESP/XBOOTLDR partition, this is fantastic, so let's wait for a root device to show up.
-         * A udev rule will create the link for us under the right name. */
+        /* OK, we shall look for a root device, so let's wait for a root device to show up.  A udev rule will
+         * create the link for us under the right name. */
 
         if (in_initrd()) {
                 r = generator_write_initrd_root_device_deps(arg_dest, "/dev/gpt-auto-root");
@@ -887,9 +912,12 @@ static int parse_proc_cmdline_item(const char *key, const char *value, void *dat
                 /* Disable root disk logic if there's a root= value
                  * specified (unless it happens to be "gpt-auto") */
 
-                if (!streq(value, "gpt-auto")) {
+                if (streq(value, "gpt-auto")) {
+                        arg_root_enabled = true;
+                        log_debug("Enabling root partition auto-detection, root= is explicitly set to 'gpt_auto'.");
+                } else {
                         arg_root_enabled = false;
-                        log_debug("Disabling root partition auto-detection, root= is defined.");
+                        log_debug("Disabling root partition auto-detection, root= is neither unset, nor set to 'gpt-auto'.");
                 }
 
         } else if (streq(key, "roothash")) {
@@ -900,6 +928,7 @@ static int parse_proc_cmdline_item(const char *key, const char *value, void *dat
                 /* Disable root disk logic if there's roothash= defined (i.e. verity enabled) */
 
                 arg_root_enabled = false;
+                log_debug("Disabling root partition auto-detection, roothash= is set.");
 
         } else if (streq(key, "rootfstype")) {
 
@@ -958,10 +987,7 @@ static int run(const char *dest, const char *dest_early, const char *dest_late) 
                 return 0;
         }
 
-        if (arg_root_enabled)
-                r = add_root_mount();
-        else
-                r = 0;
+        r = add_root_mount();
 
         if (!in_initrd())
                 RET_GATHER(r, add_mounts());

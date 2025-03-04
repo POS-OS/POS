@@ -65,11 +65,13 @@ __extension__ typedef enum _SD_ENUM_TYPE_S64(sd_varlink_method_flags_t) {
 } sd_varlink_method_flags_t;
 
 __extension__ typedef enum _SD_ENUM_TYPE_S64(sd_varlink_server_flags_t) {
-        SD_VARLINK_SERVER_ROOT_ONLY        = 1 << 0, /* Only accessible by root */
-        SD_VARLINK_SERVER_MYSELF_ONLY      = 1 << 1, /* Only accessible by our own UID */
-        SD_VARLINK_SERVER_ACCOUNT_UID      = 1 << 2, /* Do per user accounting */
-        SD_VARLINK_SERVER_INHERIT_USERDATA = 1 << 3, /* Initialize Varlink connection userdata from sd_varlink_server userdata */
-        SD_VARLINK_SERVER_INPUT_SENSITIVE  = 1 << 4, /* Automatically mark all connection input as sensitive */
+        SD_VARLINK_SERVER_ROOT_ONLY               = 1 << 0, /* Only accessible by root */
+        SD_VARLINK_SERVER_MYSELF_ONLY             = 1 << 1, /* Only accessible by our own UID */
+        SD_VARLINK_SERVER_ACCOUNT_UID             = 1 << 2, /* Do per user accounting */
+        SD_VARLINK_SERVER_INHERIT_USERDATA        = 1 << 3, /* Initialize Varlink connection userdata from sd_varlink_server userdata */
+        SD_VARLINK_SERVER_INPUT_SENSITIVE         = 1 << 4, /* Automatically mark all connection input as sensitive */
+        SD_VARLINK_SERVER_ALLOW_FD_PASSING_INPUT  = 1 << 5, /* Allow receiving fds over all connections */
+        SD_VARLINK_SERVER_ALLOW_FD_PASSING_OUTPUT = 1 << 6, /* Allow sending fds over all connections */
         _SD_ENUM_FORCE_S64(SD_VARLINK_SERVER)
 } sd_varlink_server_flags_t;
 
@@ -96,6 +98,8 @@ sd_varlink* sd_varlink_ref(sd_varlink *link);
 sd_varlink* sd_varlink_unref(sd_varlink *v);
 
 int sd_varlink_get_fd(sd_varlink *v);
+int sd_varlink_get_input_fd(sd_varlink *v);
+int sd_varlink_get_output_fd(sd_varlink *v);
 int sd_varlink_get_events(sd_varlink *v);
 int sd_varlink_get_timeout(sd_varlink *v, uint64_t *ret);
 
@@ -176,6 +180,7 @@ int sd_varlink_notifyb(sd_varlink *v, ...);
 int sd_varlink_dispatch_again(sd_varlink *v);
 
 /* Get the currently processed incoming message */
+int sd_varlink_get_current_method(sd_varlink *v, const char **ret);
 int sd_varlink_get_current_parameters(sd_varlink *v, sd_json_variant **ret);
 
 /* Parsing incoming data via json_dispatch() and generate a nice error on parse errors */
@@ -190,6 +195,7 @@ int sd_varlink_reset_fds(sd_varlink *v);
 int sd_varlink_peek_fd(sd_varlink *v, size_t i);
 int sd_varlink_peek_dup_fd(sd_varlink *v, size_t i);
 int sd_varlink_take_fd(sd_varlink *v, size_t i);
+int sd_varlink_get_n_fds(sd_varlink *v);
 
 int sd_varlink_set_allow_fd_passing_input(sd_varlink *v, int b);
 int sd_varlink_set_allow_fd_passing_output(sd_varlink *v, int b);
@@ -210,6 +216,7 @@ int sd_varlink_set_relative_timeout(sd_varlink *v, uint64_t usec);
 sd_varlink_server* sd_varlink_get_server(sd_varlink *v);
 
 int sd_varlink_set_description(sd_varlink *v, const char *d);
+const char* sd_varlink_get_description(sd_varlink *v);
 
 /* Automatically mark the parameters part of incoming messages as security sensitive */
 int sd_varlink_set_input_sensitive(sd_varlink *v);
@@ -226,10 +233,15 @@ int sd_varlink_server_set_info(
                 const char *version,
                 const char *url);
 
+/* OR this into sd_varlink_server_listen_address()'s mode paramater to get the leading directories created
+ * automatically with mode 0755. */
+#define SD_VARLINK_SERVER_MODE_MKDIR_0755 ((mode_t) 1 << 30)
+
 /* Add addresses or fds to listen on */
 int sd_varlink_server_listen_address(sd_varlink_server *s, const char *address, mode_t mode);
 int sd_varlink_server_listen_fd(sd_varlink_server *s, int fd);
 int sd_varlink_server_listen_auto(sd_varlink_server *s);
+int sd_varlink_server_listen_name(sd_varlink_server *s, const char *name);
 int sd_varlink_server_add_connection(sd_varlink_server *s, int fd, sd_varlink **ret);
 int sd_varlink_server_add_connection_pair(sd_varlink_server *s, int input_fd, int output_fd, const struct ucred *ucred_override, sd_varlink **ret);
 int sd_varlink_server_add_connection_stdio(sd_varlink_server *s, sd_varlink **ret);

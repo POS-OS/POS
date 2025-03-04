@@ -7,6 +7,10 @@ units = [
         { 'file' : 'blockdev@.target' },
         { 'file' : 'bluetooth.target' },
         { 'file' : 'boot-complete.target' },
+        { 'file' : 'breakpoint-pre-basic.service.in' },
+        { 'file' : 'breakpoint-pre-mount.service.in' },
+        { 'file' : 'breakpoint-pre-switch-root.service.in' },
+        { 'file' : 'breakpoint-pre-udev.service.in' },
         { 'file' : 'capsule@.service.in' },
         { 'file' : 'capsule.slice' },
         { 'file' : 'console-getty.service.in' },
@@ -98,6 +102,7 @@ units = [
         {
           'file' : 'initrd-udevadm-cleanup-db.service',
           'conditions' : ['ENABLE_INITRD'],
+          'install_tag' : 'udev',
         },
         {
           'file' : 'initrd-usr-fs.target',
@@ -186,6 +191,11 @@ units = [
         { 'file' : 'remote-fs-pre.target' },
         { 'file' : 'remote-fs.target' },
         {
+          'file' : 'remote-integritysetup.target',
+          'conditions' : ['HAVE_LIBCRYPTSETUP'],
+          'symlinks' : ['initrd-root-device.target.wants/'],
+        },
+        {
           'file' : 'remote-veritysetup.target',
           'conditions' : ['HAVE_LIBCRYPTSETUP'],
           'symlinks' : ['initrd-root-device.target.wants/'],
@@ -242,6 +252,11 @@ units = [
         { 'file' : 'system-update-pre.target' },
         { 'file' : 'system-update.target' },
         {
+          'file' : 'systemd-ask-password.socket',
+          'symlinks' : ['sockets.target.wants/']
+        },
+        { 'file' : 'systemd-ask-password@.service' },
+        {
           'file' : 'systemd-ask-password-console.path',
           'symlinks' : ['sysinit.target.wants/'],
         },
@@ -286,6 +301,11 @@ units = [
         {
           'file' : 'systemd-confext.service',
           'conditions' : ['ENABLE_SYSEXT'],
+        },
+        {
+          'file' : 'systemd-confext-initrd.service',
+          'conditions' : ['ENABLE_INITRD', 'ENABLE_SYSEXT'],
+          'symlinks' : ['initrd.target.wants/'],
         },
         {
           'file' : 'systemd-coredump.socket',
@@ -351,6 +371,7 @@ units = [
           'file' : 'systemd-hwdb-update.service.in',
           'conditions' : ['ENABLE_HWDB'],
           'symlinks' : ['sysinit.target.wants/'],
+          'install_tag' : 'hwdb',
         },
         {
           'file' : 'systemd-hybrid-sleep.service.in',
@@ -365,6 +386,15 @@ units = [
           'file' : 'systemd-importd.socket',
           'conditions' : ['ENABLE_IMPORTD'],
           'symlinks' : ['sockets.target.wants/'],
+        },
+        {
+          'file' : 'imports-pre.target',
+          'conditions' : ['ENABLE_IMPORTD'],
+        },
+        {
+          'file' : 'imports.target',
+          'conditions' : ['ENABLE_IMPORTD'],
+          'symlinks' : ['sysinit.target.wants/'],
         },
         {
           'file' : 'systemd-initctl.service.in',
@@ -431,6 +461,7 @@ units = [
           'conditions' : ['ENABLE_LOGIND'],
           'symlinks' : ['multi-user.target.wants/', 'dbus-org.freedesktop.login1.service'],
         },
+        { 'file' : 'systemd-loop@.service' },
         {
           'file' : 'systemd-machine-id-commit.service',
           'symlinks' : ['sysinit.target.wants/'],
@@ -502,6 +533,11 @@ units = [
           'symlinks' : ['sysinit.target.wants/'],
         },
         {
+          'file' : 'systemd-pcrphase-factory-reset.service.in',
+          'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2'],
+          'symlinks' : ['factory-reset.target.wants/'],
+        },
+        {
           'file' : 'systemd-pcrphase-initrd.service.in',
           'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2', 'ENABLE_INITRD'],
           'symlinks' : ['initrd.target.wants/'],
@@ -510,6 +546,11 @@ units = [
           'file' : 'systemd-pcrphase-sysinit.service.in',
           'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2'],
           'symlinks' : ['sysinit.target.wants/'],
+        },
+        {
+          'file' : 'systemd-pcrphase-storage-target-mode.service.in',
+          'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2'],
+          'symlinks' : ['storage-target-mode.target.wants/'],
         },
         {
           'file' : 'systemd-pcrphase.service.in',
@@ -620,6 +661,11 @@ units = [
           'conditions' : ['ENABLE_SYSEXT'],
         },
         {
+          'file' : 'systemd-sysext-initrd.service',
+          'conditions' : ['ENABLE_INITRD', 'ENABLE_SYSEXT'],
+          'symlinks' : ['initrd.target.wants/'],
+        },
+        {
           'file' : 'systemd-sysext.socket',
           'conditions' : ['ENABLE_SYSEXT'],
           'symlinks' : ['sockets.target.wants/'],
@@ -699,23 +745,38 @@ units = [
           'conditions' : ['ENABLE_TMPFILES'],
           'symlinks' : ['sysinit.target.wants/'],
         },
-        { 'file' : 'systemd-udev-load-credentials.service' },
-        { 'file' : 'systemd-udev-settle.service' },
+        {
+          'file' : 'systemd-udev-load-credentials.service',
+          'install_tag' : 'udev',
+        },
+        {
+          'file' : 'systemd-udev-settle.service',
+          'install_tag' : 'udev',
+        },
         {
           'file' : 'systemd-udev-trigger.service',
           'symlinks' : ['sysinit.target.wants/'],
+          'install_tag' : 'udev',
         },
         {
           'file' : 'systemd-udevd-control.socket',
           'symlinks' : ['sockets.target.wants/'],
+          'install_tag' : 'udev',
         },
         {
           'file' : 'systemd-udevd-kernel.socket',
           'symlinks' : ['sockets.target.wants/'],
+          'install_tag' : 'udev',
+        },
+        {
+          'file' : 'systemd-udevd-varlink.socket',
+          'symlinks' : ['sockets.target.wants/'],
+          'install_tag' : 'udev',
         },
         {
           'file' : 'systemd-udevd.service.in',
           'symlinks' : ['sysinit.target.wants/'],
+          'install_tag' : 'udev',
         },
         {
           'file' : 'systemd-update-done.service.in',
@@ -797,6 +858,10 @@ units = [
         },
 ]
 
+# For the udev/hwdb aliases
+udev_units = []
+hwdb_units = []
+
 foreach unit : units
         source = unit.get('file')
 
@@ -819,29 +884,38 @@ foreach unit : units
         endforeach
 
         if needs_jinja
-                custom_target(
+                t = custom_target(
                         name,
                         input : source,
                         output : name,
                         command : [jinja2_cmdline, '@INPUT@', '@OUTPUT@'],
                         install : install,
-                        install_dir : systemunitdir)
+                        install_dir : systemunitdir,
+                        install_tag : unit.get('install_tag', ''))
+                if unit.get('install_tag', '') == 'udev'
+                        udev_units += t
+                elif unit.get('install_tag', '') == 'hwdb'
+                        hwdb_units += t
+                endif
         elif install
                 install_data(source,
-                             install_dir : systemunitdir)
+                             install_dir : systemunitdir,
+                             install_tag : unit.get('install_tag', ''))
         endif
 
         if install
                 foreach target : unit.get('symlinks', [])
                         if target.endswith('/')
-                                install_emptydir(systemunitdir / target)
+                                install_emptydir(systemunitdir / target, install_tag : unit.get('install_tag', ''))
                                 meson.add_install_script(sh, '-c',
                                                          ln_s.format(systemunitdir / name,
-                                                                     systemunitdir / target / name))
+                                                                     systemunitdir / target / name),
+                                                         install_tag : unit.get('install_tag', ''))
                         else
                                 meson.add_install_script(sh, '-c',
                                                          ln_s.format(systemunitdir / name,
-                                                                     systemunitdir / target))
+                                                                     systemunitdir / target),
+                                                         install_tag : unit.get('install_tag', ''))
                         endif
                 endforeach
         endif

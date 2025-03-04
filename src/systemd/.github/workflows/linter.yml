@@ -29,7 +29,7 @@ jobs:
           fetch-depth: 0
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@b92721f792f381cedc002ecdbb9847a15ece5bb8
+        uses: super-linter/super-linter/slim@85f7611e0f7b53c8573cca84aa0ed4344f6f6a4d
         env:
           DEFAULT_BRANCH: main
           MULTI_STATUS: false
@@ -37,7 +37,7 @@ jobs:
           VALIDATE_GITHUB_ACTIONS: true
 
       - name: Check that tabs are not used in Python code
-        run: sh -c '! git grep -P "\\t" -- src/ukify/ukify.py test/integration-test-wrapper.py'
+        run: sh -c '! git grep -P "\\t" -- src/boot/generate-hwids-section.py src/ukify/ukify.py test/integration-test-wrapper.py'
 
       - name: Install ruff and mypy
         run: |
@@ -47,14 +47,18 @@ jobs:
       - name: Run mypy
         run: |
           python3 -m mypy --version
-          python3 -m mypy src/ukify/ukify.py test/integration-test-wrapper.py
+          python3 -m mypy src/boot/generate-hwids-section.py src/test/generate-sym-test.py src/ukify/ukify.py test/integration-test-wrapper.py
 
       - name: Run ruff check
         run: |
           ruff --version
-          ruff check src/ukify/ukify.py test/integration-test-wrapper.py
+          ruff check src/boot/generate-hwids-section.py src/test/generate-sym-test.py src/ukify/ukify.py test/integration-test-wrapper.py
 
       - name: Run ruff format
         run: |
           ruff --version
-          ruff format --check src/ukify/ukify.py test/integration-test-wrapper.py
+          if ! ruff format --check src/boot/generate-hwids-section.py src/test/generate-sym-test.py src/ukify/ukify.py test/integration-test-wrapper.py
+          then
+              echo "Please run 'ruff format' on the above files or apply the diffs below manually"
+              ruff format --check --quiet --diff  src/boot/generate-hwids-section.py src/test/generate-sym-test.py src/ukify/ukify.py test/integration-test-wrapper.py
+          fi

@@ -796,7 +796,7 @@ EOF
 
 testcase_machinectl_bind() {
     local service_path service_name root container_name ec
-    local cmd='for i in $(seq 1 20); do if test -f /tmp/marker; then exit 0; fi; sleep .5; done; exit 1;'
+    local cmd='for i in $(seq 1 20); do if test -f /tmp/marker && test -f /tmp/marker-varlink; then exit 0; fi; sleep .5; done; exit 1;'
 
     root="$(mktemp -d /var/lib/machines/TEST-13-NSPAWN.machinectl-bind.XXX)"
     create_dummy_container "$root"
@@ -814,6 +814,8 @@ EOF
     systemctl start "$service_name"
     touch /tmp/marker
     machinectl bind --mkdir "$container_name" /tmp/marker
+    touch /tmp/marker-varlink
+    varlinkctl call /run/systemd/machine/io.systemd.Machine io.systemd.Machine.BindMount "{\"name\": \"$container_name\", \"source\": \"/tmp/marker-varlink\", \"mkdir\": true}"
 
     timeout 10 bash -c "while [[ '\$(systemctl show -P SubState $service_name)' == running ]]; do sleep .2; done"
     ec="$(systemctl show -P ExecMainStatus "$service_name")"
@@ -914,7 +916,7 @@ matrix_run_one() {
                        --boot; then
         [[ "$IS_USERNS_SUPPORTED" == "yes" && "$api_vfs_writable" == "network" ]] && return 1
     else
-        [[ "$IS_USERNS_SUPPORTED" == "no" && "$api_vfs_writable" = "network" ]] && return 1
+        [[ "$IS_USERNS_SUPPORTED" == "no" && "$api_vfs_writable" == "network" ]] && return 1
     fi
 
     if SYSTEMD_NSPAWN_UNIFIED_HIERARCHY="$cgroupsv2" SYSTEMD_NSPAWN_USE_CGNS="$use_cgns" SYSTEMD_NSPAWN_API_VFS_WRITABLE="$api_vfs_writable" \
@@ -1129,7 +1131,10 @@ testcase_unpriv() {
 
     local tmpdir name
     tmpdir="$(mktemp -d /var/tmp/TEST-13-NSPAWN.unpriv.XXX)"
-    name="unpriv-${tmpdir##*.}"
+    # Note: we pick the machine name short enough to be a valid machine name,
+    # but definitely longer than 16 chars, so that userns name mangling in the
+    # nsresourced userns allocation logic is triggered and tested. */
+    name="unprv-${tmpdir##*.}-somelongsuffix"
     trap 'rm -fr ${tmpdir@Q} || true; rm -f /run/verity.d/test-13-nspawn-${name@Q} || true' RETURN ERR
     create_dummy_ddi "$tmpdir" "$name"
     chown --recursive testuser: "$tmpdir"
@@ -1140,6 +1145,17 @@ testcase_unpriv() {
         --property=Delegate=yes \
         -- \
         systemd-nspawn --pipe --private-network --register=no --keep-unit --image="$tmpdir/$name.raw" echo hello >"$tmpdir/stdout.txt"
+    echo hello | cmp "$tmpdir/stdout.txt" -
+
+    # Make sure per-user search path logic works
+    systemd-run --pipe --uid=testuser mkdir -p /home/testuser/.local/state/machines
+    systemd-run --pipe --uid=testuser ln -s "$tmpdir/$name.raw" /home/testuser/.local/state/machines/"x$name.raw"
+    systemd-run \
+        --pipe \
+        --uid=testuser \
+        --property=Delegate=yes \
+        -- \
+        systemd-nspawn --pipe --private-network --register=no --keep-unit --machine="x$name" echo hello >"$tmpdir/stdout.txt"
     echo hello | cmp "$tmpdir/stdout.txt" -
 }
 
@@ -1215,31 +1231,16 @@ testcase_unpriv_fuse() {
 }
 
 test_tun() {
-    local expect=${1?}
-    local exists=${2?}
-    local command command_exists command_not_exists
-    shift 2
-
-    command_exists='[[ -c /dev/net/tun ]]; [[ "$(stat /dev/net/tun --format=%u)" == 0 ]]; [[ "$(stat /dev/net/tun --format=%g)" == 0 ]]'
-    command_not_exists='[[ ! -e /dev/net/tun ]]'
-
-    if [[ "$exists" == 0 ]]; then
-        command="$command_not_exists"
-    else
-        command="$command_exists"
-    fi
-
-    systemd-nspawn "$@" bash -xec "$command_exists"
+    systemd-nspawn "$@" bash -xec '[[ -c /dev/net/tun ]]; [[ "$(stat /dev/net/tun --format=%u)" == 0 ]]; [[ "$(stat /dev/net/tun --format=%g)" == 0 ]]'
 
     # check if the owner of the host device is unchanged, see issue #34243.
     [[ "$(stat /dev/net/tun --format=%u)" == 0 ]]
     [[ "$(stat /dev/net/tun --format=%g)" == 0 ]]
 
     # Without DeviceAllow= for /dev/net/tun, see issue #35116.
-    assert_rc \
-        "$expect" \
-        systemd-run --wait -p Environment=SYSTEMD_LOG_LEVEL=debug -p DevicePolicy=closed -p DeviceAllow="char-pts rw" \
-        systemd-nspawn "$@" bash -xec "$command"
+    systemd-run \
+        --wait -p Environment=SYSTEMD_LOG_LEVEL=debug -p DevicePolicy=closed -p DeviceAllow="char-pts rw" \
+        systemd-nspawn "$@" bash -xec '[[ ! -e /dev/net/tun ]]'
 
     [[ "$(stat /dev/net/tun --format=%u)" == 0 ]]
     [[ "$(stat /dev/net/tun --format=%g)" == 0 ]]
@@ -1256,14 +1257,52 @@ testcase_dev_net_tun() {
     root="$(mktemp -d /var/lib/machines/TEST-13-NSPAWN.tun.XXX)"
     create_dummy_container "$root"
 
-    test_tun 0 1 --ephemeral --directory="$root" --private-users=no
-    test_tun 0 1 --ephemeral --directory="$root" --private-users=yes
-    test_tun 0 0 --ephemeral --directory="$root" --private-users=pick
-    test_tun 0 1 --ephemeral --directory="$root" --private-users=no   --private-network
-    test_tun 0 1 --ephemeral --directory="$root" --private-users=yes  --private-network
-    test_tun 1 0 --ephemeral --directory="$root" --private-users=pick --private-network
+    test_tun --ephemeral --directory="$root" --private-users=no
+    test_tun --ephemeral --directory="$root" --private-users=yes
+    test_tun --ephemeral --directory="$root" --private-users=pick
+    test_tun --ephemeral --directory="$root" --private-users=no   --private-network
+    test_tun --ephemeral --directory="$root" --private-users=yes  --private-network
+    test_tun --ephemeral --directory="$root" --private-users=pick --private-network
 
     rm -fr "$root"
+}
+
+testcase_unpriv_dir() {
+    if ! can_do_rootless_nspawn; then
+        echo "Skipping rootless test..."
+        return 0
+    fi
+
+    root="$(mktemp -d /var/lib/machines/TEST-13-NSPAWN.unpriv.XXX)"
+    create_dummy_container "$root"
+
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=no bash -c 'echo foobar')" "foobar"
+
+    # Use an image owned by some freshly acquired container user
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=pick --private-users-ownership=chown bash -c 'echo foobar')" "foobar"
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=yes --private-users-ownership=chown bash -c 'echo foobar')" "foobar"
+
+    # Now move back to root owned, and try to use fs idmapping
+    systemd-dissect --shift "$root" 0
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=no --private-users-ownership=no bash -c 'echo foobar')" "foobar"
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=pick --private-users-ownership=map bash -c 'echo foobar')" "foobar"
+
+    # Use an image owned by the foreign UID range first via direct mapping, and than via the managed uid logic
+    systemd-dissect --shift "$root" foreign
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=pick --private-users-ownership=foreign bash -c 'echo foobar')" "foobar"
+    assert_eq "$(systemd-nspawn --pipe --register=no -D "$root" --private-users=managed --private-network bash -c 'echo foobar')" "foobar"
+
+    # Test unprivileged operation
+    chown testuser:testuser "$root/.."
+
+    ls -al "/var/lib/machines"
+    ls -al "$root"
+
+    assert_eq "$(run0 --pipe -u testuser systemd-nspawn --pipe --register=no -D "$root" --private-users=managed --private-network bash -c 'echo foobar')" "foobar"
+    assert_eq "$(run0 --pipe -u testuser systemd-nspawn --pipe --register=no -D "$root" --private-network bash -c 'echo foobar')" "foobar"
+    chown root:root "$root/.."
+
+    rm -rf "$root"
 }
 
 run_testcases

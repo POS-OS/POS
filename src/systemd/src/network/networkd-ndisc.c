@@ -215,7 +215,7 @@ static int ndisc_remove_unused_nexthops(Link *link) {
 
 #define NDISC_NEXTHOP_APP_ID SD_ID128_MAKE(76,d2,0f,1f,76,1e,44,d1,97,3a,52,5c,05,68,b5,0d)
 
-static uint32_t ndisc_generate_nexthop_id(NextHop *nexthop, Link *link, sd_id128_t app_id, uint64_t trial) {
+static uint32_t ndisc_generate_nexthop_id(const NextHop *nexthop, Link *link, sd_id128_t app_id, uint64_t trial) {
         assert(nexthop);
         assert(link);
 
@@ -232,7 +232,7 @@ static uint32_t ndisc_generate_nexthop_id(NextHop *nexthop, Link *link, sd_id128
         return (uint32_t) ((result & 0xffffffff) ^ (result >> 32));
 }
 
-static bool ndisc_nexthop_equal(NextHop *a, NextHop *b) {
+static bool ndisc_nexthop_equal(const NextHop *a, const NextHop *b) {
         assert(a);
         assert(b);
 
@@ -250,9 +250,11 @@ static bool ndisc_nexthop_equal(NextHop *a, NextHop *b) {
         return true;
 }
 
-static bool ndisc_take_nexthop_id(NextHop *nexthop, NextHop *existing, Manager *manager) {
+static bool ndisc_take_nexthop_id(NextHop *nexthop, const NextHop *existing, Manager *manager) {
         assert(nexthop);
+        assert(nexthop->id == 0);
         assert(existing);
+        assert(existing->id > 0);
         assert(manager);
 
         if (!ndisc_nexthop_equal(nexthop, existing))
@@ -300,7 +302,7 @@ static int ndisc_nexthop_find_id(NextHop *nexthop, Link *link) {
         return false;
 }
 
-static int ndisc_nexthop_new(Route *route, Link *link, NextHop **ret) {
+static int ndisc_nexthop_new(const Route *route, Link *link, NextHop **ret) {
         _cleanup_(nexthop_unrefp) NextHop *nexthop = NULL;
         int r;
 
@@ -1081,11 +1083,10 @@ static int ndisc_router_drop_default(Link *link, sd_ndisc_router *rt) {
         HASHMAP_FOREACH(route_gw, link->network->routes_by_section) {
                 _cleanup_(route_unrefp) Route *tmp = NULL;
 
-                if (!route_gw->gateway_from_dhcp_or_ra)
+                if (route_gw->source != NETWORK_CONFIG_SOURCE_NDISC)
                         continue;
 
-                if (route_gw->nexthop.family != AF_INET6)
-                        continue;
+                assert(route_gw->nexthop.family == AF_INET6);
 
                 r = route_dup(route_gw, NULL, &tmp);
                 if (r < 0)
@@ -1156,11 +1157,10 @@ static int ndisc_router_process_default(Link *link, sd_ndisc_router *rt) {
         HASHMAP_FOREACH(route_gw, link->network->routes_by_section) {
                 _cleanup_(route_unrefp) Route *route = NULL;
 
-                if (!route_gw->gateway_from_dhcp_or_ra)
+                if (route_gw->source != NETWORK_CONFIG_SOURCE_NDISC)
                         continue;
 
-                if (route_gw->nexthop.family != AF_INET6)
-                        continue;
+                assert(route_gw->nexthop.family == AF_INET6);
 
                 r = route_dup(route_gw, NULL, &route);
                 if (r < 0)
@@ -1373,7 +1373,7 @@ static int ndisc_router_process_hop_limit(Link *link, sd_ndisc_router *rt) {
          * the first Router Advertisement was received.
          *
          * If the received Cur Hop Limit value is non-zero, the host SHOULD set
-         * its CurHopLimit variable to the received value.*/
+         * its CurHopLimit variable to the received value. */
         if (hop_limit <= 0)
                 return 0;
 

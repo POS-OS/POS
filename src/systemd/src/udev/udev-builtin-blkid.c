@@ -34,113 +34,146 @@
 #include "strxcpyx.h"
 #include "udev-builtin.h"
 
-static void print_property(sd_device *dev, EventMode mode, const char *name, const char *value) {
+static void print_property(UdevEvent *event, const char *name, const char *value) {
         char s[256];
+
+        assert(event);
+        assert(name);
 
         s[0] = '\0';
 
         if (streq(name, "TYPE")) {
-                udev_builtin_add_property(dev, mode, "ID_FS_TYPE", value);
+                udev_builtin_add_property(event, "ID_FS_TYPE", value);
 
         } else if (streq(name, "USAGE")) {
-                udev_builtin_add_property(dev, mode, "ID_FS_USAGE", value);
+                udev_builtin_add_property(event, "ID_FS_USAGE", value);
 
         } else if (streq(name, "VERSION")) {
-                udev_builtin_add_property(dev, mode, "ID_FS_VERSION", value);
+                udev_builtin_add_property(event, "ID_FS_VERSION", value);
 
         } else if (streq(name, "UUID")) {
                 blkid_safe_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_UUID", s);
+                udev_builtin_add_property(event, "ID_FS_UUID", s);
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_ENC", s);
+                udev_builtin_add_property(event, "ID_FS_UUID_ENC", s);
 
         } else if (streq(name, "UUID_SUB")) {
                 blkid_safe_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_SUB", s);
+                udev_builtin_add_property(event, "ID_FS_UUID_SUB", s);
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_SUB_ENC", s);
+                udev_builtin_add_property(event, "ID_FS_UUID_SUB_ENC", s);
 
         } else if (streq(name, "LABEL")) {
                 blkid_safe_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_LABEL", s);
+                udev_builtin_add_property(event, "ID_FS_LABEL", s);
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_LABEL_ENC", s);
+                udev_builtin_add_property(event, "ID_FS_LABEL_ENC", s);
 
         } else if (STR_IN_SET(name, "FSSIZE", "FSLASTBLOCK", "FSBLOCKSIZE")) {
                 strscpyl(s, sizeof(s), "ID_FS_", name + 2, NULL);
-                udev_builtin_add_property(dev, mode, s, value);
+                udev_builtin_add_property(event, s, value);
 
         } else if (streq(name, "PTTYPE")) {
-                udev_builtin_add_property(dev, mode, "ID_PART_TABLE_TYPE", value);
+                udev_builtin_add_property(event, "ID_PART_TABLE_TYPE", value);
 
         } else if (streq(name, "PTUUID")) {
-                udev_builtin_add_property(dev, mode, "ID_PART_TABLE_UUID", value);
+                udev_builtin_add_property(event, "ID_PART_TABLE_UUID", value);
 
         } else if (streq(name, "PART_ENTRY_NAME")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_PART_ENTRY_NAME", s);
+                udev_builtin_add_property(event, "ID_PART_ENTRY_NAME", s);
 
         } else if (streq(name, "PART_ENTRY_TYPE")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_PART_ENTRY_TYPE", s);
+                udev_builtin_add_property(event, "ID_PART_ENTRY_TYPE", s);
 
         } else if (startswith(name, "PART_ENTRY_")) {
                 strscpyl(s, sizeof(s), "ID_", name, NULL);
-                udev_builtin_add_property(dev, mode, s, value);
+                udev_builtin_add_property(event, s, value);
 
         } else if (streq(name, "SYSTEM_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_SYSTEM_ID", s);
+                udev_builtin_add_property(event, "ID_FS_SYSTEM_ID", s);
 
         } else if (streq(name, "PUBLISHER_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_PUBLISHER_ID", s);
+                udev_builtin_add_property(event, "ID_FS_PUBLISHER_ID", s);
 
         } else if (streq(name, "APPLICATION_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_APPLICATION_ID", s);
+                udev_builtin_add_property(event, "ID_FS_APPLICATION_ID", s);
 
         } else if (streq(name, "BOOT_SYSTEM_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_BOOT_SYSTEM_ID", s);
+                udev_builtin_add_property(event, "ID_FS_BOOT_SYSTEM_ID", s);
 
         } else if (streq(name, "VOLUME_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_VOLUME_ID", s);
+                udev_builtin_add_property(event, "ID_FS_VOLUME_ID", s);
 
         } else if (streq(name, "LOGICAL_VOLUME_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_LOGICAL_VOLUME_ID", s);
+                udev_builtin_add_property(event, "ID_FS_LOGICAL_VOLUME_ID", s);
 
         } else if (streq(name, "VOLUME_SET_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_VOLUME_SET_ID", s);
+                udev_builtin_add_property(event, "ID_FS_VOLUME_SET_ID", s);
 
         } else if (streq(name, "DATA_PREPARER_ID")) {
                 blkid_encode_string(value, s, sizeof(s));
-                udev_builtin_add_property(dev, mode, "ID_FS_DATA_PREPARER_ID", s);
+                udev_builtin_add_property(event, "ID_FS_DATA_PREPARER_ID", s);
         }
 }
 
-static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
+static int find_gpt_root(UdevEvent *event, blkid_probe pr, const char *loop_backing_fname) {
 
 #if defined(SD_GPT_ROOT_NATIVE) && ENABLE_EFI
-
+        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
         _cleanup_free_ char *root_label = NULL;
-        bool found_esp_or_xbootldr = false;
-        sd_id128_t root_id = SD_ID128_NULL;
+        bool found_esp_or_xbootldr = false, need_esp_or_xbootldr;
+        sd_id128_t root_id = SD_ID128_NULL, esp_or_xbootldr = SD_ID128_NULL;
         int r;
 
+        assert(event);
         assert(pr);
 
         /* Iterate through the partitions on this disk, and see if the UEFI ESP or XBOOTLDR partition we
-         * booted from is on it. If so, find the first root disk, and add a property indicating its partition
-         * UUID. */
+         * booted from is on it. If so, find the newest root partition, and add a property indicating its
+         * partition UUID. We also do this if we are dealing with a loopback block device whose "backing
+         * filename" field is set to the string "root". In the latter case we do not search for ESP or
+         * XBOOTLDR. */
+
+        if (!device_is_devtype(dev, "disk")) {
+                log_device_debug(dev, "Skipping GPT root logic on partition block device.");
+                return 0;
+        }
+
+        r = efi_loader_get_device_part_uuid(&esp_or_xbootldr);
+        if (r < 0) {
+                if (r != -ENOENT && !ERRNO_IS_NOT_SUPPORTED(r))
+                        return log_debug_errno(r, "Unable to determine loader partition UUID: %m");
+
+                log_device_debug(dev, "No loader partition UUID EFI variable set, not using partition data to search for default root block device.");
+
+                /* NB: if an ESP/xbootldr field is set, we always use that. We do this in order to guarantee
+                 * systematic behaviour. */
+                if (!STRPTR_IN_SET(loop_backing_fname, "rootdisk", "rootdisk.raw")) {
+                        log_device_debug(dev, "Device is not a loopback block device with reference string 'root', not considering block device as default root block device.");
+                        return 0;
+                }
+
+                /* OK, we have now sufficiently identified this device as the right root "whole" device,
+                 * hence no need to bother with searching for ESP/XBOOTLDR */
+                need_esp_or_xbootldr = false;
+        } else
+                /* We now know the the ESP/xbootldr UUID, but we cannot be sure yet it's on this block
+                 * device, hence look for it among partitions now */
+                need_esp_or_xbootldr = true;
 
         errno = 0;
         blkid_partlist pl = blkid_probe_get_partitions(pr);
         if (!pl)
-                return errno_or_else(ENOMEM);
+                return log_device_debug_errno(dev, errno_or_else(ENOMEM), "Failed to probe partitions: %m");
 
         int nvals = blkid_partlist_numof_partitions(pl);
         for (int i = 0; i < nvals; i++) {
@@ -154,27 +187,21 @@ static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
 
                 r = blkid_partition_get_uuid_id128(pp, &id);
                 if (r < 0) {
-                        log_debug_errno(r, "Failed to get partition UUID, ignoring: %m");
+                        log_device_debug_errno(dev, r, "Failed to get partition UUID, ignoring: %m");
                         continue;
                 }
 
                 r = blkid_partition_get_type_id128(pp, &type);
                 if (r < 0) {
-                        log_debug_errno(r, "Failed to get partition type UUID, ignoring: %m");
+                        log_device_debug_errno(dev, r, "Failed to get partition type UUID, ignoring: %m");
                         continue;
                 }
 
                 label = blkid_partition_get_name(pp); /* returns NULL if empty */
 
-                if (sd_id128_in_set(type, SD_GPT_ESP, SD_GPT_XBOOTLDR)) {
-                        sd_id128_t esp_or_xbootldr;
+                if (need_esp_or_xbootldr && sd_id128_in_set(type, SD_GPT_ESP, SD_GPT_XBOOTLDR)) {
 
                         /* We found an ESP or XBOOTLDR, let's see if it matches the ESP/XBOOTLDR we booted from. */
-
-                        r = efi_loader_get_device_part_uuid(&esp_or_xbootldr);
-                        if (r < 0)
-                                return r;
-
                         if (sd_id128_equal(id, esp_or_xbootldr))
                                 found_esp_or_xbootldr = true;
 
@@ -191,17 +218,20 @@ static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
                         if (sd_id128_is_null(root_id) || strverscmp_improved(label, root_label) > 0) {
                                 root_id = id;
 
-                                r = free_and_strdup(&root_label, label);
-                                if (r < 0)
-                                        return r;
+                                if (free_and_strdup(&root_label, label) < 0)
+                                        return log_oom_debug();
                         }
                 }
         }
 
-        /* We found the ESP/XBOOTLDR on this disk, and also found a root partition, nice! Let's export its
-         * UUID */
-        if (found_esp_or_xbootldr && !sd_id128_is_null(root_id))
-                udev_builtin_add_property(dev, mode, "ID_PART_GPT_AUTO_ROOT_UUID", SD_ID128_TO_UUID_STRING(root_id));
+        if (!need_esp_or_xbootldr || found_esp_or_xbootldr) {
+                /* We found the ESP/XBOOTLDR on this disk (or we didn't need it) */
+                udev_builtin_add_property(event, "ID_PART_GPT_AUTO_ROOT_DISK", "1");
+
+                /* We found a root partition, nice! Let's export its UUID. */
+                if (!sd_id128_is_null(root_id))
+                        udev_builtin_add_property(event, "ID_PART_GPT_AUTO_ROOT_UUID", SD_ID128_TO_UUID_STRING(root_id));
+        }
 #endif
 
         return 0;
@@ -421,7 +451,7 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
                 if (blkid_probe_get_value(pr, i, &name, &data, NULL) < 0)
                         continue;
 
-                print_property(dev, event->event_mode, name, data);
+                print_property(event, name, data);
 
                 /* Is this a disk with GPT partition table? */
                 if (streq(name, "PTTYPE") && streq(data, "gpt"))
@@ -430,11 +460,8 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
                 /* Is this a partition that matches the root partition
                  * property inherited from the parent? */
                 if (root_partition && streq(name, "PART_ENTRY_UUID") && streq(data, root_partition))
-                        udev_builtin_add_property(dev, event->event_mode, "ID_PART_GPT_AUTO_ROOT", "1");
+                        udev_builtin_add_property(event, "ID_PART_GPT_AUTO_ROOT", "1");
         }
-
-        if (is_gpt)
-                find_gpt_root(dev, pr, event->event_mode);
 
         r = read_loopback_backing_inode(
                         dev,
@@ -445,8 +472,8 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
         if (r < 0)
                 log_device_debug_errno(dev, r, "Failed to read loopback backing inode, ignoring: %m");
         else if (r > 0) {
-                udev_builtin_add_propertyf(dev, event->event_mode, "ID_LOOP_BACKING_DEVICE", DEVNUM_FORMAT_STR, DEVNUM_FORMAT_VAL(backing_devno));
-                udev_builtin_add_propertyf(dev, event->event_mode, "ID_LOOP_BACKING_INODE", "%" PRIu64, (uint64_t) backing_inode);
+                udev_builtin_add_propertyf(event, "ID_LOOP_BACKING_DEVICE", DEVNUM_FORMAT_STR, DEVNUM_FORMAT_VAL(backing_devno));
+                udev_builtin_add_propertyf(event, "ID_LOOP_BACKING_INODE", "%" PRIu64, (uint64_t) backing_inode);
 
                 if (backing_fname) {
                         /* In the worst case blkid_encode_string() will blow up to 4x the string
@@ -457,10 +484,13 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
                         assert(strlen(backing_fname) < ELEMENTSOF(encoded) / 4);
                         blkid_encode_string(backing_fname, encoded, ELEMENTSOF(encoded));
 
-                        udev_builtin_add_property(dev, event->event_mode, "ID_LOOP_BACKING_FILENAME", backing_fname);
-                        udev_builtin_add_property(dev, event->event_mode, "ID_LOOP_BACKING_FILENAME_ENC", encoded);
+                        udev_builtin_add_property(event, "ID_LOOP_BACKING_FILENAME", backing_fname);
+                        udev_builtin_add_property(event, "ID_LOOP_BACKING_FILENAME_ENC", encoded);
                 }
         }
+
+        if (is_gpt)
+                find_gpt_root(event, pr, backing_fname);
 
         return 0;
 }

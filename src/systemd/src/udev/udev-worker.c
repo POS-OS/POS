@@ -18,6 +18,7 @@
 #include "signal-util.h"
 #include "string-util.h"
 #include "udev-event.h"
+#include "udev-rules.h"
 #include "udev-spawn.h"
 #include "udev-trace.h"
 #include "udev-util.h"
@@ -123,6 +124,7 @@ static int worker_lock_whole_disk(sd_device *dev, int *ret_fd) {
         if (flock(fd, LOCK_SH|LOCK_NB) < 0)
                 return log_device_debug_errno(dev, errno, "Failed to flock(%s): %m", val);
 
+        log_device_debug(dev, "Successfully took flock(LOCK_SH) for %s, it will be released after the event has been processed.", val);
         *ret_fd = TAKE_FD(fd);
         return 1;
 
@@ -169,7 +171,7 @@ static int worker_mark_block_device_read_only(sd_device *dev) {
 }
 
 static int worker_process_device(UdevWorker *worker, sd_device *dev) {
-        _cleanup_(udev_event_freep) UdevEvent *udev_event = NULL;
+        _cleanup_(udev_event_unrefp) UdevEvent *udev_event = NULL;
         _cleanup_close_ int fd_lock = -EBADF;
         int r;
 
@@ -181,6 +183,7 @@ static int worker_process_device(UdevWorker *worker, sd_device *dev) {
         udev_event = udev_event_new(dev, worker, EVENT_UDEV_WORKER);
         if (!udev_event)
                 return -ENOMEM;
+        udev_event->trace = worker->config.trace;
 
         /* If this is a block device and the device is locked currently via the BSD advisory locks,
          * someone else is using it exclusively. We don't run our udev rules now to not interfere.
@@ -193,7 +196,7 @@ static int worker_process_device(UdevWorker *worker, sd_device *dev) {
         if (r < 0)
                 return r;
 
-        if (worker->blockdev_read_only)
+        if (worker->config.blockdev_read_only)
                 (void) worker_mark_block_device_read_only(dev);
 
         /* Disable watch during event processing. */
@@ -320,7 +323,7 @@ static int worker_device_monitor_handler(sd_device_monitor *monitor, sd_device *
                 log_device_warning_errno(dev, r, "Failed to send signal to main daemon, ignoring: %m");
 
         /* Reset the log level, as it might be changed by "OPTIONS=log_level=". */
-        log_set_max_level(worker->log_level);
+        log_set_max_level(worker->config.log_level);
 
         return 1;
 }

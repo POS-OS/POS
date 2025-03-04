@@ -311,26 +311,22 @@ TEST(merge_env_file_invalid) {
         assert_se(strv_isempty(a));
 }
 
-TEST(executable_is_script) {
+TEST(script_get_shebang_interpreter) {
         _cleanup_(unlink_tempfilep) char t[] = "/tmp/test-fileio-XXXXXX";
         _cleanup_fclose_ FILE *f = NULL;
         char *command;
-        int r;
 
         assert_se(fmkostemp_safe(t, "w", &f) == 0);
         fputs("#! /bin/script -a -b \ngoo goo", f);
         fflush(f);
 
-        r = executable_is_script(t, &command);
-        assert_se(r > 0);
+        ASSERT_OK(script_get_shebang_interpreter(t, &command));
         ASSERT_STREQ(command, "/bin/script");
         free(command);
 
-        r = executable_is_script("/bin/sh", &command);
-        assert_se(r == 0);
+        ASSERT_ERROR(script_get_shebang_interpreter("/bin/sh", NULL), EMEDIUMTYPE);
 
-        r = executable_is_script("/usr/bin/yum", &command);
-        if (r > 0) {
+        if (script_get_shebang_interpreter("/usr/bin/yum", &command) >= 0) {
                 assert_se(startswith(command, "/"));
                 free(command);
         }
@@ -364,24 +360,6 @@ TEST(status_field) {
                 assert_se(r == 0);
                 puts(z);
                 assert_se(safe_atollu(z, &buffers) == 0);
-        }
-}
-
-TEST(capeff) {
-        for (int pid = 0; pid < 2; pid++) {
-                _cleanup_free_ char *capeff = NULL;
-                int r, p;
-
-                r = get_process_capeff(0, &capeff);
-                log_info("capeff: '%s' (r=%d)", capeff, r);
-
-                if (IN_SET(r, -ENOENT, -EPERM))
-                        return;
-
-                assert_se(r == 0);
-                assert_se(*capeff);
-                p = capeff[strspn(capeff, HEXDIGITS)];
-                assert_se(!p || isspace(p));
         }
 }
 
@@ -977,7 +955,7 @@ TEST(read_full_file_socket) {
                 _cleanup_close_ int rfd = -EBADF;
                 /* child */
 
-                rfd = accept4(listener, NULL, 0, SOCK_CLOEXEC);
+                rfd = accept4(listener, NULL, NULL, SOCK_CLOEXEC);
                 assert_se(rfd >= 0);
 
                 assert_se(getpeername(rfd, &peer.sa, &peerlen) >= 0);

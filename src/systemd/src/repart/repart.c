@@ -6,7 +6,6 @@
 
 #include <fcntl.h>
 #include <getopt.h>
-#include <linux/fs.h>
 #include <linux/loop.h>
 #include <sys/file.h>
 #include <sys/ioctl.h>
@@ -52,6 +51,7 @@
 #include "logarithm.h"
 #include "loop-util.h"
 #include "main-func.h"
+#include "missing_fs.h"
 #include "mkdir.h"
 #include "mkfs-util.h"
 #include "mount-util.h"
@@ -179,6 +179,7 @@ static char *arg_copy_source = NULL;
 static char *arg_make_ddi = NULL;
 static char *arg_generate_fstab = NULL;
 static char *arg_generate_crypttab = NULL;
+static Set *arg_verity_settings = NULL;
 
 STATIC_DESTRUCTOR_REGISTER(arg_node, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_root, freep);
@@ -202,6 +203,7 @@ STATIC_DESTRUCTOR_REGISTER(arg_copy_source, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_make_ddi, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_generate_fstab, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_generate_crypttab, freep);
+STATIC_DESTRUCTOR_REGISTER(arg_verity_settings, set_freep);
 
 typedef struct FreeArea FreeArea;
 
@@ -306,6 +308,19 @@ static SubvolumeFlags subvolume_flags_from_string(const char *s) {
         }
 
         return flags;
+}
+
+static char* subvolume_flags_to_string(SubvolumeFlags flags) {
+        const char *l[CONST_LOG2U(_SUBVOLUME_FLAGS_MASK + 1) + 1]; /* one string per known flag at most */
+        size_t m = 0;
+
+        if (FLAGS_SET(flags, SUBVOLUME_RO))
+                l[m++] = "ro";
+
+        assert(m < ELEMENTSOF(l));
+        l[m] = NULL;
+
+        return strv_join((char**) l, ",");
 }
 
 typedef struct Subvolume {
@@ -2311,7 +2326,7 @@ static int partition_finalize_fstype(Partition *p, const char *path) {
                 return log_oom();
 
         const char *v = secure_getenv(e);
-        if (!v || streq(p->format, v))
+        if (!v || streq_ptr(p->format, v))
                 return 0;
 
         log_syntax(NULL, LOG_NOTICE, path, 1, 0,
@@ -2474,26 +2489,10 @@ static int partition_read_definition(Partition *p, const char *path, const char 
                 return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EINVAL),
                                   "Encrypting verity hash/data partitions is not supported.");
 
-        if (p->verity == VERITY_SIG && !arg_private_key)
-                return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EINVAL),
-                                  "Verity signature partition requested but no private key provided (--private-key=).");
-
-        if (p->verity == VERITY_SIG && !arg_certificate)
-                return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EINVAL),
-                                  "Verity signature partition requested but no PEM certificate provided (--certificate=).");
-
         if (p->verity == VERITY_SIG && (p->size_min != UINT64_MAX || p->size_max != UINT64_MAX))
                 return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EINVAL),
                                   "SizeMinBytes=/SizeMaxBytes= cannot be used with Verity=%s.",
                                   verity_mode_to_string(p->verity));
-
-        if (!ordered_hashmap_isempty(p->subvolumes) && arg_offline > 0)
-                return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EOPNOTSUPP),
-                                  "Subvolumes= cannot be used with --offline=yes.");
-
-        if (p->default_subvolume && arg_offline > 0)
-                return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EOPNOTSUPP),
-                                  "DefaultSubvolume= cannot be used with --offline=yes.");
 
         if (p->default_subvolume && !ordered_hashmap_contains(p->subvolumes, p->default_subvolume))
                 return log_syntax(NULL, LOG_ERR, path, 1, SYNTHETIC_ERRNO(EINVAL),
@@ -4322,10 +4321,10 @@ static int prepare_temporary_file(Context *context, PartitionTarget *t, uint64_t
 
         r = read_attr_fd(fdisk_get_devfd(context->fdisk_context), &attrs);
         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
-                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
+                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
 
         if (FLAGS_SET(attrs, FS_NOCOW_FL)) {
-                r = chattr_fd(fd, FS_NOCOW_FL, FS_NOCOW_FL, NULL);
+                r = chattr_fd(fd, FS_NOCOW_FL, FS_NOCOW_FL);
                 if (r < 0 && !ERRNO_IS_NOT_SUPPORTED(r))
                         return log_error_errno(r, "Failed to disable copy-on-write on %s: %m", temp);
         }
@@ -4342,7 +4341,7 @@ static int prepare_temporary_file(Context *context, PartitionTarget *t, uint64_t
 
 static bool loop_device_error_is_fatal(const Partition *p, int r) {
         assert(p);
-        return arg_offline == 0 || (r != -ENOENT && !ERRNO_IS_PRIVILEGE(r)) || !ordered_hashmap_isempty(p->subvolumes) || p->default_subvolume;
+        return arg_offline == 0 || (r != -ENOENT && !ERRNO_IS_PRIVILEGE(r));
 }
 
 static int partition_target_prepare(
@@ -4591,6 +4590,12 @@ static int partition_encrypt(Context *context, Partition *p, PartitionTarget *ta
                 ssize_t base64_encoded_size;
                 int keyslot;
                 TPM2Flags flags = 0;
+
+                if (arg_tpm2_n_hash_pcr_values == 0 &&
+                    arg_tpm2_public_key_pcr_mask == 0 &&
+                    !arg_tpm2_pcrlock)
+                        log_notice("Notice: encrypting future partition %" PRIu64 ", locking against TPM2 with an empty policy, i.e. without any state or access restrictions.\n"
+                                   "Use --tpm2-public-key=, --tpm2-pcrlock=, or --tpm2-pcrs= to enable one or more restrictions.", p->partno);
 
                 if (arg_tpm2_public_key_pcr_mask != 0) {
                         r = tpm2_load_pcr_public_key(arg_tpm2_public_key, &pubkey.iov_base, &pubkey.iov_len);
@@ -5035,11 +5040,34 @@ static int sign_verity_roothash(
 #endif
 }
 
+static const VeritySettings *lookup_verity_settings_by_uuid_pair(sd_id128_t data_uuid, sd_id128_t hash_uuid) {
+        uint8_t root_hash_key[sizeof(sd_id128_t) * 2];
+
+        if (sd_id128_is_null(data_uuid) || sd_id128_is_null(hash_uuid))
+                return NULL;
+
+        /* As per the https://uapi-group.org/specifications/specs/discoverable_partitions_specification/ the
+         * UUIDs of the data and verity partitions are respectively the first and second halves of the
+         * dm-verity roothash, so we can use them to match the signature to the right partition. */
+
+        memcpy(root_hash_key, data_uuid.bytes, sizeof(sd_id128_t));
+        memcpy(root_hash_key + sizeof(sd_id128_t), hash_uuid.bytes, sizeof(sd_id128_t));
+
+        VeritySettings key = {
+                .root_hash = &root_hash_key,
+                .root_hash_size = sizeof(root_hash_key),
+        };
+
+        return set_get(arg_verity_settings, &key);
+}
+
 static int partition_format_verity_sig(Context *context, Partition *p) {
         _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
-        _cleanup_(iovec_done) struct iovec sig = {};
+        _cleanup_(iovec_done) struct iovec sig_free = {};
         _cleanup_free_ char *text = NULL, *hint = NULL;
-        Partition *hp;
+        const VeritySettings *verity_settings;
+        struct iovec roothash, sig;
+        Partition *hp, *rp;
         uint8_t fp[X509_FINGERPRINT_SIZE];
         int whole_fd, r;
 
@@ -5051,16 +5079,42 @@ static int partition_format_verity_sig(Context *context, Partition *p) {
         if (PARTITION_EXISTS(p))
                 return 0;
 
-        (void) partition_hint(p, context->node, &hint);
-
         assert_se(hp = p->siblings[VERITY_HASH]);
         assert(!hp->dropped);
+        assert_se(rp = p->siblings[VERITY_DATA]);
+        assert(!rp->dropped);
+
+        verity_settings = lookup_verity_settings_by_uuid_pair(rp->current_uuid, hp->current_uuid);
+
+        if (!context->private_key && !verity_settings)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                       "Verity signature partition signing requested but no private key provided (--private-key=).");
+
+        if (!context->certificate && !verity_settings)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                       "Verity signature partition signing requested but no PEM certificate provided (--certificate=).");
+
+        (void) partition_hint(p, context->node, &hint);
 
         assert_se((whole_fd = fdisk_get_devfd(context->fdisk_context)) >= 0);
 
-        r = sign_verity_roothash(&hp->roothash, context->certificate, context->private_key, &sig);
-        if (r < 0)
-                return r;
+        if (verity_settings) {
+                sig = (struct iovec) {
+                        .iov_base = verity_settings->root_hash_sig,
+                        .iov_len = verity_settings->root_hash_sig_size,
+                };
+                roothash = (struct iovec) {
+                        .iov_base = verity_settings->root_hash,
+                        .iov_len = verity_settings->root_hash_size,
+                };
+        } else {
+                r = sign_verity_roothash(&hp->roothash, context->certificate, context->private_key, &sig_free);
+                if (r < 0)
+                        return r;
+
+                sig = sig_free;
+                roothash = hp->roothash;
+        }
 
         r = x509_fingerprint(context->certificate, fp);
         if (r < 0)
@@ -5068,7 +5122,7 @@ static int partition_format_verity_sig(Context *context, Partition *p) {
 
         r = sd_json_buildo(
                         &v,
-                        SD_JSON_BUILD_PAIR("rootHash", SD_JSON_BUILD_HEX(hp->roothash.iov_base, hp->roothash.iov_len)),
+                        SD_JSON_BUILD_PAIR("rootHash", SD_JSON_BUILD_HEX(roothash.iov_base, roothash.iov_len)),
                         SD_JSON_BUILD_PAIR("certificateFingerprint", SD_JSON_BUILD_HEX(fp, sizeof(fp))),
                         SD_JSON_BUILD_PAIR("signature", JSON_BUILD_IOVEC_BASE64(&sig)));
         if (r < 0)
@@ -5126,9 +5180,6 @@ static int context_copy_blocks(Context *context) {
         LIST_FOREACH(partitions, p, context->partitions) {
                 _cleanup_(partition_target_freep) PartitionTarget *t = NULL;
 
-                if (p->copy_blocks_fd < 0)
-                        continue;
-
                 if (p->dropped)
                         continue;
 
@@ -5136,6 +5187,13 @@ static int context_copy_blocks(Context *context) {
                         continue;
 
                 if (partition_type_defer(&p->type))
+                        continue;
+
+                /* For offline signing case */
+                if (!set_isempty(arg_verity_settings) && IN_SET(p->type.designator, PARTITION_ROOT_VERITY_SIG, PARTITION_USR_VERITY_SIG))
+                        return partition_format_verity_sig(context, p);
+
+                if (p->copy_blocks_fd < 0)
                         continue;
 
                 assert(p->new_size != UINT64_MAX);
@@ -5902,6 +5960,38 @@ static int partition_populate_filesystem(Context *context, Partition *p, const c
         return 0;
 }
 
+static int append_btrfs_subvols(char ***l, OrderedHashmap *subvolumes, const char *default_subvolume) {
+        Subvolume *subvolume;
+        int r;
+
+        assert(l);
+
+        ORDERED_HASHMAP_FOREACH(subvolume, subvolumes) {
+                _cleanup_free_ char *s = NULL, *f = NULL;
+
+                s = strdup(subvolume->path);
+                if (!s)
+                        return log_oom();
+
+                f = subvolume_flags_to_string(subvolume->flags);
+                if (!f)
+                        return log_oom();
+
+                if (streq_ptr(subvolume->path, default_subvolume) &&
+                    !strextend_with_separator(&f, ",", "default"))
+                        return log_oom();
+
+                if (!isempty(f) && !strextend_with_separator(&s, ":", f))
+                        return log_oom();
+
+                r = strv_extend_many(l, "--subvol", s);
+                if (r < 0)
+                        return log_oom();
+        }
+
+        return 0;
+}
+
 static int finalize_extra_mkfs_options(const Partition *p, const char *root, char ***ret) {
         _cleanup_strv_free_ char **sv = NULL;
         int r;
@@ -5914,6 +6004,18 @@ static int finalize_extra_mkfs_options(const Partition *p, const char *root, cha
                 return log_error_errno(r,
                                        "Failed to determine mkfs command line options for '%s': %m",
                                        p->format);
+
+        if (partition_needs_populate(p) && root && streq(p->format, "btrfs")) {
+                r = append_btrfs_subvols(&sv, p->subvolumes, p->default_subvolume);
+                if (r < 0)
+                        return r;
+
+                if (p->suppressing) {
+                        r = append_btrfs_subvols(&sv, p->suppressing->subvolumes, NULL);
+                        if (r < 0)
+                                return r;
+                }
+        }
 
         *ret = TAKE_PTR(sv);
         return 0;
@@ -5940,11 +6042,15 @@ static int context_mkfs(Context *context) {
                 if (!p->format)
                         continue;
 
-                /* Minimized partitions will use the copy blocks logic so skip those here. */
-                if (p->copy_blocks_fd >= 0)
+                if (partition_type_defer(&p->type))
                         continue;
 
-                if (partition_type_defer(&p->type))
+                /* For offline signing case */
+                if (!set_isempty(arg_verity_settings) && IN_SET(p->type.designator, PARTITION_ROOT_VERITY_SIG, PARTITION_USR_VERITY_SIG))
+                        return partition_format_verity_sig(context, p);
+
+                /* Minimized partitions will use the copy blocks logic so skip those here. */
+                if (p->copy_blocks_fd >= 0)
                         continue;
 
                 assert(p->offset != UINT64_MAX);
@@ -5992,7 +6098,8 @@ static int context_mkfs(Context *context) {
                         return r;
 
                 r = make_filesystem(partition_target_path(t), p->format, strempty(p->new_label), root,
-                                    p->fs_uuid, arg_discard, /* quiet = */ false,
+                                    p->fs_uuid, arg_discard,
+                                    /* quiet = */ streq(p->format, "erofs") && !DEBUG_LOGGING,
                                     context->fs_sector_size, p->compression, p->compression_level,
                                     extra_mkfs_options);
                 if (r < 0)
@@ -6261,20 +6368,15 @@ static int context_acquire_partition_uuids_and_labels(Context *context) {
 
 static int set_gpt_flags(struct fdisk_partition *q, uint64_t flags) {
         _cleanup_free_ char *a = NULL;
+        int r;
 
-        for (unsigned i = 0; i < sizeof(flags) * 8; i++) {
-                uint64_t bit = UINT64_C(1) << i;
-                char buf[DECIMAL_STR_MAX(unsigned)+1];
-
-                if (!FLAGS_SET(flags, bit))
-                        continue;
-
-                xsprintf(buf, "%u", i);
-                if (!strextend_with_separator(&a, ",", buf))
-                        return -ENOMEM;
+        BIT_FOREACH(i, flags) {
+                r = strextendf_with_separator(&a, ",", "%i", i);
+                if (r < 0)
+                        return r;
         }
 
-        return fdisk_partition_set_attrs(q, a);
+        return fdisk_partition_set_attrs(q, strempty(a));
 }
 
 static uint64_t partition_merge_flags(Partition *p) {
@@ -6587,7 +6689,7 @@ static int context_split(Context *context) {
 
                         r = read_attr_fd(fd, &attrs);
                         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
-                                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
+                                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
                 }
 
                 fdt = xopenat_full(
@@ -7457,7 +7559,7 @@ static int context_minimize(Context *context) {
 
         r = read_attr_fd(context->backing_fd, &attrs);
         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
-                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
+                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
 
         LIST_FOREACH(partitions, p, context->partitions) {
                 _cleanup_(rm_rf_physical_and_freep) char *root = NULL;
@@ -7556,7 +7658,8 @@ static int context_minimize(Context *context) {
                                     strempty(p->new_label),
                                     root,
                                     fs_uuid,
-                                    arg_discard, /* quiet = */ false,
+                                    arg_discard,
+                                    /* quiet = */ streq(p->format, "erofs") && !DEBUG_LOGGING,
                                     context->fs_sector_size,
                                     p->compression,
                                     p->compression_level,
@@ -7575,6 +7678,11 @@ static int context_minimize(Context *context) {
 
                         if (fstat(fd, &st) < 0)
                                 return log_error_errno(errno, "Failed to stat temporary file: %m");
+
+                        if ((uint64_t) st.st_size > partition_max_size(context, p))
+                                return log_error_errno(SYNTHETIC_ERRNO(E2BIG),
+                                                       "Minimal partition size of %s filesystem of partition %s exceeds configured maximum size (%s > %s)",
+                                                       p->format, strna(hint), FORMAT_BYTES(st.st_size), FORMAT_BYTES(partition_max_size(context, p)));
 
                         log_info("Minimal partition size of %s filesystem of partition %s is %s",
                                  p->format, strna(hint), FORMAT_BYTES(st.st_size));
@@ -7612,8 +7720,12 @@ static int context_minimize(Context *context) {
                  * fool-proof. */
                 uint64_t heuristic = streq(p->format, "xfs") ? fsz : fsz / 2;
                 fsz = round_up_size(fsz + heuristic, context->grain_size);
-                if (minimal_size_by_fs_name(p->format) != UINT64_MAX)
-                        fsz = MAX(minimal_size_by_fs_name(p->format), fsz);
+                fsz = MAX(partition_min_size(context, p), fsz);
+
+                if (fsz > partition_max_size(context, p))
+                        return log_error_errno(SYNTHETIC_ERRNO(E2BIG),
+                                               "Minimal partition size of %s filesystem of partition %s exceeds configured maximum size (%s > %s)",
+                                               p->format, strna(hint), FORMAT_BYTES(fsz), FORMAT_BYTES(partition_max_size(context, p)));
 
                 log_info("Minimal partition size of %s filesystem of partition %s is %s",
                          p->format, strna(hint), FORMAT_BYTES(fsz));
@@ -7639,7 +7751,7 @@ static int context_minimize(Context *context) {
                                     root,
                                     p->fs_uuid,
                                     arg_discard,
-                                    /* quiet = */ false,
+                                    /* quiet = */ streq(p->format, "erofs") && !DEBUG_LOGGING,
                                     context->fs_sector_size,
                                     p->compression,
                                     p->compression_level,
@@ -7762,6 +7874,67 @@ static int parse_partition_types(const char *p, GptPartitionType **partitions, s
         return 0;
 }
 
+static int parse_join_signature(const char *p, Set **verity_settings_map) {
+        _cleanup_(verity_settings_freep) VeritySettings *verity_settings = NULL;
+        _cleanup_free_ char *root_hash = NULL;
+        _cleanup_free_ void *content = NULL;
+        const char *signature;
+        size_t len;
+        int r;
+
+        assert(p);
+        assert(verity_settings_map);
+
+        r = extract_first_word(&p, &root_hash, ":", 0);
+        if (r < 0)
+                return log_error_errno(r, "Failed to parse signature parameter '%s': %m", p);
+        if (!p)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Expected hash:sig");
+        if ((signature = startswith(p, "base64:"))) {
+                r = unbase64mem(signature, &content, &len);
+                if (r < 0)
+                        return log_error_errno(r, "Failed to parse root hash signature '%s': %m", signature);
+        } else {
+                r = read_full_file(p, (char**) &content, &len);
+                if (r < 0)
+                        return log_error_errno(r, "Failed to read root hash signature file '%s': %m", p);
+        }
+        if (len == 0)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Empty verity signature specified.");
+        if (len > VERITY_SIG_SIZE)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                       "Verity signatures larger than %llu are not allowed.",
+                                       VERITY_SIG_SIZE);
+
+        verity_settings = new(VeritySettings, 1);
+        if (!verity_settings)
+                return log_oom();
+
+        *verity_settings = (VeritySettings) {
+                .root_hash_sig = TAKE_PTR(content),
+                .root_hash_sig_size = len,
+        };
+
+        r = unhexmem(root_hash, &content, &len);
+        if (r < 0)
+                return log_error_errno(r, "Failed to parse root hash '%s': %m", root_hash);
+        if (len < sizeof(sd_id128_t))
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                       "Root hash must be at least 128-bit long: %s",
+                                       root_hash);
+
+        verity_settings->root_hash = TAKE_PTR(content);
+        verity_settings->root_hash_size = len;
+
+        r = set_ensure_put(verity_settings_map, &verity_settings_hash_ops, verity_settings);
+        if (r < 0)
+                return log_error_errno(r, "Failed to add entry to hashmap: %m");
+
+        TAKE_PTR(verity_settings);
+
+        return 0;
+}
+
 static int help(void) {
         _cleanup_free_ char *link = NULL;
         int r;
@@ -7819,6 +7992,11 @@ static int help(void) {
                "                          Specify how to interpret the certificate from\n"
                "                          --certificate=. Allows the certificate to be loaded\n"
                "                          from an OpenSSL provider\n"
+               "     --join-signature=HASH:SIG\n"
+               "                          Specify root hash and pkcs7 signature of root hash for\n"
+               "                          verity as a tuple of hex encoded hash and a DER\n"
+               "                          encoded PKCS7, either as a path to a file or as an\n"
+               "                          ASCII base64 encoded string prefixed by 'base64:'\n"
                "\n%3$sEncryption:%4$s\n"
                "     --key-file=PATH      Key to use when encrypting partitions\n"
                "     --tpm2-device=PATH   Path to TPM2 device node to use\n"
@@ -7908,6 +8086,7 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                 ARG_GENERATE_FSTAB,
                 ARG_GENERATE_CRYPTTAB,
                 ARG_LIST_DEVICES,
+                ARG_JOIN_SIGNATURE,
         };
 
         static const struct option options[] = {
@@ -7953,13 +8132,14 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                 { "generate-fstab",       required_argument, NULL, ARG_GENERATE_FSTAB       },
                 { "generate-crypttab",    required_argument, NULL, ARG_GENERATE_CRYPTTAB    },
                 { "list-devices",         no_argument,       NULL, ARG_LIST_DEVICES         },
+                { "join-signature",       required_argument, NULL, ARG_JOIN_SIGNATURE       },
                 {}
         };
 
         _cleanup_(X509_freep) X509 *certificate = NULL;
         _cleanup_(openssl_ask_password_ui_freep) OpenSSLAskPasswordUI *ui = NULL;
         _cleanup_(EVP_PKEY_freep) EVP_PKEY *private_key = NULL;
-        bool auto_hash_pcr_values = true, auto_public_key_pcr_mask = true, auto_pcrlock = true;
+        bool auto_public_key_pcr_mask = true, auto_pcrlock = true;
         int c, r;
 
         assert(argc >= 0);
@@ -8160,7 +8340,7 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                         _cleanup_free_ char *device = NULL;
 
                         if (streq(optarg, "list"))
-                                return tpm2_list_devices();
+                                return tpm2_list_devices(/* legend = */ true, /* quiet = */ false);
 
                         if (!streq(optarg, "auto")) {
                                 device = strdup(optarg);
@@ -8188,7 +8368,6 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                         break;
 
                 case ARG_TPM2_PCRS:
-                        auto_hash_pcr_values = false;
                         r = tpm2_parse_pcr_argument_append(optarg, &arg_tpm2_hash_pcr_values, &arg_tpm2_n_hash_pcr_values);
                         if (r < 0)
                                 return r;
@@ -8352,6 +8531,12 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
 
                         return 0;
 
+                case ARG_JOIN_SIGNATURE:
+                        r = parse_join_signature(optarg, &arg_verity_settings);
+                        if (r < 0)
+                                return r;
+                        break;
+
                 case '?':
                         return -EINVAL;
 
@@ -8394,6 +8579,9 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
 
         if (arg_empty == EMPTY_UNSET) /* default to refuse mode, if not otherwise specified */
                 arg_empty = EMPTY_REFUSE;
+
+        if (!set_isempty(arg_verity_settings) && !arg_certificate)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Verity signature specified without --certificate=.");
 
         if (arg_factory_reset > 0 && IN_SET(arg_empty, EMPTY_FORCE, EMPTY_REQUIRE, EMPTY_CREATE))
                 return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
@@ -8464,17 +8652,6 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                 arg_tpm2_public_key_pcr_mask = INDEX_TO_MASK(uint32_t, TPM2_PCR_KERNEL_BOOT);
         }
 
-        if (auto_hash_pcr_values && !arg_tpm2_pcrlock) { /* Only lock to PCR 7 if no pcr policy is specified. */
-                assert(arg_tpm2_n_hash_pcr_values == 0);
-
-                if (!GREEDY_REALLOC_APPEND(
-                                    arg_tpm2_hash_pcr_values,
-                                    arg_tpm2_n_hash_pcr_values,
-                                    &TPM2_PCR_VALUE_MAKE(TPM2_PCR_INDEX_DEFAULT, /* hash= */ 0, /* value= */ {}),
-                                    1))
-                        return log_oom();
-        }
-
         if (arg_pretty < 0 && isatty_safe(STDOUT_FILENO))
                 arg_pretty = true;
 
@@ -8514,9 +8691,12 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
                                 arg_private_key_source,
                                 arg_private_key,
                                 &(AskPasswordRequest) {
+                                        .tty_fd = -EBADF,
                                         .id = "repart-private-key-pin",
                                         .keyring = arg_private_key,
                                         .credential = "repart.private-key-pin",
+                                        .until = USEC_INFINITY,
+                                        .hup_fd = -EBADF,
                                 },
                                 &private_key,
                                 &ui);
