@@ -3,7 +3,7 @@
 base=$(cd "$(dirname "$0")/.." || exit 1; pwd)
 
 cd ../upstream/systemd || exit 1
-rsync --delete --exclude .git -av ./ "${base}/src/systemd/"
+rsync --delete --delete-excluded --exclude .idea --exclude .git -av ./ "${base}/src/systemd/"
 ucm=$(git log -1)
 
 cd "$base" || exit 1
