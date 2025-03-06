@@ -2,12 +2,12 @@
 
 base=$(cd "$(dirname "$0")/.." || exit 1; pwd)
 
-cd ../upstream/systemd || exit 1
-rsync --delete --exclude .git -av ./ "${base}/src/systemd/"
+cd ../upstream/glibc || exit 1
+rsync --delete --exclude .git -av ./ "${base}/src/glibc/"
 ucm=$(git log -1)
 
 cd "$base" || exit 1
-git add -A src/systemd
-git commit --author="pos-bot <pos-bot@devzero.dk>" -m "Systemd sources updated from upstream
+git add -A src/glibc
+git commit --author="pos-bot <pos-bot@devzero.dk>" -m "Glibc sources updated from upstream
 ---
 $ucm"
