@@ -1,0 +1,16 @@
+*~
+*.gz
+*.Z
+*.tar
+*.tgz
+*.bz2
+*.rej
+*.orig
+=*
+TAGS
+TODO
+AUTHORS
+copyr-*
+copying.*
+
+out
