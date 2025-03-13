@@ -1422,18 +1422,17 @@ if opt and not is_disabler(exe)
   bashcompletions += ['more']
 endif
 
-if not get_option('build-hexdump').disabled()
-  exe = executable(
-    'hexdump',
-    hexdump_sources,
-    include_directories : includes,
-    link_with : [lib_common,
-                 lib_tcolors],
-    install_dir : usrbin_exec_dir)
-else
-  exe = disabler()
-endif
-if not is_disabler(exe)
+opt = not get_option('build-hexdump').disabled()
+exe = executable(
+  'hexdump',
+  hexdump_sources,
+  include_directories : includes,
+  link_with : [lib_common,
+               lib_tcolors],
+  install_dir : usrbin_exec_dir,
+  install : opt,
+  build_by_default : opt)
+if opt and not is_disabler(exe)
     exes += exe
     manadocs += hexdump_manadocs
     bashcompletions += ['hexdump']
@@ -2171,7 +2170,9 @@ if opt and not is_disabler(exe)
   exes += exe
 endif
 
-opt = not get_option('build-setpriv').disabled() and lib_cap_ng.found()
+opt = not get_option('build-setpriv').disabled() \
+      and lib_cap_ng.found() \
+      and cc.has_header('linux/seccomp.h')
 exe = executable(
   'setpriv',
   setpriv_sources,
@@ -3328,9 +3329,10 @@ syscalls_h = custom_target('syscalls.h',
 )
 
 have_linux_audit_h = cc.has_header('linux/audit.h')
+have_linux_seccomp_h = cc.has_header('linux/seccomp.h')
 have_audit_arch_native = cc.compiles(fs.read('include/audit-arch.h'), name : 'has AUDIT_ARCH_NATIVE')
 
-opt = get_option('build-enosys').require(have_linux_audit_h and have_audit_arch_native).allowed()
+opt = get_option('build-enosys').require(have_linux_audit_h and have_linux_seccomp_h and have_audit_arch_native).allowed()
 exe = executable(
   'enosys',
   'misc-utils/enosys.c', syscalls_h, errnos_h,

@@ -26,13 +26,21 @@
 # define RENAME_EXCHANGE (1 << 1)
 #endif
 
-#if !defined(HAVE_RENAMEAT2) && defined(SYS_renameat2)
-static inline int renameat2(int olddirfd, const char *oldpath,
-			    int newdirfd, const char *newpath, unsigned int flags)
+static inline int rename_exchange(const char *oldpath, const char *newpath)
 {
-	return syscall (SYS_renameat2, olddirfd, oldpath, newdirfd, newpath, flags);
-}
+	int rc;
+
+#if defined(HAVE_RENAMEAT2)
+	rc = renameat2(AT_FDCWD, oldpath, AT_FDCWD, newpath, RENAME_EXCHANGE);
+#elif defined(SYS_renameat2)
+	rc = syscall(SYS_renameat2,
+		     AT_FDCWD, oldpath, AT_FDCWD, newpath, RENAME_EXCHANGE);
+#else
+	rc = -1;
+	errno = ENOSYS;
 #endif
+	return rc;
+}
 
 static void __attribute__((__noreturn__)) usage(void)
 {
@@ -54,7 +62,6 @@ static void __attribute__((__noreturn__)) usage(void)
 int main(int argc, char **argv)
 {
 	int c;
-	int rc;
 
 	static const struct option longopts[] = {
 		{ "version",    no_argument, NULL, 'V' },
@@ -85,11 +92,11 @@ int main(int argc, char **argv)
 		errtryhelp(EXIT_FAILURE);
 	}
 
-	rc = renameat2(AT_FDCWD, argv[optind],
-		       AT_FDCWD, argv[optind + 1], RENAME_EXCHANGE);
-	if (rc)
+	if (rename_exchange(argv[optind], argv[optind + 1]) != 0) {
 		warn(_("failed to exchange \"%s\" and \"%s\""),
 		     argv[optind], argv[optind + 1]);
+		return EXIT_FAILURE;
+	}
 
-	return rc == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+	return EXIT_SUCCESS;
 }
