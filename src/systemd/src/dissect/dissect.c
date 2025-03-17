@@ -274,6 +274,8 @@ static int parse_argv(int argc, char *argv[]) {
                 ARG_GROWFS,
                 ARG_ROOT_HASH,
                 ARG_ROOT_HASH_SIG,
+                ARG_USR_HASH,
+                ARG_USR_HASH_SIG,
                 ARG_VERITY_DATA,
                 ARG_MKDIR,
                 ARG_RMDIR,
@@ -311,6 +313,8 @@ static int parse_argv(int argc, char *argv[]) {
                 { "growfs",        required_argument, NULL, ARG_GROWFS        },
                 { "root-hash",     required_argument, NULL, ARG_ROOT_HASH     },
                 { "root-hash-sig", required_argument, NULL, ARG_ROOT_HASH_SIG },
+                { "usr-hash",      required_argument, NULL, ARG_USR_HASH      },
+                { "usr-hash-sig",  required_argument, NULL, ARG_USR_HASH_SIG  },
                 { "verity-data",   required_argument, NULL, ARG_VERITY_DATA   },
                 { "mkdir",         no_argument,       NULL, ARG_MKDIR         },
                 { "rmdir",         no_argument,       NULL, ARG_RMDIR         },
@@ -457,9 +461,15 @@ static int parse_argv(int argc, char *argv[]) {
                         arg_in_memory = true;
                         break;
 
-                case ARG_ROOT_HASH: {
+                case ARG_ROOT_HASH:
+                case ARG_USR_HASH: {
                         _cleanup_free_ void *p = NULL;
                         size_t l;
+
+                        PartitionDesignator d = c == ARG_USR_HASH ? PARTITION_USR : PARTITION_ROOT;
+                        if (arg_verity_settings.designator >= 0 &&
+                            arg_verity_settings.designator != d)
+                                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Cannot combine --root-hash=/--root-hash-sig= and --usr-hash=/--usr-hash-sig= options.");
 
                         r = unhexmem(optarg, &p, &l);
                         if (r < 0)
@@ -470,13 +480,20 @@ static int parse_argv(int argc, char *argv[]) {
 
                         free_and_replace(arg_verity_settings.root_hash, p);
                         arg_verity_settings.root_hash_size = l;
+                        arg_verity_settings.designator = d;
                         break;
                 }
 
-                case ARG_ROOT_HASH_SIG: {
+                case ARG_ROOT_HASH_SIG:
+                case ARG_USR_HASH_SIG: {
                         char *value;
                         size_t l;
                         void *p;
+
+                        PartitionDesignator d = c == ARG_USR_HASH_SIG ? PARTITION_USR : PARTITION_ROOT;
+                        if (arg_verity_settings.designator >= 0 &&
+                            arg_verity_settings.designator != d)
+                                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Cannot combine --root-hash=/--root-hash-sig= and --usr-hash=/--usr-hash-sig= options.");
 
                         if ((value = startswith(optarg, "base64:"))) {
                                 r = unbase64mem(value, &p, &l);
@@ -490,6 +507,7 @@ static int parse_argv(int argc, char *argv[]) {
 
                         free_and_replace(arg_verity_settings.root_hash_sig, p);
                         arg_verity_settings.root_hash_sig_size = l;
+                        arg_verity_settings.designator = d;
                         break;
                 }
 
@@ -974,6 +992,13 @@ static int action_dissect(
                 printf("     Arch.: %s\n",
                        strna(architecture_to_string(dissected_image_architecture(m))));
 
+                if (!sd_id128_is_null(m->image_uuid))
+                        printf("Image UUID: %s\n",
+                               SD_ID128_TO_UUID_STRING(m->image_uuid));
+
+                if (m->image_name && !streq(m->image_name, bn))
+                        printf("Image Name: %s\n", m->image_name);
+
                 putc('\n', stdout);
                 fflush(stdout);
         }
@@ -992,12 +1017,6 @@ static int action_dissect(
         else if (r < 0)
                 return log_error_errno(r, "Failed to acquire image metadata: %m");
         else if (!sd_json_format_enabled(arg_json_format_flags)) {
-
-                if (m->image_name && !streq(m->image_name, bn))
-                        printf("Image Name: %s\n", m->image_name);
-
-                if (!sd_id128_is_null(m->image_uuid))
-                        printf("Image UUID: %s\n", SD_ID128_TO_UUID_STRING(m->image_uuid));
 
                 if (m->hostname)
                         printf("  Hostname: %s\n", m->hostname);
@@ -2095,12 +2114,12 @@ static int action_validate(void) {
                 return r;
 
         if (isatty_safe(STDOUT_FILENO) && emoji_enabled())
-                printf("%s ", special_glyph(SPECIAL_GLYPH_SPARKLES));
+                printf("%s ", glyph(GLYPH_SPARKLES));
 
         printf("%sOK%s", ansi_highlight_green(), ansi_normal());
 
         if (isatty_safe(STDOUT_FILENO) && emoji_enabled())
-                printf(" %s", special_glyph(SPECIAL_GLYPH_SPARKLES));
+                printf(" %s", glyph(GLYPH_SPARKLES));
 
         putc('\n', stdout);
         return 0;
@@ -2153,7 +2172,7 @@ static int run(int argc, char *argv[]) {
 
         default:
                 /* All other actions need the image dissected (except for ACTION_VALIDATE, see below) */
-                break;
+                ;
         }
 
         if (arg_image) {

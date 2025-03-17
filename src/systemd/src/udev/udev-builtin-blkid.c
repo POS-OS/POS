@@ -150,7 +150,7 @@ static int find_gpt_root(UdevEvent *event, blkid_probe pr, const char *loop_back
 
         r = efi_loader_get_device_part_uuid(&esp_or_xbootldr);
         if (r < 0) {
-                if (r != -ENOENT && !ERRNO_IS_NOT_SUPPORTED(r))
+                if (r != -ENOENT && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
                         return log_debug_errno(r, "Unable to determine loader partition UUID: %m");
 
                 log_device_debug(dev, "No loader partition UUID EFI variable set, not using partition data to search for default root block device.");
@@ -210,6 +210,10 @@ static int find_gpt_root(UdevEvent *event, blkid_probe pr, const char *loop_back
 
                         flags = blkid_partition_get_flags(pp);
                         if (flags & SD_GPT_FLAG_NO_AUTO)
+                                continue;
+
+                        /* systemd-sysupdate expects empty partitions to be marked with an "_empty" label, hence ignore them here. */
+                        if (streq_ptr(label, "_empty"))
                                 continue;
 
                         /* We found a suitable root partition, let's remember the first one, or the one with

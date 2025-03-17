@@ -38,6 +38,7 @@
 #include "fs-util.h"
 #include "gpt.h"
 #include "hexdecoct.h"
+#include "hostname-setup.h"
 #include "hostname-util.h"
 #include "io-util.h"
 #include "kernel-image.h"
@@ -66,6 +67,7 @@
 #include "stdio-util.h"
 #include "string-util.h"
 #include "strv.h"
+#include "sync-util.h"
 #include "time-util.h"
 #include "tmpfile-util.h"
 #include "unit-name.h"
@@ -119,6 +121,7 @@ static char *arg_ssh_key_type = NULL;
 static bool arg_discard_disk = true;
 struct ether_addr arg_network_provided_mac = {};
 static char **arg_smbios11 = NULL;
+static uint64_t arg_grow_image = 0;
 
 STATIC_DESTRUCTOR_REGISTER(arg_directory, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_image, freep);
@@ -170,6 +173,7 @@ static int help(void) {
                "     --secure-boot=BOOL    Enable searching for firmware supporting SecureBoot\n"
                "     --firmware=PATH|list  Select firmware definition file (or list available)\n"
                "     --discard-disk=BOOL   Control processing of discard requests\n"
+               "  -G --grow-image=BYTES    Grow image file to specified size in bytes\n"
                "  -s --smbios11=STRING     Pass an arbitrary SMBIOS Type #11 string to the VM\n"
                "\n%3$sSystem Identity:%4$s\n"
                "  -M --machine=NAME        Set the machine name for the VM\n"
@@ -300,6 +304,7 @@ static int parse_argv(int argc, char *argv[]) {
                 { "discard-disk",      required_argument, NULL, ARG_DISCARD_DISK      },
                 { "background",        required_argument, NULL, ARG_BACKGROUND        },
                 { "smbios11",          required_argument, NULL, 's'                   },
+                { "grow-image",        required_argument, NULL, 'G'                   },
                 {}
         };
 
@@ -309,7 +314,7 @@ static int parse_argv(int argc, char *argv[]) {
         assert(argv);
 
         optind = 0;
-        while ((c = getopt_long(argc, argv, "+hD:i:M:nqs:", options, NULL)) >= 0)
+        while ((c = getopt_long(argc, argv, "+hD:i:M:nqs:G:", options, NULL)) >= 0)
                 switch (c) {
                 case 'h':
                         return help();
@@ -580,6 +585,18 @@ static int parse_argv(int argc, char *argv[]) {
 
                         if (strv_extend(&arg_smbios11, optarg) < 0)
                                 return log_oom();
+
+                        break;
+
+                case 'G':
+                        if (isempty(optarg)) {
+                                arg_grow_image = 0;
+                                break;
+                        }
+
+                        r = parse_size(optarg, 1024, &arg_grow_image);
+                        if (r < 0)
+                                return log_error_errno(r, "Failed to parse --grow-image= parameter: %s", optarg);
 
                         break;
 
@@ -1410,7 +1427,7 @@ static void set_window_title(PTYForward *f) {
         (void) gethostname_strict(&hn);
 
         if (emoji_enabled())
-                dot = strjoin(special_glyph(SPECIAL_GLYPH_GREEN_CIRCLE), " ");
+                dot = strjoin(glyph(GLYPH_GREEN_CIRCLE), " ");
 
         if (hn)
                 (void) pty_forward_set_titlef(f, "%sVirtual Machine %s on %s", strempty(dot), arg_machine, hn);
@@ -1463,6 +1480,47 @@ static int generate_ssh_keypair(const char *key_path, const char *key_type) {
         }
 
         return 0;
+}
+
+static int grow_image(const char *path, uint64_t size) {
+        int r;
+
+        assert(path);
+
+        if (size == 0)
+                return 0;
+
+        /* Round up to multiple of 4K */
+        size = DIV_ROUND_UP(size, 4096);
+        if (size > UINT64_MAX / 4096)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Specified file size too large, refusing.");
+        size *= 4096;
+
+        _cleanup_close_ int fd = xopenat_full(AT_FDCWD, path, O_RDWR|O_CLOEXEC, XO_REGULAR, /* mode= */ 0);
+        if (fd < 0)
+                return log_error_errno(fd, "Failed to open image file '%s': %m", path);
+
+        struct stat st;
+        if (fstat(fd, &st) < 0)
+                return log_error_errno(errno, "Failed to stat '%s': %m", path);
+        if ((uint64_t) st.st_size >= size) {
+                log_debug("Not growing image '%s' to %s, size already at %s.", path,
+                          FORMAT_BYTES(size), FORMAT_BYTES(st.st_size));
+                return 0;
+        }
+
+        if (ftruncate(fd, size) < 0)
+                return log_error_errno(errno, "Failed grow image file '%s' from %s to %s: %m", path,
+                                       FORMAT_BYTES(st.st_size), FORMAT_BYTES(size));
+
+        r = fsync_full(fd);
+        if (r < 0)
+                return log_error_errno(r, "Failed to sync image file '%s' after growing to %s: %m", path, FORMAT_BYTES(size));
+
+        if (!arg_quiet)
+                log_info("Image file '%s' successfully grown from %s to %s.", path, FORMAT_BYTES(st.st_size), FORMAT_BYTES(size));
+
+        return 1;
 }
 
 static int run_virtual_machine(int kvm_device_fd, int vhost_device_fd) {
@@ -2156,6 +2214,10 @@ static int run_virtual_machine(int kvm_device_fd, int vhost_device_fd) {
                         return log_error_errno(r, "Failed to parse $SYSTEMD_VMSPAWN_QEMU_EXTRA: %m");
         }
 
+        r = grow_image(arg_image, arg_grow_image);
+        if (r < 0)
+                return r;
+
         if (DEBUG_LOGGING) {
                 _cleanup_free_ char *joined = quote_command_line(cmdline, SHELL_ESCAPE_EMPTY);
                 if (!joined)
@@ -2204,14 +2266,19 @@ static int run_virtual_machine(int kvm_device_fd, int vhost_device_fd) {
                 return r;
         if (r == 0) {
                 /* set TERM and LANG if they are missing */
-                if (setenv("TERM", "vt220", 0) < 0)
-                        return log_oom();
+                if (setenv("TERM", "vt220", 0) < 0) {
+                        log_oom();
+                        goto fail;
+                }
 
-                if (setenv("LANG", "C.UTF-8", 0) < 0)
-                        return log_oom();
+                if (setenv("LANG", "C.UTF-8", 0) < 0) {
+                        log_oom();
+                        goto fail;
+                }
 
                 execv(qemu_binary, cmdline);
                 log_error_errno(errno, "Failed to execve %s: %m", qemu_binary);
+        fail:
                 _exit(EXIT_FAILURE);
         }
 
@@ -2404,14 +2471,14 @@ static int run(int argc, char *argv[]) {
                 (void) terminal_urlify_path(vm_path, vm_path, &u);
 
                 log_info("%s %sSpawning VM %s on %s.%s",
-                         special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), ansi_grey(), arg_machine, u ?: vm_path, ansi_normal());
+                         glyph(GLYPH_LIGHT_SHADE), ansi_grey(), arg_machine, u ?: vm_path, ansi_normal());
 
                 if (arg_console_mode == CONSOLE_INTERACTIVE)
                         log_info("%s %sPress %sCtrl-]%s three times within 1s to kill VM.%s",
-                                 special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
+                                 glyph(GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
                 else if (arg_console_mode == CONSOLE_NATIVE)
                         log_info("%s %sPress %sCtrl-a x%s to kill VM.%s",
-                                 special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
+                                 glyph(GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
         }
 
         r = sd_listen_fds_with_names(true, &names);

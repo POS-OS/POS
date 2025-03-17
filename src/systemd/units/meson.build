@@ -37,6 +37,7 @@ units = [
         { 'file' : 'emergency.target' },
         { 'file' : 'exit.target' },
         { 'file' : 'factory-reset.target' },
+        { 'file' : 'factory-reset-now.target' },
         { 'file' : 'final.target' },
         { 'file' : 'first-boot-complete.target' },
         { 'file' : 'getty-pre.target' },
@@ -322,6 +323,17 @@ units = [
         },
         { 'file' : 'systemd-creds@.service' },
         { 'file' : 'systemd-exit.service' },
+        { 'file' : 'systemd-factory-reset@.service.in' },
+        {
+          'file' : 'systemd-factory-reset.socket',
+          'symlinks' : ['sockets.target.wants/'],
+        },
+        { 'file' : 'systemd-factory-reset-complete.service.in' },
+        { 'file' : 'systemd-factory-reset-reboot.service' },
+        {
+          'file' : 'systemd-factory-reset-request.service.in',
+          'symlinks' : ['factory-reset.target.wants/'],
+        },
         {
           'file' : 'systemd-firstboot.service',
           'conditions' : ['ENABLE_FIRSTBOOT'],
@@ -556,6 +568,10 @@ units = [
           'file' : 'systemd-pcrphase.service.in',
           'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2'],
           'symlinks' : ['sysinit.target.wants/'],
+        },
+        {
+          'file' : 'systemd-tpm2-clear.service.in',
+          'conditions' : ['ENABLE_BOOTLOADER', 'HAVE_OPENSSL', 'HAVE_TPM2'],
         },
         {
           'file' : 'systemd-tpm2-setup.service.in',
@@ -906,16 +922,17 @@ foreach unit : units
         if install
                 foreach target : unit.get('symlinks', [])
                         if target.endswith('/')
-                                install_emptydir(systemunitdir / target, install_tag : unit.get('install_tag', ''))
-                                meson.add_install_script(sh, '-c',
-                                                         ln_s.format(systemunitdir / name,
-                                                                     systemunitdir / target / name),
-                                                         install_tag : unit.get('install_tag', ''))
+                                # '/' is only allowed at the end of the target
+                                assert(target.replace('/', '') + '/' == target)
+                                install_symlink(name,
+                                                pointing_to : '..' / name,
+                                                install_dir : systemunitdir / target,
+                                                install_tag : unit.get('install_tag', ''))
                         else
-                                meson.add_install_script(sh, '-c',
-                                                         ln_s.format(systemunitdir / name,
-                                                                     systemunitdir / target),
-                                                         install_tag : unit.get('install_tag', ''))
+                                install_symlink(target,
+                                                pointing_to : name,
+                                                install_dir : systemunitdir,
+                                                install_tag : unit.get('install_tag', ''))
                         endif
                 endforeach
         endif
@@ -931,10 +948,18 @@ install_data('user@0.service.d/10-login-barrier.conf',
 
 ############################################################
 
-install_emptydir(dbussessionservicedir)
-meson.add_install_script(sh, '-c',
-                         ln_s.format(dbussystemservicedir / 'org.freedesktop.systemd1.service',
-                                     dbussessionservicedir / 'org.freedesktop.systemd1.service'))
+if meson.version().version_compare('>=1.3.0')
+        install_symlink(
+                'org.freedesktop.systemd1.service',
+                pointing_to : fs.relative_to(dbussystemservicedir / 'org.freedesktop.systemd1.service',
+                                             dbussessionservicedir),
+                install_dir : dbussessionservicedir)
+else
+        install_emptydir(dbussessionservicedir)
+        meson.add_install_script(sh, '-c',
+                ln_s.format(dbussystemservicedir / 'org.freedesktop.systemd1.service',
+                            dbussessionservicedir / 'org.freedesktop.systemd1.service'))
+endif
 
 if conf.get('HAVE_SYSV_COMPAT') == 1
         foreach i : [1, 2, 3, 4, 5]

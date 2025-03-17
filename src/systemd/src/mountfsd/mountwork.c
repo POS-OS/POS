@@ -510,6 +510,14 @@ static int vl_method_mount_image(
 
                 TAKE_FD(pp->fsmount_fd);
 
+                const char *m = partition_mountpoint_to_string(d);
+                _cleanup_strv_free_ char **l = NULL;
+                if (!isempty(m)) {
+                        l = strv_split_nulstr(m);
+                        if (!l)
+                                return log_oom_debug();
+                }
+
                 r = sd_json_variant_append_arraybo(
                                 &aj,
                                 SD_JSON_BUILD_PAIR("designator", SD_JSON_BUILD_STRING(partition_designator_to_string(d))),
@@ -522,7 +530,8 @@ static int vl_method_mount_image(
                                 SD_JSON_BUILD_PAIR_CONDITION(!!pp->label, "partitionLabel", SD_JSON_BUILD_STRING(pp->label)),
                                 SD_JSON_BUILD_PAIR("size", SD_JSON_BUILD_INTEGER(pp->size)),
                                 SD_JSON_BUILD_PAIR("offset", SD_JSON_BUILD_INTEGER(pp->offset)),
-                                SD_JSON_BUILD_PAIR("mountFileDescriptor", SD_JSON_BUILD_INTEGER(fd_idx)));
+                                SD_JSON_BUILD_PAIR("mountFileDescriptor", SD_JSON_BUILD_INTEGER(fd_idx)),
+                                JSON_BUILD_PAIR_STRV_NON_EMPTY("mountPoint", l));
                 if (r < 0)
                         return r;
         }
@@ -940,7 +949,7 @@ static int run(int argc, char *argv[]) {
         r = varlink_server_new(&server,
                                SD_VARLINK_SERVER_INHERIT_USERDATA|
                                SD_VARLINK_SERVER_ALLOW_FD_PASSING_INPUT|SD_VARLINK_SERVER_ALLOW_FD_PASSING_OUTPUT,
-                               NULL);
+                               &polkit_registry);
         if (r < 0)
                 return log_error_errno(r, "Failed to allocate server: %m");
 
@@ -954,8 +963,6 @@ static int run(int argc, char *argv[]) {
                         "io.systemd.MountFileSystem.MountDirectory", vl_method_mount_directory);
         if (r < 0)
                 return log_error_errno(r, "Failed to bind methods: %m");
-
-        sd_varlink_server_set_userdata(server, &polkit_registry);
 
         r = sd_varlink_server_set_exit_on_idle(server, true);
         if (r < 0)

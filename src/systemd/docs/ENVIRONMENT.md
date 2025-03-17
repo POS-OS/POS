@@ -615,6 +615,11 @@ SYSTEMD_HOME_DEBUG_SUFFIX=foo \
   there already exists at least one regular user on the system. If set to "0"
   will make the tool skip any such query.
 
+* `$SYSTEMD_HOME_DRY_RUN` – if set to "1" will make `homectl create` and
+  `homectl update` operate in a "dry-run" mode: the new user record is
+  assembled, and displayed in JSON format, but not actually passed to
+  `systemd-homed` for execution of the operation.
+
 `kernel-install`:
 
 * `$KERNEL_INSTALL_BYPASS` – If set to "1", execution of kernel-install is skipped
@@ -767,3 +772,10 @@ Tools using the Varlink protocol (such as `varlinkctl`) or sd-bus (such as
   `process`, `session`, `user`, `user-session`, or `group`. Controls the kernel
   keyring in which `systemd-ask-password` caches the queried password. Defaults
   to `user`.
+
+`systemd-tpm2-clear`:
+
+* `SYSTEMD_TPM2_ALLOW_CLEAR` – takes a boolean. Overrides the effect of the
+  `systemd.factory_reset=` kernel command line option: if set to false,
+  requesting a TPM clearing is skipped, and the command immediately exits
+  successfully.

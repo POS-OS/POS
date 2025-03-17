@@ -113,6 +113,9 @@ TEST(path_get_user_unit) {
         check_p_g_u_u("/user.slice/user-1000.slice/user@1000.service/server.service", 0, "server.service");
         check_p_g_u_u("/user.slice/user-1000.slice/user@1000.service/foobar.slice/foobar@pie.service", 0, "foobar@pie.service");
         check_p_g_u_u("/user.slice/user-1000.slice/user@.service/server.service", -ENXIO, NULL);
+        check_p_g_u_u("/capsule.slice/capsule@test.service/app.slice/run-p9-i1.service", 0, "run-p9-i1.service");
+        check_p_g_u_u("/capsule.slice/capsule@usr-joe.service/foo.slice/foo-bar.slice/run-p9-i1.service", 0, "run-p9-i1.service");
+        check_p_g_u_u("/capsule.slice/capsule@#.service/foo.slice/foo-bar.slice/run-p9-i1.service", -ENXIO, NULL);
 }
 
 static void check_p_g_s(const char *path, int code, const char *result) {
@@ -157,6 +160,7 @@ TEST(path_get_slice) {
         check_p_g_slice("foobar", 0, SPECIAL_ROOT_SLICE);
         check_p_g_slice("foobar.slice", 0, "foobar.slice");
         check_p_g_slice("foo.slice/foo-bar.slice/waldo.service", 0, "foo-bar.slice");
+        check_p_g_slice("/capsule.slice/capsule@test.service/app.slice/run-p9-i1.service", 0, "capsule.slice");
 }
 
 static void check_p_g_u_slice(const char *path, int code, const char *result) {
@@ -181,6 +185,10 @@ TEST(path_get_user_slice) {
         check_p_g_u_slice("foo.slice/foo-bar.slice/user@1000.service/waldo.service", 0, SPECIAL_ROOT_SLICE);
         check_p_g_u_slice("foo.slice/foo-bar.slice/user@1000.service/piep.slice/foo.service", 0, "piep.slice");
         check_p_g_u_slice("/foo.slice//foo-bar.slice/user@1000.service/piep.slice//piep-pap.slice//foo.service", 0, "piep-pap.slice");
+
+        check_p_g_u_slice("/capsule.slice/capsule@test.service/app.slice/run-p9-i1.service", 0, "app.slice");
+        check_p_g_u_slice("/capsule.slice/capsule@usr-joe.service/app.slice/run-p9-i1.service", 0, "app.slice");
+        check_p_g_u_slice("/capsule.slice/capsule@usr-joe.service/foo.slice/foo-bar.slice/run-p9-i1.service", 0, "foo-bar.slice");
 }
 
 TEST(get_paths, .sd_booted = true) {
@@ -190,7 +198,14 @@ TEST(get_paths, .sd_booted = true) {
         log_info("Root = %s", a);
 }
 
-TEST(proc) {
+static inline bool hidden_cgroup(const char *p) {
+        assert(p);
+
+        /* Consider top-level cgroup hidden from us */
+        return p[0] == '/' && p[strspn(p, "/")] == '.';
+}
+
+TEST(proc, .sd_booted = true) {
         _cleanup_closedir_ DIR *d = NULL;
         int r;
 
@@ -201,34 +216,57 @@ TEST(proc) {
                 _cleanup_(pidref_done) PidRef pid = PIDREF_NULL;
                 uid_t uid = UID_INVALID;
 
-                r = proc_dir_read_pidref(d, &pid);
-                assert_se(r >= 0);
-
+                ASSERT_OK(r = proc_dir_read_pidref(d, &pid));
                 if (r == 0)
                         break;
 
                 if (pidref_is_kernel_thread(&pid) != 0)
                         continue;
 
-                cg_pidref_get_path(SYSTEMD_CGROUP_CONTROLLER, &pid, &path);
-                cg_pid_get_path_shifted(pid.pid, NULL, &path_shifted);
-                cg_pidref_get_owner_uid(&pid, &uid);
-                cg_pidref_get_session(&pid, &session);
-                cg_pidref_get_unit(&pid, &unit);
-                cg_pid_get_user_unit(pid.pid, &user_unit);
-                cg_pid_get_machine_name(pid.pid, &machine);
-                cg_pid_get_slice(pid.pid, &slice);
+                r = cg_pidref_get_path(SYSTEMD_CGROUP_CONTROLLER, &pid, &path);
+                if (r == -ESRCH)
+                        continue;
+                ASSERT_OK(r);
 
-                printf(PID_FMT"\t%s\t%s\t"UID_FMT"\t%s\t%s\t%s\t%s\t%s\n",
-                       pid.pid,
-                       path,
-                       path_shifted,
-                       uid,
-                       session,
-                       unit,
-                       user_unit,
-                       machine,
-                       slice);
+                /* Test may run in a container with supervising/monitor processes that don't belong to our
+                 * cgroup tree (slices/leaves) */
+                if (hidden_cgroup(path))
+                        continue;
+
+                r = cg_pid_get_path_shifted(pid.pid, NULL, &path_shifted);
+                if (r != -ESRCH)
+                        ASSERT_OK(r);
+                r = cg_pidref_get_unit(&pid, &unit);
+                if (r != -ESRCH)
+                        ASSERT_OK(r);
+                r = cg_pid_get_slice(pid.pid, &slice);
+                if (r != -ESRCH)
+                        ASSERT_OK(r);
+
+                /* Not all processes belong to a specific user or a machine */
+                r = cg_pidref_get_owner_uid(&pid, &uid);
+                if (!IN_SET(r, -ESRCH, -ENXIO))
+                        ASSERT_OK(r);
+                r = cg_pidref_get_session(&pid, &session);
+                if (!IN_SET(r, -ESRCH, -ENXIO))
+                        ASSERT_OK(r);
+                r = cg_pid_get_user_unit(pid.pid, &user_unit);
+                if (!IN_SET(r, -ESRCH, -ENXIO))
+                        ASSERT_OK(r);
+                r = cg_pid_get_machine_name(pid.pid, &machine);
+                if (!IN_SET(r, -ESRCH, -ENOENT))
+                        ASSERT_OK(r);
+
+                log_debug(PID_FMT": %s, %s, "UID_FMT", %s, %s, %s, %s, %s",
+                          pid.pid,
+                          path,
+                          strna(path_shifted),
+                          uid,
+                          strna(session),
+                          strna(unit),
+                          strna(user_unit),
+                          strna(machine),
+                          strna(slice));
         }
 }
 
@@ -335,28 +373,6 @@ TEST(mask_supported, .sd_booted = true) {
                 printf("'%s' is supported: %s\n",
                        cgroup_controller_to_string(c),
                        yes_no(m & CGROUP_CONTROLLER_TO_MASK(c)));
-}
-
-TEST(is_cgroup_fs, .sd_booted = true) {
-        struct statfs sfs;
-        assert_se(statfs("/sys/fs/cgroup", &sfs) == 0);
-        if (is_temporary_fs(&sfs))
-                assert_se(statfs("/sys/fs/cgroup/systemd", &sfs) == 0);
-        assert_se(is_cgroup_fs(&sfs));
-}
-
-TEST(fd_is_cgroup_fs, .sd_booted = true) {
-        int fd;
-
-        fd = open("/sys/fs/cgroup", O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
-        assert_se(fd >= 0);
-        if (fd_is_temporary_fs(fd)) {
-                fd = safe_close(fd);
-                fd = open("/sys/fs/cgroup/systemd", O_RDONLY|O_DIRECTORY|O_CLOEXEC|O_NOFOLLOW);
-                assert_se(fd >= 0);
-        }
-        assert_se(fd_is_cgroup_fs(fd));
-        fd = safe_close(fd);
 }
 
 TEST(cg_tests) {

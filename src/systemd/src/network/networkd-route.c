@@ -121,8 +121,7 @@ static void route_hash_func(const Route *route, struct siphash *state) {
                 break;
 
         default:
-                /* treat any other address family as AF_UNSPEC */
-                break;
+                assert_not_reached();
         }
 }
 
@@ -209,8 +208,7 @@ static int route_compare_func(const Route *a, const Route *b) {
                 return route_nexthops_compare_func(a, b);
 
         default:
-                /* treat any other address family as AF_UNSPEC */
-                return 0;
+                assert_not_reached();
         }
 }
 
@@ -1395,36 +1393,97 @@ static bool route_by_kernel(const Route *route) {
         return false;
 }
 
-bool route_can_update(const Route *existing, const Route *requesting) {
+bool route_can_update(Manager *manager, const Route *existing, const Route *requesting) {
+        int r;
+
+        assert(manager);
         assert(existing);
         assert(requesting);
 
-        if (route_compare_func(existing, requesting) != 0)
+        if (route_compare_func(existing, requesting) != 0) {
+                log_route_debug(existing, "Cannot update route, as the existing route is different", manager);
                 return false;
+        }
 
         switch (existing->family) {
         case AF_INET:
-                if (existing->nexthop.weight != requesting->nexthop.weight)
+                if (existing->nexthop.weight != requesting->nexthop.weight) {
+                        log_debug("Cannot update route: existing weight: %u, requesting weight: %u",
+                                  existing->nexthop.weight, requesting->nexthop.weight);
                         return false;
+                }
                 return true;
 
         case AF_INET6:
-                if (existing->protocol != requesting->protocol)
+                if (existing->protocol != requesting->protocol) {
+                        if (DEBUG_LOGGING) {
+                                _cleanup_free_ char *ex = NULL, *req = NULL;
+
+                                r = route_protocol_to_string_alloc(existing->protocol, &ex);
+                                if (r < 0)
+                                        return false;
+
+                                r = route_protocol_to_string_alloc(requesting->protocol, &req);
+                                if (r < 0)
+                                        return false;
+
+                                log_debug("Cannot update route: existing protocol: %s, requesting protocol: %s", ex, req);
+                        }
+
                         return false;
-                if (existing->type != requesting->type)
+                }
+                if (existing->type != requesting->type) {
+                        log_debug("Cannot update route: existing type: %s, requesting type: %s",
+                                  route_type_to_string(existing->type),
+                                  route_type_to_string(requesting->type));
+
                         return false;
-                if ((existing->flags & ~RTNH_COMPARE_MASK) != (requesting->flags & ~RTNH_COMPARE_MASK))
+                }
+                if ((existing->flags & ~RTNH_COMPARE_MASK) != (requesting->flags & ~RTNH_COMPARE_MASK)) {
+                        if (DEBUG_LOGGING) {
+                                _cleanup_free_ char *ex = NULL, *req = NULL;
+
+                                r = route_flags_to_string_alloc(existing->flags, &ex);
+                                if (r < 0)
+                                        return false;
+
+                                r = route_flags_to_string_alloc(requesting->flags, &req);
+                                if (r < 0)
+                                        return false;
+
+                                log_debug("Cannot update route: existing flags: %s, requesting flags: %s", ex, req);
+                        }
+
                         return false;
-                if (!in6_addr_equal(&existing->prefsrc.in6, &requesting->prefsrc.in6))
+                }
+                if (!in6_addr_equal(&existing->prefsrc.in6, &requesting->prefsrc.in6)) {
+                        log_debug("Cannot update route: existing preferred source: %s, requesting preferred source: %s",
+                                  IN6_ADDR_TO_STRING(&existing->prefsrc.in6),
+                                  IN6_ADDR_TO_STRING(&requesting->prefsrc.in6));
                         return false;
-                if (existing->pref != requesting->pref)
+                }
+                if (existing->pref != requesting->pref) {
+                        log_debug("Cannot update route: existing preference: %u, requesting preference: %u",
+                                  existing->pref, requesting->pref);
                         return false;
-                if (existing->expiration_managed_by_kernel && requesting->lifetime_usec == USEC_INFINITY)
+                }
+                if (existing->expiration_managed_by_kernel && requesting->lifetime_usec == USEC_INFINITY) {
+                        log_route_debug(existing,
+                                        "Cannot update route: the expiration is managed by the kernel and requested lifetime is infinite",
+                                        manager);
                         return false; /* We cannot disable expiration timer in the kernel. */
-                if (!route_metric_can_update(&existing->metric, &requesting->metric, existing->expiration_managed_by_kernel))
+                }
+                if (!route_metric_can_update(&existing->metric, &requesting->metric, existing->expiration_managed_by_kernel)) {
+                        log_route_debug(existing,
+                                        "Cannot update route: expiration is managed by the kernel or metrics differ",
+                                        manager);
                         return false;
-                if (existing->nexthop.weight != requesting->nexthop.weight)
+                }
+                if (existing->nexthop.weight != requesting->nexthop.weight) {
+                        log_debug("Cannot update route: existing weight: %u, requesting weight: %u",
+                                  existing->nexthop.weight, requesting->nexthop.weight);
                         return false;
+                }
                 return true;
 
         default:
@@ -1451,7 +1510,7 @@ static int link_unmark_route(Link *link, const Route *route, const RouteNextHop 
         if (route_get(link->manager, tmp, &existing) < 0)
                 return 0;
 
-        if (!route_can_update(existing, tmp))
+        if (!route_can_update(link->manager, existing, tmp))
                 return 0;
 
         route_unmark(existing);
@@ -1479,15 +1538,22 @@ int link_drop_routes(Link *link, bool only_static) {
                 if (!link_should_mark_config(link, only_static, route->source, route->protocol))
                         continue;
 
-                /* When we also mark foreign routes, do not mark routes assigned to other interfaces.
-                 * Otherwise, routes assigned to unmanaged interfaces will be dropped.
-                 * Note, route_get_link() does not provide assigned link for routes with an unreachable type
-                 * or IPv4 multipath routes. So, the current implementation does not support managing such
-                 * routes by other daemon or so, unless ManageForeignRoutes=no. */
-                if (!only_static) {
-                        Link *route_link;
+                Link *route_link = NULL;
+                if (route_get_link(link->manager, route, &route_link) >= 0 && route_link != link) {
+                        /* When we also mark foreign routes, do not mark routes assigned to other interfaces.
+                         * Otherwise, routes assigned to unmanaged interfaces will be dropped.
+                         * Note, route_get_link() does not provide assigned link for routes with an
+                         * unreachable type or IPv4 multipath routes. So, the current implementation does not
+                         * support managing such routes by other daemon or so, unless ManageForeignRoutes=no. */
+                        if (!only_static)
+                                continue;
 
-                        if (route_get_link(link->manager, route, &route_link) >= 0 && route_link != link)
+                        /* When we mark only static routes, do not mark routes assigned to links that we do
+                         * not know the assignment of .network files to the interfaces. Otherwise, if an
+                         * interface is in the pending state, even if the .network file to be assigned to the
+                         * interface has KeepConfiguration=yes, routes on the interface will be removed.
+                         * This is especially important when systemd-networkd is restarted. */
+                        if (!IN_SET(route_link->state, LINK_STATE_UNMANAGED, LINK_STATE_CONFIGURING, LINK_STATE_CONFIGURED))
                                 continue;
                 }
 

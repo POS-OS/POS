@@ -613,7 +613,7 @@ static void swap_dump(Unit *u, FILE *f, const char *prefix) {
                         continue;
 
                 fprintf(f, "%s%s %s:\n",
-                        prefix, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), swap_exec_command_to_string(c));
+                        prefix, glyph(GLYPH_ARROW_RIGHT), swap_exec_command_to_string(c));
 
                 exec_command_dump(s->exec_command + c, f, prefix2);
         }
@@ -1190,7 +1190,6 @@ static int swap_process_proc_swaps(Manager *m) {
                         default:
                                 /* Fire again */
                                 swap_set_state(swap, swap->state);
-                                break;
                         }
 
                         if (swap->what)
@@ -1214,12 +1213,9 @@ static int swap_process_proc_swaps(Manager *m) {
                                 break;
 
                         default:
-                                /* Nothing really changed, but let's
-                                 * issue an notification call
-                                 * nonetheless, in case somebody is
-                                 * waiting for this. */
+                                /* Nothing really changed, but let's issue an notification call nonetheless,
+                                 * in case somebody is waiting for this. */
                                 swap_set_state(swap, swap->state);
-                                break;
                         }
                 }
 

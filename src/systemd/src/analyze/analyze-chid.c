@@ -212,7 +212,7 @@ static int smbios_fields_acquire(char16_t *fields[static _CHID_SMBIOS_FIELDS_MAX
                 }
 
                 default:
-                        break;
+                        ;
                 }
 
                 fields[f] = utf8_to_utf16(buf, size);
@@ -298,13 +298,13 @@ int verb_chid(int argc, char *argv[], void *userdata) {
                         if (!strextend(&legend,
                                        ansi_grey(),
                                        separator ? " " : "",
-                                       separator ? special_glyph(SPECIAL_GLYPH_HORIZONTAL_DOTTED) : "",
+                                       separator ? glyph(GLYPH_HORIZONTAL_DOTTED) : "",
                                        separator ? " " : "",
                                        ansi_normal(),
                                        CHAR_TO_STR(chid_smbios_fields_char[f]),
                                        ansi_grey(),
                                        " ",
-                                       special_glyph(SPECIAL_GLYPH_ARROW_RIGHT),
+                                       glyph(GLYPH_ARROW_RIGHT),
                                        " ",
                                        ansi_normal(),
                                        chid_smbios_friendly[f],

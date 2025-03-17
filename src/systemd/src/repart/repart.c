@@ -33,6 +33,7 @@
 #include "dirent-util.h"
 #include "efivars.h"
 #include "errno-util.h"
+#include "factory-reset.h"
 #include "fd-util.h"
 #include "fdisk-util.h"
 #include "fileio.h"
@@ -1657,7 +1658,7 @@ static int config_parse_size4096(
 
         if (*sz != parsed)
                 log_syntax(unit, LOG_NOTICE, filename, line, r, "Rounded %s= size %" PRIu64 " %s %" PRIu64 ", a multiple of 4096.",
-                           lvalue, parsed, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), *sz);
+                           lvalue, parsed, glyph(GLYPH_ARROW_RIGHT), *sz);
 
         return 0;
 }
@@ -3490,9 +3491,9 @@ static int format_size_change(uint64_t from, uint64_t to, char **ret) {
                 if (from == to || to == UINT64_MAX)
                         t = strdup(FORMAT_BYTES(from));
                 else
-                        t = strjoin(FORMAT_BYTES(from), " ", special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), " ", FORMAT_BYTES(to));
+                        t = strjoin(FORMAT_BYTES(from), " ", glyph(GLYPH_ARROW_RIGHT), " ", FORMAT_BYTES(to));
         } else if (to != UINT64_MAX)
-                t = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), " ", FORMAT_BYTES(to));
+                t = strjoin(glyph(GLYPH_ARROW_RIGHT), " ", FORMAT_BYTES(to));
         else {
                 *ret = NULL;
                 return 0;
@@ -3640,8 +3641,8 @@ static int context_dump_partitions(Context *context) {
         if (!sd_json_format_enabled(arg_json_format_flags) && (sum_padding > 0 || sum_size > 0)) {
                 const char *a, *b;
 
-                a = strjoina(special_glyph(SPECIAL_GLYPH_SIGMA), " = ", FORMAT_BYTES(sum_size));
-                b = strjoina(special_glyph(SPECIAL_GLYPH_SIGMA), " = ", FORMAT_BYTES(sum_padding));
+                a = strjoina(glyph(GLYPH_SIGMA), " = ", FORMAT_BYTES(sum_size));
+                b = strjoina(glyph(GLYPH_SIGMA), " = ", FORMAT_BYTES(sum_padding));
 
                 r = table_add_many(
                                 t,
@@ -3803,10 +3804,10 @@ static int context_dump_partition_bar(Context *context) {
                                 z = !z;
 
                         fputs(z ? ansi_green() : ansi_yellow(), stdout);
-                        fputs(special_glyph(SPECIAL_GLYPH_DARK_SHADE), stdout);
+                        fputs(glyph(GLYPH_DARK_SHADE), stdout);
                 } else {
                         fputs(ansi_normal(), stdout);
-                        fputs(special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), stdout);
+                        fputs(glyph(GLYPH_LIGHT_SHADE), stdout);
                 }
 
                 last = bar[i];
@@ -3837,16 +3838,16 @@ static int context_dump_partition_bar(Context *context) {
                                         const char *e;
 
                                         /* Upgrade final corner to the right with a branch to the right */
-                                        e = startswith(line[start_array[j-1]], special_glyph(SPECIAL_GLYPH_TREE_RIGHT));
+                                        e = startswith(line[start_array[j-1]], glyph(GLYPH_TREE_RIGHT));
                                         if (e) {
-                                                d = strjoin(special_glyph(SPECIAL_GLYPH_TREE_BRANCH), e);
+                                                d = strjoin(glyph(GLYPH_TREE_BRANCH), e);
                                                 if (!d)
                                                         return log_oom();
                                         }
                                 }
 
                                 if (!d) {
-                                        d = strdup(special_glyph(SPECIAL_GLYPH_TREE_VERTICAL));
+                                        d = strdup(glyph(GLYPH_TREE_VERTICAL));
                                         if (!d)
                                                 return log_oom();
                                 }
@@ -3856,10 +3857,10 @@ static int context_dump_partition_bar(Context *context) {
 
                                 (void) partition_hint(p, context->node, &hint);
 
-                                if (streq_ptr(line[start_array[j-1]], special_glyph(SPECIAL_GLYPH_TREE_VERTICAL)))
-                                        d = strjoin(special_glyph(SPECIAL_GLYPH_TREE_BRANCH), " ", strna(hint));
+                                if (streq_ptr(line[start_array[j-1]], glyph(GLYPH_TREE_VERTICAL)))
+                                        d = strjoin(glyph(GLYPH_TREE_BRANCH), " ", strna(hint));
                                 else
-                                        d = strjoin(special_glyph(SPECIAL_GLYPH_TREE_RIGHT), " ", strna(hint));
+                                        d = strjoin(glyph(GLYPH_TREE_RIGHT), " ", strna(hint));
 
                                 if (!d)
                                         return log_oom();
@@ -5162,7 +5163,7 @@ static int progress_bytes(uint64_t n_bytes, void *userdata) {
                         100.0 * (double) p->copy_blocks_done / (double) p->copy_blocks_size,
                         "%s %s %s %s/%s",
                         strna(p->copy_blocks_path),
-                        special_glyph(SPECIAL_GLYPH_ARROW_RIGHT),
+                        glyph(GLYPH_ARROW_RIGHT),
                         strna(p->definition_path),
                         FORMAT_BYTES(p->copy_blocks_done),
                         FORMAT_BYTES(p->copy_blocks_size));
@@ -8273,7 +8274,7 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
 
                         if (rounded != parsed)
                                 log_warning("Specified size is not a multiple of 4096, rounding up automatically. (%" PRIu64 " %s %" PRIu64 ")",
-                                            parsed, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), rounded);
+                                            parsed, glyph(GLYPH_ARROW_RIGHT), rounded);
 
                         arg_size = rounded;
                         arg_size_auto = false;
@@ -8712,23 +8713,20 @@ static int parse_argv(int argc, char *argv[], X509 **ret_certificate, EVP_PKEY *
 }
 
 static int parse_proc_cmdline_factory_reset(void) {
-        bool b;
-        int r;
-
         if (arg_factory_reset >= 0) /* Never override what is specified on the process command line */
                 return 0;
 
         if (!in_initrd()) /* Never honour kernel command line factory reset request outside of the initrd */
                 return 0;
 
-        r = proc_cmdline_get_bool("systemd.factory_reset", /* flags = */ 0, &b);
-        if (r < 0)
-                return log_error_errno(r, "Failed to parse systemd.factory_reset kernel command line argument: %m");
-        if (r > 0) {
-                arg_factory_reset = b;
+        FactoryResetMode f = factory_reset_mode();
+        if (f < 0)
+                return log_error_errno(f, "Failed to determine factory reset status: %m");
+        if (f != FACTORY_RESET_UNSPECIFIED) {
+                arg_factory_reset = f == FACTORY_RESET_ON;
 
-                if (b)
-                        log_notice("Honouring factory reset requested via kernel command line.");
+                if (arg_factory_reset)
+                        log_notice("Honouring factory reset requested via kernel command line or EFI variable.");
         }
 
         return 0;
@@ -8737,6 +8735,10 @@ static int parse_proc_cmdline_factory_reset(void) {
 static int parse_efi_variable_factory_reset(void) {
         _cleanup_free_ char *value = NULL;
         int r;
+
+        /* NB: This is legacy, people should move to the newer FactoryResetRequest variable! */
+
+        // FIXME: Remove this in v260
 
         if (arg_factory_reset >= 0) /* Never override what is specified on the process command line */
                 return 0;
@@ -8751,6 +8753,8 @@ static int parse_efi_variable_factory_reset(void) {
                 return log_error_errno(r, "Failed to read EFI variable FactoryReset: %m");
         }
 
+        log_warning("Warning, EFI variable FactoryReset is in use, please migrate to use FactoryResetRequest instead, support will be removed in v260!");
+
         r = parse_boolean(value);
         if (r < 0)
                 return log_error_errno(r, "Failed to parse EFI variable FactoryReset: %m");
@@ -8764,6 +8768,8 @@ static int parse_efi_variable_factory_reset(void) {
 
 static int remove_efi_variable_factory_reset(void) {
         int r;
+
+        // FIXME: Remove this in v260, see above
 
         r = efi_set_variable(EFI_SYSTEMD_VARIABLE_STR("FactoryReset"), NULL, 0);
         if (r < 0) {

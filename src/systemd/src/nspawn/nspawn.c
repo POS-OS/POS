@@ -236,6 +236,7 @@ static Architecture arg_architecture = _ARCHITECTURE_INVALID;
 static ImagePolicy *arg_image_policy = NULL;
 static char *arg_background = NULL;
 static bool arg_privileged = false;
+static bool arg_cleanup = false;
 
 STATIC_DESTRUCTOR_REGISTER(arg_directory, freep);
 STATIC_DESTRUCTOR_REGISTER(arg_template, freep);
@@ -327,6 +328,8 @@ static int help(void) {
                "  -q --quiet                Do not show status information\n"
                "     --no-pager             Do not pipe output into a pager\n"
                "     --settings=BOOLEAN     Load additional settings from .nspawn file\n"
+               "     --cleanup              Clean up left-over mounts and underlying mount\n"
+               "                            points used by the container\n"
                "\n%3$sImage:%4$s\n"
                "  -D --directory=PATH       Root directory for the container\n"
                "     --template=PATH        Initialize root directory from template directory,\n"
@@ -751,6 +754,7 @@ static int parse_argv(int argc, char *argv[]) {
                 ARG_SUPPRESS_SYNC,
                 ARG_IMAGE_POLICY,
                 ARG_BACKGROUND,
+                ARG_CLEANUP,
         };
 
         static const struct option options[] = {
@@ -826,6 +830,7 @@ static int parse_argv(int argc, char *argv[]) {
                 { "suppress-sync",          required_argument, NULL, ARG_SUPPRESS_SYNC          },
                 { "image-policy",           required_argument, NULL, ARG_IMAGE_POLICY           },
                 { "background",             required_argument, NULL, ARG_BACKGROUND             },
+                { "cleanup",                no_argument,       NULL, ARG_CLEANUP                },
                 {}
         };
 
@@ -1607,6 +1612,10 @@ static int parse_argv(int argc, char *argv[]) {
                         r = free_and_strdup_warn(&arg_background, optarg);
                         if (r < 0)
                                 return r;
+                        break;
+
+                case ARG_CLEANUP:
+                        arg_cleanup = true;
                         break;
 
                 case '?':
@@ -3328,6 +3337,8 @@ static int inner_child(
                 (char*) "PATH=" DEFAULT_PATH_COMPAT,
                 NULL, /* container */
                 NULL, /* TERM */
+                NULL, /* COLORTERM */
+                NULL, /* NO_COLOR */
                 NULL, /* HOME */
                 NULL, /* USER */
                 NULL, /* LOGNAME */
@@ -3579,9 +3590,17 @@ static int inner_child(
         /* LXC sets container=lxc, so follow the scheme here */
         envp[n_env++] = strjoina("container=", arg_container_service_name);
 
-        /* Propagate $TERM unless we are invoked in pipe mode and stdin/stdout/stderr don't refer to a TTY */
-        const char *term = (arg_console_mode != CONSOLE_PIPE || on_tty()) ? strv_find_prefix(environ, "TERM=") : NULL;
-        envp[n_env++] = (char*) (term ?: "TERM=dumb");
+        /* Propagate $TERM & Co. unless we are invoked in pipe mode and stdin/stdout/stderr don't refer to a TTY */
+        if (arg_console_mode != CONSOLE_PIPE || on_tty()) {
+                FOREACH_STRING(v, "TERM=", "COLORTERM=", "NO_COLOR=") {
+                        char *t = strv_find_prefix(environ, v);
+                        if (!t)
+                                continue;
+
+                        envp[n_env++] = t;
+                }
+        } else
+                envp[n_env++] = (char*) "TERM=dumb";
 
         if (home || !uid_is_valid(arg_uid) || arg_uid == 0)
                 if (asprintf(envp + n_env++, "HOME=%s", home ?: "/root") < 0)
@@ -4681,7 +4700,7 @@ static void set_window_title(PTYForward *f) {
         (void) gethostname_strict(&hn);
 
         if (emoji_enabled())
-                dot = strjoin(special_glyph(SPECIAL_GLYPH_BLUE_CIRCLE), " ");
+                dot = strjoin(glyph(GLYPH_BLUE_CIRCLE), " ");
 
         if (hn)
                 (void) pty_forward_set_titlef(f, "%sContainer %s on %s", strempty(dot), arg_machine, hn);
@@ -4690,6 +4709,37 @@ static void set_window_title(PTYForward *f) {
 
         if (dot)
                 (void) pty_forward_set_title_prefix(f, dot);
+}
+
+static int ptyfwd_hotkey(PTYForward *f, char c, void *userdata) {
+        pid_t pid = PTR_TO_PID(userdata);
+        const char *word;
+        int sig = 0;
+
+        assert(f);
+
+        switch (c) {
+        case 'p':
+                sig = SIGRTMIN+4;
+                word = "power off";
+                break;
+
+        case 'r':
+                sig = SIGRTMIN+5;
+                word = "reboot";
+                break;
+
+        default:
+                log_info("Unknown hotkey sequence ^]^]%c, ignoring.", c);
+                return 0;
+        }
+
+        if (kill(pid, sig) < 0)
+                log_error_errno(errno, "Failed to send %s (%s request) to PID 1 of container: %m", signal_to_string(sig), word);
+        else
+                log_info("Sent %s (%s request) to PID 1 of container.", signal_to_string(sig), word);
+
+        return 0;
 }
 
 static int merge_settings(Settings *settings, const char *path) {
@@ -5687,6 +5737,8 @@ static int run_container(
                                 (void) pty_forward_set_background_color(forward, arg_background);
 
                         set_window_title(forward);
+
+                        pty_forward_set_hotkey_handler(forward, ptyfwd_hotkey, PID_TO_PTR(*pid));
                         break;
 
                 default:
@@ -5886,6 +5938,34 @@ static void initialize_defaults(void) {
         arg_private_network = !arg_privileged;
 }
 
+static void cleanup_propagation_and_export_directories(void) {
+        const char *p;
+
+        if (!arg_machine || !arg_privileged)
+                return;
+
+        p = strjoina("/run/systemd/nspawn/propagate/", arg_machine);
+        (void) rm_rf(p, REMOVE_ROOT);
+
+        p = strjoina("/run/systemd/nspawn/unix-export/", arg_machine);
+        (void) umount2(p, MNT_DETACH|UMOUNT_NOFOLLOW);
+        (void) rmdir(p);
+}
+
+static int do_cleanup(void) {
+        int r;
+
+        if (arg_ephemeral)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Cannot specify --ephemeral with --cleanup.");
+
+        r = determine_names();
+        if (r < 0)
+                return r;
+
+        cleanup_propagation_and_export_directories();
+        return 0;
+}
+
 static int run(int argc, char *argv[]) {
         bool remove_directory = false, remove_image = false, veth_created = false;
         _cleanup_close_ int master = -EBADF, userns_fd = -EBADF, mount_fd = -EBADF;
@@ -5907,6 +5987,9 @@ static int run(int argc, char *argv[]) {
         r = parse_argv(argc, argv);
         if (r <= 0)
                 goto finish;
+
+        if (arg_cleanup)
+                return do_cleanup();
 
         r = cant_be_in_netns();
         if (r < 0)
@@ -6361,11 +6444,13 @@ static int run(int argc, char *argv[]) {
                 (void) terminal_urlify_path(t, t, &u);
 
                 log_info("%s %sSpawning container %s on %s.%s",
-                         special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), ansi_grey(), arg_machine, u ?: t, ansi_normal());
+                         glyph(GLYPH_LIGHT_SHADE), ansi_grey(), arg_machine, u ?: t, ansi_normal());
 
                 if (arg_console_mode == CONSOLE_INTERACTIVE)
-                        log_info("%s %sPress %sCtrl-]%s three times within 1s to kill container.%s",
-                                 special_glyph(SPECIAL_GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
+                        log_info("%s %sPress %sCtrl-]%s three times within 1s to kill container; two times followed by %sr%s\n"
+                                 "%s %sto reboot container; two times followed by %sp%s to poweroff container.%s",
+                                 glyph(GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_highlight(), ansi_normal(),
+                                 glyph(GLYPH_LIGHT_SHADE), ansi_grey(), ansi_highlight(), ansi_grey(), ansi_normal());
         }
 
         assert_se(sigprocmask_many(SIG_BLOCK, NULL, SIGCHLD, SIGWINCH, SIGTERM, SIGINT, SIGRTMIN+18) >= 0);
@@ -6440,6 +6525,8 @@ finish:
                 (void) umount2(p, MNT_DETACH|UMOUNT_NOFOLLOW);
                 (void) rmdir(p);
         }
+
+        cleanup_propagation_and_export_directories();
 
         expose_port_flush(&fw_ctx, arg_expose_ports, AF_INET,  &expose_args.address4);
         expose_port_flush(&fw_ctx, arg_expose_ports, AF_INET6, &expose_args.address6);

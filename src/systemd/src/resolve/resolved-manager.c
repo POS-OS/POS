@@ -18,6 +18,7 @@
 #include "event-util.h"
 #include "fd-util.h"
 #include "fileio.h"
+#include "hostname-setup.h"
 #include "hostname-util.h"
 #include "idn-util.h"
 #include "io-util.h"
@@ -1555,7 +1556,7 @@ DnsScope* manager_find_scope(Manager *m, DnsPacket *p) {
                 break;
 
         default:
-                break;
+                ;
         }
 
         return NULL;

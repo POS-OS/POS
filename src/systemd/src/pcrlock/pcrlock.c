@@ -742,8 +742,6 @@ static int event_log_record_extract_firmware_description(EventLogRecord *rec) {
                                 r = strextendf_with_separator(&rec->description, ", ", "Tag 0x%" PRIx32 ": %s", tag->taggedEventID, s);
                                 if (r < 0)
                                         return log_error_errno(r, "Failed to format EV_EVENT_TAG description string: %m");
-
-                                break;
                         }}
 
                         tag = (TCG_PCClientTaggedEvent*) ((uint8_t*) tag + m);
@@ -1437,7 +1435,6 @@ static int event_log_record_validate_hash_firmware(
                 hdata = record->firmware_payload;
                 hsz = record->firmware_payload_size;
                 strict = false;
-                break;
         }
 
         int mdsz = EVP_MD_size(md);
@@ -2118,7 +2115,7 @@ static int show_log_table(EventLog *el, sd_json_variant **ret_variant) {
 
                 r = table_add_many(table,
                                    TABLE_UINT32, record->pcr,
-                                   TABLE_STRING, special_glyph(SPECIAL_GLYPH_FULL_BLOCK),
+                                   TABLE_STRING, glyph(GLYPH_FULL_BLOCK),
                                    TABLE_SET_COLOR, color_for_pcr(el, record->pcr),
                                    TABLE_STRING, tpm2_pcr_index_to_string(record->pcr));
                 if (r < 0)
@@ -2263,15 +2260,15 @@ static int show_pcr_table(EventLog *el, sd_json_variant **ret_variant) {
                 /* Whether any unmatched components touch this PCR */
                 bool missing_components = BIT_SET(el->missing_component_pcrs, pcr);
 
-                const char *emoji = special_glyph(
-                                !hash_match ? SPECIAL_GLYPH_DEPRESSED_SMILEY :
-                                !fully_recognized ? SPECIAL_GLYPH_UNHAPPY_SMILEY :
-                                missing_components ?  SPECIAL_GLYPH_SLIGHTLY_HAPPY_SMILEY :
-                                SPECIAL_GLYPH_HAPPY_SMILEY);
+                const char *emoji = glyph(
+                                !hash_match ? GLYPH_DEPRESSED_SMILEY :
+                                !fully_recognized ? GLYPH_UNHAPPY_SMILEY :
+                                missing_components ?  GLYPH_SLIGHTLY_HAPPY_SMILEY :
+                                GLYPH_HAPPY_SMILEY);
 
                 r = table_add_many(table,
                                    TABLE_UINT32, pcr,
-                                   TABLE_STRING, special_glyph(SPECIAL_GLYPH_FULL_BLOCK),
+                                   TABLE_STRING, glyph(GLYPH_FULL_BLOCK),
                                    TABLE_SET_COLOR, color_for_pcr(el, pcr),
                                    TABLE_STRING, emoji,
                                    TABLE_STRING, tpm2_pcr_index_to_string(pcr));
@@ -2617,10 +2614,10 @@ static int verb_list_components(int argc, char *argv[], void *userdata) {
                         case BEFORE_LOCATION:
                                 if (arg_location_end && strcmp((*c)->id, arg_location_end) >= 0) {
                                         loc = AFTER_LOCATION;
-                                        marker = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), " location '", arg_location_end, "' ", special_glyph(SPECIAL_GLYPH_ARROW_LEFT));
+                                        marker = strjoin(glyph(GLYPH_ARROW_RIGHT), " location '", arg_location_end, "' ", glyph(GLYPH_ARROW_LEFT));
                                 } else if (arg_location_start && strcmp((*c)->id, arg_location_start) >= 0) {
                                         loc = BETWEEN_LOCATION;
-                                        marker = strjoin(special_glyph(SPECIAL_GLYPH_TREE_TOP), " start location '", arg_location_start, "' ", special_glyph(SPECIAL_GLYPH_ARROW_DOWN));
+                                        marker = strjoin(glyph(GLYPH_TREE_TOP), " start location '", arg_location_start, "' ", glyph(GLYPH_ARROW_DOWN));
                                 }
 
                                 break;
@@ -2628,7 +2625,7 @@ static int verb_list_components(int argc, char *argv[], void *userdata) {
                         case BETWEEN_LOCATION:
                                 if (arg_location_end && strcmp((*c)->id, arg_location_end) >= 0) {
                                         loc = AFTER_LOCATION;
-                                        marker = strjoin(special_glyph(SPECIAL_GLYPH_TREE_RIGHT), " end location '", arg_location_end, "' ", special_glyph(SPECIAL_GLYPH_ARROW_UP));
+                                        marker = strjoin(glyph(GLYPH_TREE_RIGHT), " end location '", arg_location_end, "' ", glyph(GLYPH_ARROW_UP));
                                 }
                                 break;
 
@@ -4580,7 +4577,7 @@ static int make_policy(bool force, RecoveryPinMode recovery_pin_mode) {
 
                 if (recovery_pin_mode == RECOVERY_PIN_SHOW)
                         printf("%s Selected recovery PIN is: %s%s%s\n",
-                               special_glyph(SPECIAL_GLYPH_LOCK_AND_KEY),
+                               glyph(GLYPH_LOCK_AND_KEY),
                                ansi_highlight_cyan(),
                                pin,
                                ansi_normal());

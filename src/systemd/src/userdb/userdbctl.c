@@ -45,8 +45,10 @@ static uid_t arg_uid_min = 0;
 static uid_t arg_uid_max = UID_INVALID-1;
 static bool arg_fuzzy = false;
 static bool arg_boundaries = true;
+static sd_json_variant *arg_from_file = NULL;
 
 STATIC_DESTRUCTOR_REGISTER(arg_services, strv_freep);
+STATIC_DESTRUCTOR_REGISTER(arg_from_file, sd_json_variant_unrefp);
 
 static const char *user_disposition_to_color(UserDisposition d) {
         assert(d >= 0);
@@ -211,9 +213,9 @@ static int table_add_uid_boundaries(Table *table, const UIDRange *p) {
                 if (i->test && !i->test())
                         continue;
 
-                name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_DOWN),
+                name = strjoin(glyph(GLYPH_ARROW_DOWN),
                                " begin ", i->name, " users ",
-                               special_glyph(SPECIAL_GLYPH_ARROW_DOWN));
+                               glyph(GLYPH_ARROW_DOWN));
                 if (!name)
                         return log_oom();
 
@@ -223,7 +225,7 @@ static int table_add_uid_boundaries(Table *table, const UIDRange *p) {
 
                 r = table_add_many(
                                 table,
-                                TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_TOP),
+                                TABLE_STRING, glyph(GLYPH_TREE_TOP),
                                 TABLE_STRING, name,
                                 TABLE_SET_COLOR, ansi_grey(),
                                 TABLE_STRING, user_disposition_to_string(i->disposition),
@@ -240,9 +242,9 @@ static int table_add_uid_boundaries(Table *table, const UIDRange *p) {
                         return table_log_add_error(r);
 
                 free(name);
-                name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_UP),
+                name = strjoin(glyph(GLYPH_ARROW_UP),
                                " end ", i->name, " users ",
-                               special_glyph(SPECIAL_GLYPH_ARROW_UP));
+                               glyph(GLYPH_ARROW_UP));
                 if (!name)
                         return log_oom();
 
@@ -253,7 +255,7 @@ static int table_add_uid_boundaries(Table *table, const UIDRange *p) {
 
                 r = table_add_many(
                                 table,
-                                TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_RIGHT),
+                                TABLE_STRING, glyph(GLYPH_TREE_RIGHT),
                                 TABLE_STRING, name,
                                 TABLE_SET_COLOR, ansi_grey(),
                                 TABLE_STRING, user_disposition_to_string(i->disposition),
@@ -282,15 +284,15 @@ static int add_unavailable_uid(Table *table, uid_t start, uid_t end) {
         assert(table);
         assert(start <= end);
 
-        name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_DOWN),
+        name = strjoin(glyph(GLYPH_ARROW_DOWN),
                        " begin unavailable users ",
-                       special_glyph(SPECIAL_GLYPH_ARROW_DOWN));
+                       glyph(GLYPH_ARROW_DOWN));
         if (!name)
                 return log_oom();
 
         r = table_add_many(
                         table,
-                        TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_TOP),
+                        TABLE_STRING, glyph(GLYPH_TREE_TOP),
                         TABLE_STRING, name,
                         TABLE_SET_COLOR, ansi_grey(),
                         TABLE_EMPTY,
@@ -306,15 +308,15 @@ static int add_unavailable_uid(Table *table, uid_t start, uid_t end) {
                 return table_log_add_error(r);
 
         free(name);
-        name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_UP),
+        name = strjoin(glyph(GLYPH_ARROW_UP),
                        " end unavailable users ",
-                       special_glyph(SPECIAL_GLYPH_ARROW_UP));
+                       glyph(GLYPH_ARROW_UP));
         if (!name)
                 return log_oom();
 
         r = table_add_many(
                         table,
-                        TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_RIGHT),
+                        TABLE_STRING, glyph(GLYPH_TREE_RIGHT),
                         TABLE_STRING, name,
                         TABLE_SET_COLOR, ansi_grey(),
                         TABLE_EMPTY,
@@ -380,7 +382,7 @@ static int display_user(int argc, char *argv[], void *userdata) {
         int ret = 0, r;
 
         if (arg_output < 0)
-                arg_output = argc > 1 && !arg_fuzzy ? OUTPUT_FRIENDLY : OUTPUT_TABLE;
+                arg_output = arg_from_file || (argc > 1 && !arg_fuzzy) ? OUTPUT_FRIENDLY : OUTPUT_TABLE;
 
         if (arg_output == OUTPUT_TABLE) {
                 table = table_new(" ", "name", "disposition", "uid", "gid", "realname", "home", "shell", "order");
@@ -402,7 +404,23 @@ static int display_user(int argc, char *argv[], void *userdata) {
                 .uid_max = arg_uid_max,
         };
 
-        if (argc > 1 && !arg_fuzzy)
+        if (arg_from_file) {
+                if (argc > 1)
+                        return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No argument expected when invoked with --from-file=, refusing.");
+
+                _cleanup_(user_record_unrefp) UserRecord *ur = user_record_new();
+                if (!ur)
+                        return log_oom();
+
+                r = user_record_load(ur, arg_from_file, USER_RECORD_LOAD_MASK_SECRET|USER_RECORD_LOG);
+                if (r < 0)
+                        return r;
+
+                r = show_user(ur, table);
+                if (r < 0)
+                        return r;
+
+        } else if (argc > 1 && !arg_fuzzy)
                 STRV_FOREACH(i, argv + 1) {
                         _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
 
@@ -591,9 +609,9 @@ static int table_add_gid_boundaries(Table *table, const UIDRange *p) {
                 if (i->test && !i->test())
                         continue;
 
-                name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_DOWN),
+                name = strjoin(glyph(GLYPH_ARROW_DOWN),
                                " begin ", i->name, " groups ",
-                               special_glyph(SPECIAL_GLYPH_ARROW_DOWN));
+                               glyph(GLYPH_ARROW_DOWN));
                 if (!name)
                         return log_oom();
 
@@ -603,7 +621,7 @@ static int table_add_gid_boundaries(Table *table, const UIDRange *p) {
 
                 r = table_add_many(
                                 table,
-                                TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_TOP),
+                                TABLE_STRING, glyph(GLYPH_TREE_TOP),
                                 TABLE_STRING, name,
                                 TABLE_SET_COLOR, ansi_grey(),
                                 TABLE_STRING, user_disposition_to_string(i->disposition),
@@ -617,9 +635,9 @@ static int table_add_gid_boundaries(Table *table, const UIDRange *p) {
                         return table_log_add_error(r);
 
                 free(name);
-                name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_UP),
+                name = strjoin(glyph(GLYPH_ARROW_UP),
                                " end ", i->name, " groups ",
-                               special_glyph(SPECIAL_GLYPH_ARROW_UP));
+                               glyph(GLYPH_ARROW_UP));
                 if (!name)
                         return log_oom();
 
@@ -630,7 +648,7 @@ static int table_add_gid_boundaries(Table *table, const UIDRange *p) {
 
                 r = table_add_many(
                                 table,
-                                TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_RIGHT),
+                                TABLE_STRING, glyph(GLYPH_TREE_RIGHT),
                                 TABLE_STRING, name,
                                 TABLE_SET_COLOR, ansi_grey(),
                                 TABLE_STRING, user_disposition_to_string(i->disposition),
@@ -656,15 +674,15 @@ static int add_unavailable_gid(Table *table, uid_t start, uid_t end) {
         assert(table);
         assert(start <= end);
 
-        name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_DOWN),
+        name = strjoin(glyph(GLYPH_ARROW_DOWN),
                        " begin unavailable groups ",
-                       special_glyph(SPECIAL_GLYPH_ARROW_DOWN));
+                       glyph(GLYPH_ARROW_DOWN));
         if (!name)
                 return log_oom();
 
         r = table_add_many(
                         table,
-                        TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_TOP),
+                        TABLE_STRING, glyph(GLYPH_TREE_TOP),
                         TABLE_STRING, name,
                         TABLE_SET_COLOR, ansi_grey(),
                         TABLE_EMPTY,
@@ -677,15 +695,15 @@ static int add_unavailable_gid(Table *table, uid_t start, uid_t end) {
                 return table_log_add_error(r);
 
         free(name);
-        name = strjoin(special_glyph(SPECIAL_GLYPH_ARROW_UP),
+        name = strjoin(glyph(GLYPH_ARROW_UP),
                        " end unavailable groups ",
-                       special_glyph(SPECIAL_GLYPH_ARROW_UP));
+                       glyph(GLYPH_ARROW_UP));
         if (!name)
                 return log_oom();
 
         r = table_add_many(
                         table,
-                        TABLE_STRING, special_glyph(SPECIAL_GLYPH_TREE_RIGHT),
+                        TABLE_STRING, glyph(GLYPH_TREE_RIGHT),
                         TABLE_STRING, name,
                         TABLE_SET_COLOR, ansi_grey(),
                         TABLE_EMPTY,
@@ -706,7 +724,7 @@ static int display_group(int argc, char *argv[], void *userdata) {
         int ret = 0, r;
 
         if (arg_output < 0)
-                arg_output = argc > 1 && !arg_fuzzy ? OUTPUT_FRIENDLY : OUTPUT_TABLE;
+                arg_output = arg_from_file || (argc > 1 && !arg_fuzzy) ? OUTPUT_FRIENDLY : OUTPUT_TABLE;
 
         if (arg_output == OUTPUT_TABLE) {
                 table = table_new(" ", "name", "disposition", "gid", "description", "order");
@@ -727,7 +745,23 @@ static int display_group(int argc, char *argv[], void *userdata) {
                 .gid_max = arg_uid_max,
         };
 
-        if (argc > 1 && !arg_fuzzy)
+        if (arg_from_file) {
+                if (argc > 1)
+                        return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No argument expected when invoked with --from-file=, refusing.");
+
+                _cleanup_(group_record_unrefp) GroupRecord *gr = group_record_new();
+                if (!gr)
+                        return log_oom();
+
+                r = group_record_load(gr, arg_from_file, USER_RECORD_LOAD_MASK_SECRET|USER_RECORD_LOG);
+                if (r < 0)
+                        return r;
+
+                r = show_group(gr, table);
+                if (r < 0)
+                        return r;
+
+        } else if (argc > 1 && !arg_fuzzy)
                 STRV_FOREACH(i, argv + 1) {
                         _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
 
@@ -888,6 +922,9 @@ static int display_memberships(int argc, char *argv[], void *userdata) {
         _cleanup_(table_unrefp) Table *table = NULL;
         int ret = 0, r;
 
+        if (arg_from_file)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "--from-file= not supported when showing memberships, refusing.");
+
         if (arg_output < 0)
                 arg_output = OUTPUT_TABLE;
 
@@ -982,6 +1019,9 @@ static int display_services(int argc, char *argv[], void *userdata) {
         _cleanup_closedir_ DIR *d = NULL;
         int r;
 
+        if (arg_from_file)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "--from-file= not supported when showing services, refusing.");
+
         d = opendir("/run/systemd/userdb/");
         if (!d) {
                 if (errno == ENOENT) {
@@ -1047,6 +1087,9 @@ static int ssh_authorized_keys(int argc, char *argv[], void *userdata) {
         int r;
 
         assert(argc >= 2);
+
+        if (arg_from_file)
+                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "--from-file= not supported when showing SSH authorized keys, refusing.");
 
         if (arg_chain) {
                 /* If --chain is specified, the rest of the command line is the chain command */
@@ -1167,6 +1210,7 @@ static int help(int argc, char *argv[], void *userdata) {
                "  -R                         Equivalent to --disposition=regular\n"
                "     --boundaries=BOOL       Show/hide UID/GID range boundaries in output\n"
                "  -B                         Equivalent to --boundaries=no\n"
+               "  -F --from-file=PATH        Read JSON record from file\n"
                "\nSee the %s for details.\n",
                program_invocation_short_name,
                ansi_highlight(),
@@ -1215,6 +1259,7 @@ static int parse_argv(int argc, char *argv[]) {
                 { "fuzzy",        no_argument,       NULL, 'z'              },
                 { "disposition",  required_argument, NULL, ARG_DISPOSITION  },
                 { "boundaries",   required_argument, NULL, ARG_BOUNDARIES   },
+                { "from-file",    required_argument, NULL, 'F'              },
                 {}
         };
 
@@ -1245,7 +1290,7 @@ static int parse_argv(int argc, char *argv[]) {
                 int c;
 
                 c = getopt_long(argc, argv,
-                                arg_chain ? "+hjs:NISRzB" : "hjs:NISRzB", /* When --chain was used disable parsing of further switches */
+                                arg_chain ? "+hjs:NISRzBF:" : "hjs:NISRzBF:", /* When --chain was used disable parsing of further switches */
                                 options, NULL);
                 if (c < 0)
                         break;
@@ -1420,6 +1465,24 @@ static int parse_argv(int argc, char *argv[]) {
                         arg_boundaries = false;
                         break;
 
+                case 'F': {
+                        if (isempty(optarg)) {
+                                arg_from_file = sd_json_variant_unref(arg_from_file);
+                                break;
+                        }
+
+                        _cleanup_(sd_json_variant_unrefp) sd_json_variant *v = NULL;
+                        const char *fn = streq(optarg, "-") ? NULL : optarg;
+                        unsigned line = 0;
+                        r = sd_json_parse_file(fn ? NULL : stdin, fn ?: "<stdin>", SD_JSON_PARSE_SENSITIVE, &v, &line, /* reterr_column= */ NULL);
+                        if (r < 0)
+                                return log_syntax(/* unit= */ NULL, LOG_ERR, fn ?: "<stdin>", line, r, "JSON parse failure.");
+
+                        sd_json_variant_unref(arg_from_file);
+                        arg_from_file = TAKE_PTR(v);
+                        break;
+                }
+
                 case '?':
                         return -EINVAL;
 
@@ -1434,6 +1497,9 @@ static int parse_argv(int argc, char *argv[]) {
         /* If not mask was specified, use the all bits on mask */
         if (arg_disposition_mask == UINT64_MAX)
                 arg_disposition_mask = USER_DISPOSITION_MASK_ALL;
+
+        if (arg_from_file)
+                arg_boundaries = false;
 
         return 1;
 }

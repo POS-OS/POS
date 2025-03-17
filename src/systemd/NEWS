@@ -55,6 +55,9 @@ CHANGES WITH 258 in spe:
 
         * Support for the SystemdOptions EFI variable has been removed.
 
+        * The 'split-usr', 'rootlibdir', and 'rootprefix' meson options, which
+          were deprecated in v255, have been removed.
+
         Announcements of Future Feature Removals:
 
         * The D-Bus method org.freedesktop.systemd1.StartAuxiliaryScope() is
@@ -75,6 +78,12 @@ CHANGES WITH 258 in spe:
           removed in v258. Please make sure to update your software
           *now* to include a native systemd unit file instead of a legacy
           System V script to retain compatibility with future systemd releases.
+
+        * Support for systemd-repart's FactoryReset EFI variable has been
+          deprecated and support for it will be removed in v260. Use the newer,
+          more generic FactoryResetRequest variable instead, which can be
+          managed by "systemd-factory-reset request" and "systemd-factory-reset
+          complete".
 
         * To work around limitations of X11's keyboard handling systemd's
           keyboard mapping hardware database (hwdb.d/60-keyboard.hwdb) so far

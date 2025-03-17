@@ -20,7 +20,9 @@ udevadm_sources = files(
 
 libudevd_core_sources = files(
         'net/link-config.c',
+        'udev-builtin.c',
         'udev-builtin-btrfs.c',
+        'udev-builtin-factory_reset.c',
         'udev-builtin-hwdb.c',
         'udev-builtin-input_id.c',
         'udev-builtin-keyboard.c',
@@ -29,7 +31,6 @@ libudevd_core_sources = files(
         'udev-builtin-net_setup_link.c',
         'udev-builtin-path_id.c',
         'udev-builtin-usb_id.c',
-        'udev-builtin.c',
         'udev-config.c',
         'udev-ctrl.c',
         'udev-dump.c',
@@ -268,9 +269,10 @@ executables += [
         },
 ]
 
-meson.add_install_script(sh, '-c', ln_s.format(bindir / 'udevadm',
-                                               libexecdir / 'systemd-udevd'),
-                         install_tag : 'udev')
+install_symlink('systemd-udevd',
+                pointing_to : libexecdir_to_bin + 'udevadm',
+                install_dir : libexecdir,
+                install_tag : 'udev')
 
 if install_sysconfdir_samples
         install_data('udev.conf',

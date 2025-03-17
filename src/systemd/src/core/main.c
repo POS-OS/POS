@@ -20,9 +20,6 @@
 #include "apparmor-setup.h"
 #include "architecture.h"
 #include "argv-util.h"
-#if HAVE_LIBBPF
-#include "bpf-restrict-fs.h"
-#endif
 #include "build.h"
 #include "bus-error.h"
 #include "bus-util.h"
@@ -96,7 +93,6 @@
 #include "special.h"
 #include "stat-util.h"
 #include "stdio-util.h"
-#include "string-table.h"
 #include "strv.h"
 #include "switch-root.h"
 #include "sysctl-util.h"
@@ -170,14 +166,6 @@ static char **saved_env = NULL;
 
 static int parse_configuration(const struct rlimit *saved_rlimit_nofile,
                                const struct rlimit *saved_rlimit_memlock);
-
-static const char* const crash_action_table[_CRASH_ACTION_MAX] = {
-        [CRASH_FREEZE]   = "freeze",
-        [CRASH_REBOOT]   = "reboot",
-        [CRASH_POWEROFF] = "poweroff",
-};
-
-DEFINE_STRING_TABLE_LOOKUP(crash_action, CrashAction);
 
 static DEFINE_CONFIG_PARSE_ENUM_WITH_DEFAULT(config_parse_crash_action, crash_action, CrashAction, CRASH_FREEZE);
 
@@ -666,10 +654,8 @@ static int config_parse_oom_score_adjust(
         }
 
         r = parse_oom_score_adjust(rvalue, &oa);
-        if (r < 0) {
-                log_syntax(unit, LOG_WARNING, filename, line, r, "Failed to parse the OOM score adjust value '%s', ignoring: %m", rvalue);
-                return 0;
-        }
+        if (r < 0)
+                return log_syntax_parse_error(unit, filename, line, r, lvalue, rvalue);
 
         arg_defaults.oom_score_adjust = oa;
         arg_defaults.oom_score_adjust_set = true;
@@ -705,10 +691,8 @@ static int config_parse_protect_system_pid1(
         }
 
         r = parse_boolean(rvalue);
-        if (r < 0) {
-                log_syntax(unit, LOG_WARNING, filename, line, r, "Failed to parse ProtectSystem= argument '%s', ignoring: %m", rvalue);
-                return 0;
-        }
+        if (r < 0)
+                return log_syntax_parse_error(unit, filename, line, r, lvalue, rvalue);
 
         *v = r;
         return 0;
@@ -735,10 +719,8 @@ static int config_parse_crash_reboot(
         }
 
         r = parse_boolean(rvalue);
-        if (r < 0) {
-                log_syntax(unit, LOG_WARNING, filename, line, r, "Failed to parse CrashReboot= argument '%s', ignoring: %m", rvalue);
-                return 0;
-        }
+        if (r < 0)
+                return log_syntax_parse_error(unit, filename, line, r, lvalue, rvalue);
 
         *v = r > 0 ? CRASH_REBOOT : CRASH_FREEZE;
         return 0;
@@ -1576,8 +1558,6 @@ static int bump_unix_max_dgram_qlen(void) {
 }
 
 static int fixup_environment(void) {
-        _cleanup_free_ char *term = NULL;
-        const char *t;
         int r;
 
         /* Only fix up the environment when we are started as PID 1 */
@@ -1593,19 +1573,29 @@ static int fixup_environment(void) {
          * not have support for color mode for example.
          *
          * However if TERM was configured through the kernel command line then leave it alone. */
+        _cleanup_free_ char *term = NULL;
         r = proc_cmdline_get_key("TERM", 0, &term);
         if (r < 0)
                 return r;
-
-        if (r == 0) {
+        if (r > 0) {
+                /* If we pick up $TERM, then also pick up $COLORTERM, $NO_COLOR */
+                FOREACH_STRING(v, "COLORTERM", "NO_COLOR") {
+                        _cleanup_free_ char *vv = NULL;
+                        r = proc_cmdline_get_key(v, 0, &vv);
+                        if (r < 0)
+                                return r;
+                        if (r > 0 && setenv(v, vv, /* overwrite= */ true) < 0)
+                                return -errno;
+                }
+        } else {
+                /* If no $TERM is set then look for the per-tty variable instead */
                 r = proc_cmdline_get_key("systemd.tty.term.console", 0, &term);
                 if (r < 0)
                         return r;
         }
 
-        t = term ?: default_term_for_tty("/dev/console");
-
-        if (setenv("TERM", t, 1) < 0)
+        const char *t = term ?: default_term_for_tty("/dev/console");
+        if (setenv("TERM", t, /* overwrite= */ true) < 0)
                 return -errno;
 
         /* The kernels sets HOME=/ for init. Let's undo this. */
@@ -1687,7 +1677,6 @@ static int become_shutdown(int objective, int retval) {
         case LOG_TARGET_CONSOLE:
         default:
                 command_line[pos++] = "--log-target=console";
-                break;
         };
 
         if (log_get_show_color())
@@ -1996,36 +1985,9 @@ static int do_reexecute(
         assert(saved_rlimit_memlock);
         assert(ret_error_message);
 
-        if (switch_root_init) {
-                r = chase(switch_root_init, switch_root_dir, CHASE_PREFIX_ROOT, NULL, NULL);
-                if (r < 0)
-                        log_warning_errno(r, "Failed to chase configured init %s/%s: %m",
-                                          strempty(switch_root_dir), switch_root_init);
-        } else {
-                r = chase(SYSTEMD_BINARY_PATH, switch_root_dir, CHASE_PREFIX_ROOT, NULL, NULL);
-                if (r < 0)
-                        log_debug_errno(r, "Failed to chase our own binary %s/%s: %m",
-                                        strempty(switch_root_dir), SYSTEMD_BINARY_PATH);
-        }
-
-        if (r < 0) {
-                r = chase("/sbin/init", switch_root_dir, CHASE_PREFIX_ROOT, NULL, NULL);
-                if (r < 0)
-                        return log_error_errno(r, "Failed to chase %s/sbin/init", strempty(switch_root_dir));
-        }
-
         /* Close and disarm the watchdog, so that the new instance can reinitialize it, but doesn't get
          * rebooted while we do that */
         watchdog_close(true);
-
-        /* Reset RLIMIT_NOFILE + RLIMIT_MEMLOCK back to the kernel defaults, so that the new systemd can pass
-         * the kernel default to its child processes */
-        if (saved_rlimit_nofile->rlim_cur != 0)
-                (void) setrlimit(RLIMIT_NOFILE, saved_rlimit_nofile);
-        if (saved_rlimit_memlock->rlim_cur != RLIM_INFINITY)
-                (void) setrlimit(RLIMIT_MEMLOCK, saved_rlimit_memlock);
-
-        finish_remaining_processes(objective);
 
         if (!switch_root_dir && objective == MANAGER_SOFT_REBOOT) {
                 /* If no switch root dir is specified, then check if /run/nextroot/ qualifies and use that */
@@ -2035,6 +1997,39 @@ static int do_reexecute(
                 else if (r > 0)
                         switch_root_dir = "/run/nextroot";
         }
+
+        if (switch_root_dir) {
+                /* If we're supposed to switch root, preemptively check the existence of a usable init.
+                 * Otherwise the system might end up in a completely undebuggable state afterwards. */
+                if (switch_root_init) {
+                        r = chase_and_access(switch_root_init, switch_root_dir, CHASE_PREFIX_ROOT, X_OK, /* ret_path = */ NULL);
+                        if (r < 0)
+                                log_warning_errno(r, "Failed to chase configured init %s/%s: %m",
+                                                  switch_root_dir, switch_root_init);
+                } else {
+                        r = chase_and_access(SYSTEMD_BINARY_PATH, switch_root_dir, CHASE_PREFIX_ROOT, X_OK, /* ret_path = */ NULL);
+                        if (r < 0)
+                                log_debug_errno(r, "Failed to chase our own binary %s/%s: %m",
+                                                switch_root_dir, SYSTEMD_BINARY_PATH);
+                }
+
+                if (r < 0) {
+                        r = chase_and_access("/sbin/init", switch_root_dir, CHASE_PREFIX_ROOT, X_OK, /* ret_path = */ NULL);
+                        if (r < 0) {
+                                *ret_error_message = "Switch root target contains no usable init";
+                                return log_error_errno(r, "Failed to chase %s/sbin/init", switch_root_dir);
+                        }
+                }
+        }
+
+        /* Reset RLIMIT_NOFILE + RLIMIT_MEMLOCK back to the kernel defaults, so that the new systemd can pass
+         * the kernel default to its child processes */
+        if (saved_rlimit_nofile->rlim_cur != 0)
+                (void) setrlimit(RLIMIT_NOFILE, saved_rlimit_nofile);
+        if (saved_rlimit_memlock->rlim_cur != RLIM_INFINITY)
+                (void) setrlimit(RLIMIT_MEMLOCK, saved_rlimit_memlock);
+
+        finish_remaining_processes(objective);
 
         if (switch_root_dir) {
                 r = switch_root(/* new_root= */ switch_root_dir,
@@ -2137,21 +2132,23 @@ static int do_reexecute(
         args[0] = "/sbin/init";
         (void) execv(args[0], (char* const*) args);
         r = -errno;
+        *ret_error_message = "Failed to execute /sbin/init";
 
-        manager_status_printf(NULL, STATUS_TYPE_EMERGENCY,
-                              ANSI_HIGHLIGHT_RED "  !!  " ANSI_NORMAL,
-                              "Failed to execute /sbin/init");
-
-        *ret_error_message = "Failed to execute fallback shell";
         if (r == -ENOENT) {
-                log_warning("No /sbin/init, trying fallback");
+                manager_status_printf(NULL, STATUS_TYPE_EMERGENCY,
+                                      ANSI_HIGHLIGHT_RED "  !!  " ANSI_NORMAL,
+                                      "%s", *ret_error_message);
+
+                log_warning_errno(r, "No /sbin/init, trying fallback shell");
 
                 args[0] = "/bin/sh";
                 args[1] = NULL;
                 (void) execve(args[0], (char* const*) args, saved_env);
-                return log_error_errno(errno, "Failed to execute /bin/sh, giving up: %m");
-        } else
-                return log_error_errno(r, "Failed to execute /sbin/init, giving up: %m");
+                r = -errno;
+                *ret_error_message = "Failed to execute fallback shell";
+        }
+
+        return log_error_errno(r, "%s, giving up: %m", *ret_error_message);
 }
 
 static int invoke_main_loop(
@@ -2247,7 +2244,7 @@ static int invoke_main_loop(
 
                         log_notice("Reexecuting.");
 
-                        *ret_retval = EXIT_SUCCESS;
+                        *ret_retval = EXIT_FAILURE;
                         *ret_switch_root_dir = *ret_switch_root_init = NULL;
 
                         return objective;
@@ -2270,7 +2267,7 @@ static int invoke_main_loop(
 
                         log_notice("Switching root.");
 
-                        *ret_retval = EXIT_SUCCESS;
+                        *ret_retval = EXIT_FAILURE;
 
                         /* Steal the switch root parameters */
                         *ret_switch_root_dir = TAKE_PTR(m->switch_root);
@@ -2290,7 +2287,7 @@ static int invoke_main_loop(
 
                         log_notice("Soft-rebooting.");
 
-                        *ret_retval = EXIT_SUCCESS;
+                        *ret_retval = EXIT_FAILURE;
                         *ret_switch_root_dir = TAKE_PTR(m->switch_root);
                         *ret_switch_root_init = NULL;
 
@@ -2464,12 +2461,11 @@ static int initialize_runtime(
                         (void) import_credentials();
 
                         (void) os_release_status();
-                        (void) hostname_setup(/* really = */ true);
                         (void) machine_id_setup(/* root = */ NULL, arg_machine_id,
                                                 (first_boot ? MACHINE_ID_SETUP_FORCE_TRANSIENT : 0) |
                                                 (arg_machine_id_from_firmware ? MACHINE_ID_SETUP_FORCE_FIRMWARE : 0),
                                                 /* ret_machine_id = */ NULL);
-
+                        (void) hostname_setup(/* really = */ true);
                         (void) loopback_setup();
 
                         bump_unix_max_dgram_qlen();
@@ -3040,7 +3036,7 @@ static int save_env(void) {
 
         l = strv_copy(environ);
         if (!l)
-                return -ENOMEM;
+                return log_oom();
 
         strv_free_and_replace(saved_env, l);
         return 0;
@@ -3155,7 +3151,8 @@ int main(int argc, char *argv[]) {
                                         goto finish;
                         }
 
-                        if (mac_init() < 0) {
+                        r = mac_init();
+                        if (r < 0) {
                                 error_message = "Failed to initialize MAC support";
                                 goto finish;
                         }
@@ -3212,14 +3209,6 @@ int main(int argc, char *argv[]) {
                         goto finish;
                 }
 
-                if (!skip_setup) {
-                        r = mount_cgroup_legacy_controllers(loaded_policy);
-                        if (r < 0) {
-                                error_message = "Failed to mount cgroup v1 hierarchy";
-                                goto finish;
-                        }
-                }
-
                 /* The efivarfs is now mounted, let's lock down the system token. */
                 lock_down_efi_variables();
         } else {
@@ -3231,7 +3220,8 @@ int main(int argc, char *argv[]) {
                 /* clear the kernel timestamp, because we are not PID 1 */
                 kernel_timestamp = DUAL_TIMESTAMP_NULL;
 
-                if (mac_init() < 0) {
+                r = mac_init();
+                if (r < 0) {
                         error_message = "Failed to initialize MAC support";
                         goto finish;
                 }
@@ -3319,6 +3309,23 @@ int main(int argc, char *argv[]) {
         }
 
         log_execution_mode(&first_boot);
+
+        r = cg_has_legacy();
+        if (r < 0) {
+                error_message = "Failed to check cgroup hierarchy";
+                goto finish;
+        }
+        if (r > 0) {
+                r = log_full_errno(LOG_EMERG, SYNTHETIC_ERRNO(EPROTO),
+                                   "Detected cgroup v1 hierarchy at /sys/fs/cgroup/, which is no longer supported by current version of systemd.\n"
+                                   "Please instruct your initrd to mount cgroup v2 (unified) hierarchy,\n"
+                                   "possibly by removing any stale kernel command line options, such as:\n"
+                                   "  systemd.legacy_systemd_cgroup_controller=1\n"
+                                   "  systemd.unified_cgroup_hierarchy=0");
+
+                error_message = "Detected unsupported legacy cgroup hierarchy, refusing execution";
+                goto finish;
+        }
 
         r = initialize_runtime(skip_setup,
                                first_boot,

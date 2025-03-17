@@ -223,6 +223,20 @@
         <xi:include href="version-info.xml" xpointer="v226"/></listitem>
       </varlistentry>
 
+      <varlistentry>
+        <term><option>--cleanup</option></term>
+
+        <listitem>
+          <para>Clean up left-over mounts and underlying mount points used by the container, and exit without
+          invoking any containers. This may be useful when the previous invocation of
+          <command>systemd-nspawn</command> was unexpectedly terminated. This requires at least one of
+          <option>-M/--machine=</option>, <option>-D/--directory=</option>, or <option>-i/--image=</option>
+          to determine the mounts to be cleaned up.</para>
+
+          <xi:include href="version-info.xml" xpointer="v257"/>
+        </listitem>
+      </varlistentry>
+
     </variablelist>
 
     <refsect2>
@@ -1845,6 +1859,35 @@ After=sys-subsystem-net-devices-ens1.device</programlisting>
       <xi:include href="standard-options.xml" xpointer="version" />
     </variablelist>
    </refsect2>
+  </refsect1>
+
+  <refsect1>
+    <title>Hotkeys</title>
+
+    <para>When invoked in interactive mode (i.e. the default <option>--console=interactive</option>), a few
+    special keyboard shortcuts are understood that control the container runtime. These shortcuts need to be
+    typed within 1s to have effect, otherwise they will be forwarded to the container as regular
+    keypresses.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term>Ctrl-] Ctrl-] Ctrl-]</term>
+        <listitem><para>Immediately terminate the container, killing all processes.</para></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Ctrl-] Ctrl-] r</term>
+        <listitem><para>Issue a reboot request to the container.</para>
+        <xi:include href="version-info.xml" xpointer="v258"/></listitem>
+      </varlistentry>
+
+      <varlistentry>
+        <term>Ctrl-] Ctrl-] p</term>
+        <listitem><para>Issue a shutdown request to the container.</para>
+        <xi:include href="version-info.xml" xpointer="v258"/></listitem>
+      </varlistentry>
+
+    </variablelist>
   </refsect1>
 
   <xi:include href="common-variables.xml" />

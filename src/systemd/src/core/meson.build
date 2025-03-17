@@ -32,7 +32,6 @@ libcore_sources = files(
         'dbus.c',
         'device.c',
         'dynamic-user.c',
-        'efi-random.c',
         'emergency-action.c',
         'exec-credential.c',
         'execute.c',
@@ -149,6 +148,7 @@ systemd_sources = files(
         'ipe-setup.c',
         'selinux-setup.c',
         'smack-setup.c',
+        'efi-random.c',
 )
 
 systemd_executor_sources = files(
@@ -260,13 +260,17 @@ install_emptydir(usergeneratordir)
 if install_sysconfdir
         install_emptydir(pkgsysconfdir / 'system')
         install_emptydir(pkgsysconfdir / 'user')
-        install_emptydir(sysconfdir / 'xdg/systemd')
-        meson.add_install_script(sh, '-c', ln_s.format(pkgsysconfdir / 'user',
-                                                       sysconfdir / 'xdg/systemd/user'))
+
+        assert(sysconfdir / 'systemd' == pkgsysconfdir)
+        install_symlink('user',
+                        pointing_to : '../../systemd/user',
+                        install_dir : sysconfdir / 'xdg/systemd')
 endif
 
-install_emptydir(sbindir)
-meson.add_install_script(sh, '-c', ln_s.format(libexecdir / 'systemd', sbindir / 'init'))
+assert(fs.parent(sbindir) / 'lib/systemd' == libexecdir)
+install_symlink('init',
+                pointing_to : '../lib/systemd/systemd',
+                install_dir : sbindir)
 
 ############################################################
 
