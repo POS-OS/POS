@@ -1684,6 +1684,9 @@ static int more_key_command(struct more_control *ctl, char *filename)
 			continue;
 		if (cmd.key == more_kc_repeat_previous)
 			cmd = ctl->previous_command;
+		else
+			ctl->previous_command = cmd;
+
 		switch (cmd.key) {
 		case more_kc_backwards:
 			if (ctl->no_tty_in) {
@@ -1849,7 +1852,6 @@ static int more_key_command(struct more_control *ctl, char *filename)
 			fflush(NULL);
 			break;
 		}
-		ctl->previous_command = cmd;
 		if (done) {
 			cmd.key = more_kc_unknown_command;
 			break;
@@ -2095,7 +2097,6 @@ int main(int argc, char **argv)
 	bindtextdomain(PACKAGE, LOCALEDIR);
 	textdomain(PACKAGE);
 	close_stdout_atexit();
-	setlocale(LC_ALL, "");
 
 	/* Auto set no scroll on when binary is called page */
 	if (!(strcmp(program_invocation_short_name, "page")))

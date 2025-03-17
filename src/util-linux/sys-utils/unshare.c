@@ -737,7 +737,7 @@ static int is_fixed(const char *interp)
 
 	flags = strrchr(interp, ':');
 
-	return strchr(flags, 'F') != NULL;
+	return flags && strchr(flags, 'F') != NULL;
 }
 
 static void load_interp(const char *binfmt_mnt, const char *interp)
@@ -1005,7 +1005,7 @@ int main(int argc, char *argv[])
 				insert_map_range(&groupmap,
 						 read_subid_range(_PATH_SUBGID, real_euid, 0));
 			else if (!strcmp(optarg, "subids"))
-				insert_map_range(&usermap,
+				insert_map_range(&groupmap,
 						 read_subid_range(_PATH_SUBGID, real_euid, 1));
 			else if (!strcmp(optarg, "all"))
 				read_kernel_map(&groupmap, _PATH_PROC_GIDMAP);

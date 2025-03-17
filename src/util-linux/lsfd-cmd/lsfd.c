@@ -429,6 +429,9 @@ static const struct colinfo infos[] = {
 	[COL_UID]              = { "UID",
 				   0,   SCOLS_FL_RIGHT, SCOLS_JSON_NUMBER,
 				   N_("user ID number of the process") },
+	[COL_UNIX_IPEER]       = { "UNIX.IPEER",
+				   0,   SCOLS_FL_RIGHT, SCOLS_JSON_NUMBER,
+				   N_("inode number for the peer of the UNIX domain socket") },
 	[COL_UNIX_PATH]        = { "UNIX.PATH",
 				   0.4, SCOLS_FL_TRUNC, SCOLS_JSON_STRING,
 				   N_("filesystem pathname for UNIX domain socket") },
@@ -872,7 +875,7 @@ static struct file *collect_file_symlink(struct path_cxt *pc,
 					 bool sockets_only)
 {
 	char sym[PATH_MAX] = { '\0' };
-	struct stat sb;
+	struct stat sb = { .st_mode = 0 };
 	struct file *f, *prev;
 
 	if (ul_path_readlink(pc, sym, sizeof(sym), name) < 0)
@@ -963,7 +966,7 @@ static void parse_maps_line(struct path_cxt *pc, char *buf, struct proc *proc)
 	uint64_t start, end, offset, ino;
 	unsigned long major, minor;
 	enum association assoc = ASSOC_MEM;
-	struct stat sb;
+	struct stat sb = { .st_mode = 0 };
 	struct file *f, *prev;
 	char *path, modestr[5];
 	dev_t devno;
