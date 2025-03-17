@@ -2,7 +2,7 @@
 
 base=$(cd "$(dirname "$0")/.." || exit 1; pwd)
 
-cd ../upstream/coreutils || exit 1
+cd "${base}/../upstream/coreutils" || exit 1
 rsync --delete --delete-excluded --exclude .idea --exclude .git -av ./ "${base}/src/coreutils/"
 ucm=$(git log -1)
 
