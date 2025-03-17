@@ -1,15 +1,18 @@
 ifeq ($(subdir),math)
 CFLAGS-e_asin-fma.c = -mfma -mavx2
 CFLAGS-e_atan2-fma.c = -mfma -mavx2
+CFLAGS-e_atanh-fma.c = -mfma -mavx2
 CFLAGS-e_exp-fma.c = -mfma -mavx2
 CFLAGS-e_log-fma.c = -mfma -mavx2
 CFLAGS-e_log2-fma.c = -mfma -mavx2
 CFLAGS-e_pow-fma.c = -mfma -mavx2
+CFLAGS-e_sinh-fma.c = -mfma -mavx2
 CFLAGS-s_atan-fma.c = -mfma -mavx2
 CFLAGS-s_expm1-fma.c = -mfma -mavx2
 CFLAGS-s_log1p-fma.c = -mfma -mavx2
 CFLAGS-s_sin-fma.c = -mfma -mavx2
 CFLAGS-s_tan-fma.c = -mfma -mavx2
+CFLAGS-s_tanh-fma.c = -mfma -mavx2
 CFLAGS-s_sincos-fma.c = -mfma -mavx2
 CFLAGS-s_exp10m1f-fma.c = -mfma -mavx2
 CFLAGS-s_exp2m1f-fma.c = -mfma -mavx2
@@ -57,6 +60,7 @@ libm-sysdep_routines += \
   e_asin-fma \
   e_atan2-avx \
   e_atan2-fma \
+  e_atanh-fma \
   e_exp-avx \
   e_exp-fma \
   e_exp2f-fma \
@@ -68,6 +72,7 @@ libm-sysdep_routines += \
   e_logf-fma \
   e_pow-fma \
   e_powf-fma \
+  e_sinh-fma \
   s_atan-avx \
   s_atan-fma \
   s_ceil-sse4_1 \
@@ -96,6 +101,7 @@ libm-sysdep_routines += \
   s_sinf-sse2 \
   s_tan-avx \
   s_tan-fma \
+  s_tanh-fma \
   s_trunc-sse4_1 \
   s_truncf-sse4_1 \
 # libm-sysdep_routines

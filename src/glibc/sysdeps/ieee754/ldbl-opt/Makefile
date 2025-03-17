@@ -166,6 +166,7 @@ libnldbl-calls = \
   obstack_vprintf \
   obstack_vprintf_chk \
   pow \
+  powr \
   printf \
   printf_chk \
   printf_fp \
@@ -180,6 +181,7 @@ libnldbl-calls = \
   rint \
   round \
   roundeven \
+  rsqrt \
   scalb \
   scalbln \
   scalbn \
@@ -374,11 +376,13 @@ CFLAGS-nldbl-nexttoward.c = -fno-builtin-nexttoward -fno-builtin-nexttowardl
 CFLAGS-nldbl-nexttowardf.c = -fno-builtin-nexttowardf
 CFLAGS-nldbl-nextup.c = -fno-builtin-nextupl
 CFLAGS-nldbl-pow.c = -fno-builtin-powl
+CFLAGS-nldbl-powr.c = -fno-builtin-powrl
 CFLAGS-nldbl-remainder.c = -fno-builtin-remainderl -fno-builtin-dreml
 CFLAGS-nldbl-remquo.c = -fno-builtin-remquol
 CFLAGS-nldbl-rint.c = -fno-builtin-rintl
 CFLAGS-nldbl-round.c = -fno-builtin-roundl
 CFLAGS-nldbl-roundeven.c = -fno-builtin-roundevenl
+CFLAGS-nldbl-rsqrt.c = -fno-builtin-rsqrtl
 CFLAGS-nldbl-scalb.c = -fno-builtin-scalbl
 CFLAGS-nldbl-scalbln.c = -fno-builtin-scalblnl
 CFLAGS-nldbl-scalbn.c = -fno-builtin-scalbnl

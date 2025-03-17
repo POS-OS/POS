@@ -417,6 +417,7 @@ tests += \
   tst-dlmopen3 \
   tst-dlmopen4 \
   tst-dlopen-auditdup \
+  tst-dlopen-constructor-null \
   tst-dlopen-self \
   tst-dlopen-tlsmodid \
   tst-dlopen-tlsreinit1 \
@@ -498,6 +499,7 @@ tests += \
   tst-unique2 \
   tst-unwind-ctor \
   tst-unwind-main \
+  tst-version-hash-zero \
   unload3 \
   unload4 \
   unload5 \
@@ -761,6 +763,7 @@ modules-names += \
   libmarkermod5-3 \
   libmarkermod5-4 \
   libmarkermod5-5 \
+  liborigin-mod \
   libtracemod1-1 \
   libtracemod2-1 \
   libtracemod3-1 \
@@ -907,6 +910,8 @@ modules-names += \
   tst-dlmopen1mod \
   tst-dlopen-auditdup-auditmod \
   tst-dlopen-auditdupmod \
+  tst-dlopen-constructor-null-mod1 \
+  tst-dlopen-constructor-null-mod2 \
   tst-dlopen-tlsreinitmod1 \
   tst-dlopen-tlsreinitmod2 \
   tst-dlopen-tlsreinitmod3 \
@@ -1035,6 +1040,9 @@ modules-names += \
   tst-unique2mod1 \
   tst-unique2mod2 \
   tst-unwind-ctor-lib \
+  tst-version-hash-zero-linkmod \
+  tst-version-hash-zero-mod \
+  tst-version-hash-zero-refmod \
   unload2dep \
   unload2mod \
   unload3mod1 \
@@ -1137,17 +1145,19 @@ tests += \
   tst-dlopen-pie \
   tst-dlopen-self-pie \
   tst-dlopen-tlsmodid-pie \
-  tst-pie-bss \
   tst-pie1 \
   tst-pie2 \
   # tests
 tests-pie += \
   tst-dlopen-self-pie \
   tst-dlopen-tlsmodid-pie \
-  tst-pie-bss \
   tst-pie1 \
   tst-pie2 \
   # tests-pie
+ifeq (yes,$(aligned-65536))
+tests += tst-pie-bss
+tests-pie += tst-pie-bss
+endif
 ifneq (,$(load-address-ldflag))
 tests += \
   tst-pie-address \
@@ -1159,12 +1169,14 @@ LDFLAGS-tst-pie-address += $(load-address-ldflag)=$(pde-load-address)
 ifeq (yes,$(enable-static-pie))
 tests += \
   tst-pie-address-static \
-  tst-pie-bss-static \
   # tests
 tests-static += \
   tst-pie-address-static \
-  tst-pie-bss-static \
   # tests-static
+ifeq (yes,$(aligned-65536))
+tests += tst-pie-bss-static
+tests-static += tst-pie-bss-static
+endif
 LDFLAGS-tst-pie-address-static += \
   $(load-address-ldflag)=$(pde-load-address)
 endif
@@ -1183,6 +1195,7 @@ extra-test-objs += $(addsuffix .os,$(strip $(modules-names)))
 # filtmod1.so, tst-big-note-lib.so, tst-ro-dynamic-mod.so have special
 # rules.
 modules-names-nobuild += \
+  liborigin-mod \
   filtmod1 \
   tst-audit24bmod1 \
   tst-audit24bmod2 \
@@ -1408,6 +1421,10 @@ tests-internal += tst-_dl_addr_inside_object
 tests-pie += tst-_dl_addr_inside_object
 $(objpfx)tst-_dl_addr_inside_object: $(objpfx)dl-addr-obj.os
 CFLAGS-tst-_dl_addr_inside_object.c += $(PIE-ccflag)
+endif
+
+ifeq ($(run-built-tests),yes)
+tests-special += $(objpfx)tst-origin.out
 endif
 
 include ../Rules
@@ -3408,3 +3425,48 @@ $(objpfx)tst-nolink-libc-2: $(objpfx)tst-nolink-libc.o
 	  -Wl,--dynamic-linker=$(objpfx)ld.so
 $(objpfx)tst-nolink-libc-2.out: $(objpfx)tst-nolink-libc-2 $(objpfx)ld.so
 	$< > $@ 2>&1; $(evaluate-test)
+
+$(objpfx)tst-version-hash-zero.out: \
+  $(objpfx)tst-version-hash-zero-mod.so \
+  $(objpfx)tst-version-hash-zero-refmod.so
+LDFLAGS-tst-version-hash-zero-mod.so = \
+  -Wl,--version-script=tst-version-hash-zero-mod.map
+# The run-time test module tst-version-hash-zero-refmod.so is linked
+# to a stub module, tst-version-hash-zero-linkmod.so, to produce an
+# expected relocation error.
+$(objpfx)tst-version-hash-zero-refmod.so: \
+  $(objpfx)tst-version-hash-zero-linkmod.so
+LDFLAGS-tst-version-hash-zero-linkmod.so = \
+  -Wl,--version-script=tst-version-hash-zero-linkmod.map \
+  -Wl,--soname=tst-version-hash-zero-mod.so
+$(objpfx)tst-version-hash-zero-refmod.so: \
+  $(objpfx)tst-version-hash-zero-linkmod.so
+tst-version-hash-zero-refmod.so-no-z-defs = yes
+
+$(objpfx)tst-dlopen-constructor-null: \
+  $(objpfx)tst-dlopen-constructor-null-mod1.so \
+  $(objpfx)tst-dlopen-constructor-null-mod2.so
+$(objpfx)tst-dlopen-constructor-null-mod2.so: \
+  $(objpfx)tst-dlopen-constructor-null-mod1.so
+
+CFLAGS-tst-origin.c += $(no-stack-protector)
+CFLAGS-liborigin-mod.c += $(no-stack-protector)
+$(objpfx)tst-origin: $(objpfx)tst-origin.o $(objpfx)liborigin-mod.so
+	$(LINK.o) -o $@ -B$(csu-objpfx) $(LDFLAGS.so) $< \
+		-Wl,-rpath,\$$ORIGIN \
+		-L$(subst :, -L,$(rpath-link)) -Wl,--no-as-needed -lorigin-mod
+$(objpfx)liborigin-mod.so: $(objpfx)liborigin-mod.os
+	$(LINK.o) -shared -o $@ -B$(csu-objpfx) $(LDFLAGS.so) \
+		$(LDFLAGS-soname-fname) \
+		$<
+$(objpfx)tst-origin.out: tst-origin.sh $(objpfx)tst-origin
+	$(SHELL) \
+		$< \
+		'$(common-objpfx)' \
+		'$(test-wrapper-env)' \
+		'$(run-program-env)' \
+		'$(rpath-link)' \
+		tst-origin \
+		liborigin-mod.so \
+		> $@; \
+	$(evaluate-test)

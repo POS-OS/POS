@@ -139,6 +139,8 @@ gen-libm-calls = \
   s_log2p1F \
   s_nanF \
   s_nextdownF \
+  s_powrF \
+  s_rsqrtF \
   s_significandF \
   s_sinpiF \
   s_tanpiF \
@@ -620,11 +622,13 @@ libm-vec-test-wrappers = $(addsuffix -wrappers, $(libm-vec-tests))
 test-extras += $(libm-vec-test-wrappers)
 extra-test-objs += $(addsuffix .o, $(libm-vec-test-wrappers))
 
-ulps-file = $(firstword $(wildcard $(sysdirs:%=%/libm-test-ulps)))
+ulps-file = $(wildcard $(sysdirs:%=%/libm-test-ulps))
+
+space := $(subst ,, )
 
 $(objpfx)libm-test-ulps.h: $(ulps-file) gen-libm-test.py
 	$(make-target-directory)
-	$(PYTHON) gen-libm-test.py -u $< -H $@
+	$(PYTHON) gen-libm-test.py -u $(subst $(space),:,$(ulps-file)) -H $@
 
 libm-test-funcs-auto = \
   acos \
@@ -682,6 +686,8 @@ libm-test-funcs-auto = \
   log1p \
   log2p1 \
   pow \
+  powr \
+  rsqrt \
   sin \
   sincos \
   sinh \
@@ -1012,11 +1018,13 @@ tgmath3-macros = \
   nexttoward \
   nextup \
   pow \
+  powr \
   remainder \
   remquo \
   rint \
   round \
   roundeven \
+  rsqrt \
   scalb \
   scalbln \
   scalbn \
@@ -1298,29 +1306,6 @@ endef
 object-suffixes-left := $(test-types)
 include $(o-iterator)
 
-# Run the math programs to automatically generate ULPs files.
-.PHONY: regen-ulps
-
-run-regen-ulps = $(test-wrapper-env) \
-	    $(run-program-env) \
-	    $($*-ENV) $(rtld-prefix) $(objpfx)$${run}
-
-regen-ulps: $(addprefix $(objpfx),$(libm-tests))
-	rm -f $(objpfx)ULPs; rm -f $(objpfx)NewUlps; \
-	cp $(ulps-file) $(objpfx)libm-test-ulps; \
-	for run in $(libm-tests); do \
-	  echo "Regenerating ULPs for $${run}"; \
-	  $(run-regen-ulps) -u -o $(objpfx); \
-	  cat $(objpfx)ULPs >> $(objpfx)libm-test-ulps; \
-	  rm $(objpfx)ULPs; \
-	done; \
-	$(PYTHON) gen-libm-test.py -n $(objpfx)NewUlps \
-				   -u $(objpfx)libm-test-ulps; \
-	echo "Automatic regeneration of ULPs complete."; \
-	echo "Difference between the current baseline and the new baseline is:";\
-	diff -urN $(ulps-file) $(objpfx)NewUlps; \
-	echo "Copy $(objpfx)NewUlps to $(ulps-file) (relative to source)."
-
 # The generated sysd-rules file defines rules like this for sources
 # coming from sysdeps/ directories.  These rules find the generic sources.
 define o-iterator-doit
@@ -1457,11 +1442,13 @@ CFLAGS-s_nexttoward.c += -fno-builtin-nexttoward -fno-builtin-nexttowardl
 CFLAGS-s_nexttowardf.c += -fno-builtin-nexttowardf
 CFLAGS-s_nextup.c += -fno-builtin-nextupl
 CFLAGS-e_pow.c += -fno-builtin-powl
+CFLAGS-s_powr.c += -fno-builtin-powrl
 CFLAGS-w_remainder.c += -fno-builtin-remainderl -fno-builtin-dreml
 CFLAGS-s_remquo.c += -fno-builtin-remquol
 CFLAGS-s_rint.c += -fno-builtin-rintl
 CFLAGS-s_round.c += -fno-builtin-roundl
 CFLAGS-s_roundeven.c += -fno-builtin-roundevenl
+CFLAGS-s_rsqrt.c += -fno-builtin-rsqrtl
 CFLAGS-w_scalb.c += -fno-builtin-scalbl
 CFLAGS-w_scalbln.c += -fno-builtin-scalblnl
 CFLAGS-s_scalbn.c += -fno-builtin-scalbnl
@@ -1591,11 +1578,13 @@ CFLAGS-s_nextafter.c += -fno-builtin-nextafterf32x -fno-builtin-nextafterf64
 CFLAGS-s_nextdown.c += -fno-builtin-nextdownf32x -fno-builtin-nextdownf64
 CFLAGS-s_nextup.c += -fno-builtin-nextupf32x -fno-builtin-nextupf64
 CFLAGS-e_pow.c += -fno-builtin-powf32x -fno-builtin-powf64
+CFLAGS-s_powr.c += -fno-builtin-powrf32x -fno-builtin-powrf64
 CFLAGS-w_remainder.c += -fno-builtin-remainderf32x -fno-builtin-remainderf64
 CFLAGS-s_remquo.c += -fno-builtin-remquof32x -fno-builtin-remquof64
 CFLAGS-s_rint.c += -fno-builtin-rintf32x -fno-builtin-rintf64
 CFLAGS-s_round.c += -fno-builtin-roundf32x -fno-builtin-roundf64
 CFLAGS-s_roundeven.c += -fno-builtin-roundevenf32x -fno-builtin-roundevenf64
+CFLAGS-s_rsqrt.c += -fno-builtin-rsqrtf32x -fno-builtin-rsqrtf64
 CFLAGS-w_scalbln.c += -fno-builtin-scalblnf32x -fno-builtin-scalblnf64
 CFLAGS-s_scalbn.c += -fno-builtin-scalbnf32x -fno-builtin-scalbnf64
 CFLAGS-s_setpayload.c += -fno-builtin-setpayloadf32x -fno-builtin-setpayloadf64
@@ -1716,11 +1705,13 @@ CFLAGS-s_nextafterf.c += -fno-builtin-nextafterf32
 CFLAGS-s_nextdownf.c += -fno-builtin-nextdownf32
 CFLAGS-s_nextupf.c += -fno-builtin-nextupf32
 CFLAGS-e_powf.c += -fno-builtin-powf32
+CFLAGS-s_powrf.c += -fno-builtin-powrf32
 CFLAGS-w_remainderf.c += -fno-builtin-remainderf32
 CFLAGS-s_remquof.c += -fno-builtin-remquof32
 CFLAGS-s_rintf.c += -fno-builtin-rintf32
 CFLAGS-s_roundf.c += -fno-builtin-roundf32
 CFLAGS-s_roundevenf.c += -fno-builtin-roundevenf32
+CFLAGS-s_rsqrtf.c += -fno-builtin-rsqrtf32
 CFLAGS-w_scalblnf.c += -fno-builtin-scalblnf32
 CFLAGS-s_scalbnf.c += -fno-builtin-scalbnf32
 CFLAGS-s_setpayloadf.c += -fno-builtin-setpayloadf32

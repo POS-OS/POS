@@ -63,7 +63,6 @@ routines = \
   old_pthread_cond_signal \
   old_pthread_cond_timedwait \
   old_pthread_cond_wait \
-  pthread_atfork \
   pthread_attr_copy \
   pthread_attr_destroy \
   pthread_attr_extension \
@@ -124,6 +123,7 @@ routines = \
   pthread_getname \
   pthread_getschedparam \
   pthread_getspecific \
+  pthread_gettid_np \
   pthread_join \
   pthread_join_common \
   pthread_key_create \
@@ -210,7 +210,6 @@ routines = \
   vars \
   # routines
 
-static-only-routines = pthread_atfork
 libpthread-routines = libpthread-compat
 libpthread-shared-only-routines = libpthread-compat
 
@@ -326,6 +325,7 @@ tests = \
   tst-pthread-timedlock-lockloop \
   tst-pthread_exit-nothreads \
   tst-pthread_exit-nothreads-static \
+  tst-pthread_gettid_np \
   tst-robust-fork \
   tst-robustpi1 \
   tst-robustpi2 \
