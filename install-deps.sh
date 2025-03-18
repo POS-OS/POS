@@ -36,4 +36,8 @@ sudo dnf -y install \
   libblkid-devel \
   xz-devel \
   gettext \
-  gettext-devel
+  gettext-devel \
+  rubygem-asciidoctor \
+  libutempter-devel \
+  systemd-devel \
+  po4a
