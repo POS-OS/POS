@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -eou
+set -euo pipefail
 
 base=$(cd "$(dirname "$0")" || exit 1; pwd)
 

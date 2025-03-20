@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 base=$(cd "$(dirname "$0")/.." || exit 1; pwd)
 
 cd "${base}/../upstream/systemd" || exit 1
