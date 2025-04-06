@@ -1,0 +1,5 @@
+# Fields: type; path; mode; uid; gid; age; argument (symlink target)
+
+# Create ${runstatedir}/dbus/containers owned by the system bus user.
+# org.freedesktop.DBus.Containers1 uses this to create sockets.
+d @EXPANDED_RUNSTATEDIR@/dbus/containers 0755 @DBUS_USER@ - - -
