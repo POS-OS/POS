@@ -1,0 +1,199 @@
+#!/bin/sh
+#
+# mkdep - compute dependencies for the supplied source files
+#
+#   Copyright © 2024 The Free Software Foundation.
+#
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Martin D Kealey <martin@kurahaupo.gen.nz>
+#
+# Modified by Chet Ramey <chet.ramey@case.edu> for inclusion in Bash
+#
+
+append_depfile=false
+compiler=cc
+depfile=.depend
+keep_path=false
+keep_output=false
+m_flag=-MM
+skip_o=false
+
+debug=false
+
+usage()
+{
+  echo "$PROG: usage: $PROG [-a] [-c compiler] [-f depend_file] [-k f|p] [-m M|MM] [-p] [--] [cc_flags] file ..." >&2
+  exit 2
+}
+
+PROG=${0##*/}
+
+while getopts ac:f:k:m:pD opt "$@"
+do
+  case $opt in
+    a)
+      # append to the dependency file (rather than overwriting it)
+      append_depfile=true ;;
+
+    c)
+      # change compiler
+      compiler=$OPTARG ;;
+
+    f)
+      # select a dependency file
+      depfile=$2 ;;
+
+    k)
+      case $OPTARG in
+      f)  # Keep the temporary files on failure
+	  keep_output=true ;;
+      p)
+	  # keep PATH from environment
+	  keep_path=true ;;
+      *) usage ; exit 2 ;;
+      esac ;;
+
+    m)
+      case $OPTARG in
+      M) m_flag=-M ;;
+      MM) m_flag=-MM ;;
+      *) usage ; exit 2 ;;
+      esac;;
+
+    p)
+      # produce “program: program.c”-style dependencies
+      # (to avoid generating .o files)
+      skip_o=true ;;
+
+    D) debug=true ;;
+    
+    ?)
+      usage ;;
+  esac
+
+done
+
+shift $(( $OPTIND - 1 ))
+
+if [ $# = 0 ] ; then
+  usage
+fi
+
+"$debug" && set -x
+
+"$keep_path" || export PATH=/bin:/usr/bin:/usr/local/bin:/opt/bin:$PATH
+
+output=$depfile.mkdep$$
+
+cleanup()
+{
+  rm -f "$output".*
+}
+
+if "$keep_output"
+then soft_cleanup() { :; }
+else soft_cleanup() { cleanup ; }
+fi
+
+caught () {
+  soft_cleanup
+  trap 2	# SIGINT?
+  kill -2 $$
+}
+
+trap caught 1 2 3 13 15
+
+"$compiler" "$m_flag" "$@" > "$output.1" || {
+  ex=$?
+  echo >&2 "mkdep: compilation failed; exit status $ex."
+  soft_cleanup
+  exit "$ex"
+}
+
+# The pathnames here don't work for every system (e.g., macOS), but the -MM
+# option (the default) usually does the right thing
+{
+  if "$append_depfile"
+  then
+    cat "$depfile"
+  fi
+
+  if "$skip_o"
+  then
+    sed '
+	s@ \./@ @g
+	s@ /usr/include[^ ]*@@g
+	s@ /usr/lib/gcc[^ ]*@@g
+
+	s@\.o @ @
+
+        :a
+        / \\$/ {
+          N
+          s/[[:space:]]*\\\n[[:space:]]*/ /
+          ta
+          s/\\$//
+        }
+
+        s/  *$//
+	/^[^ ]*:$/d
+
+        :b
+        /^[^ :][^ :]*:/ {
+          s@^\([^ :][^ :]*: \)\([^ ][^ ]*\) @\1\2\n\1@
+          /: \/usr\/include/bd
+          /: \/usr\/lib/bd
+          P
+          :d
+          D
+          tb
+        }
+      '
+  else
+    sed '
+	s@ \./@ @g;
+	s@ /usr/include[^ ]*@@g;
+	s@ /usr/lib/gcc[^ ]*@@g;
+
+        :a
+        / \\$/ {
+          N
+          s/[[:space:]]*\\\n[[:space:]]*/ /
+          ta
+          s/\\$//
+        }
+
+        s/  *$//
+	/^[^ ]*:$/d
+
+        :b
+        /^[^ :][^ :]*:/ {
+          s@^\([^ :][^ :]*: \)\([^ ][^ ]*\) @\1\2\n\1@
+          /: \/usr\/include/bd
+          /: \/usr\/lib/bd
+          P
+          :d
+          D
+          tb
+        }
+      '
+  fi < "$output.1"
+} |
+sort -o "$output.2"
+
+mv "$output.2" "$depfile"
+
+cleanup
+exit 0
