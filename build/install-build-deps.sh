@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+[[ ! -f /run/.toolboxenv ]] && exit 1
+
 # id -u build &>/dev/null || sudo useradd build
 # add to group tty for util-linux chgrp
 sudo dnf -y group install "development-tools"
