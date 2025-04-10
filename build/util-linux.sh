@@ -2,13 +2,16 @@
 
 set -euo pipefail
 
-base=$(cd "$(dirname "$0")/../" || exit 1; pwd)
+component=util-linux
 
-cd "$base" || exit 1
-mkdir -p work/output
-cd work || exit 1
-mkdir -p util-linux
-cd util-linux || exit 1
+base=$(cd "$(dirname "$0")/../" || exit 1; pwd)
+work_dir=${base}/work
+
+mkdir -p "$work_dir/$component"
+mkdir -p "$work_dir/pos-$component"
+
+cd "$work_dir/$component" || exit 1
+
 "${base}/src/util-linux/autogen.sh"
 # $RPM_OPT_FLAGS?
 export CFLAGS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
@@ -43,7 +46,7 @@ export DAEMON_LDFLAGS="$SUID_LDFLAGS"
     --disable-makeinstall-chown
 
 make
-make DESTDIR="${base}/work/output" install
+make DESTDIR="$work_dir/pos-$component" install
 
 cd ..
-rm -rf util-linux
+rm -rf "./$component"

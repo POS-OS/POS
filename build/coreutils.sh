@@ -5,10 +5,10 @@ set -euo pipefail
 component=coreutils
 
 base=$(cd "$(dirname "$0")/../" || exit 1; pwd)
-out_dir=${base}/work/output
+work_dir=${base}/work
 
-mkdir -p "$out_dir/$component"
-mkdir -p "$out_dir/pos-$component"
+mkdir -p "$work_dir/$component"
+mkdir -p "$work_dir/pos-$component"
 
 cd "${base}/src/${component}" || exit 1
 
