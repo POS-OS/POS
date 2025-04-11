@@ -7,10 +7,16 @@ component=glibc
 base=$(cd "$(dirname "$0")/../" || exit 1; pwd)
 work_dir=${base}/work
 
-mkdir -p "$work_dir/$component"
-mkdir -p "$work_dir/pos-$component"
+source "$base/enable.sh"
+echo "$PATH"
+
+mkdir "$work_dir/$component"
+mkdir "$work_dir/pos-$component"
 
 cd "$work_dir/$component" || exit 1
+
+export LDFLAGS=-Wl,--dynamic-linker=/pos/lib/ld-linux-x86-64.so.2
+
 echo "rootsbindir=/pos/sbin" > configparms
 "${base}/src/${component}/configure" --prefix=/pos                            \
                                      --disable-werror                         \
@@ -21,3 +27,6 @@ echo "rootsbindir=/pos/sbin" > configparms
 make
 
 make DESTDIR="$work_dir/pos-$component" install
+
+cd ..
+rm -rf "./$component"

@@ -13,16 +13,12 @@ util-linux
 "
 
 mkdir -p "pos-${ts}"
-
 for component in $components
 do
   cp -a "pos-$component/." "pos-${ts}/"
 done
-
-tar cf "pos-${ts}.tar" -C "pos-${ts}" .
-
-podman import "pos-${ts}.tar" "pos:${ts}"
-
-podman tag "pos:${ts}" pos
-
+tar cf "../pos-${ts}.tar" -C "pos-${ts}" .
 rm -rf "./pos-${ts}"
+
+podman import "../pos-${ts}.tar" "pos:${ts}"
+podman tag "pos:${ts}" pos

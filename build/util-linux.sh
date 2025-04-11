@@ -6,9 +6,11 @@ component=util-linux
 
 base=$(cd "$(dirname "$0")/../" || exit 1; pwd)
 work_dir=${base}/work
+source "$base/enable.sh"
+echo "$PATH"
 
-mkdir -p "$work_dir/$component"
-mkdir -p "$work_dir/pos-$component"
+mkdir "$work_dir/$component"
+mkdir "$work_dir/pos-$component"
 
 cd "$work_dir/$component" || exit 1
 
@@ -19,6 +21,8 @@ export SUID_CFLAGS="-fpie"
 export SUID_LDFLAGS="-pie -Wl,-z,relro -Wl,-z,now"
 export DAEMON_CFLAGS="$SUID_CFLAGS"
 export DAEMON_LDFLAGS="$SUID_LDFLAGS"
+export LDFLAGS=-Wl,--dynamic-linker=/pos/lib/ld-linux-x86-64.so.2
+#export LDFAGS=-Wl,--rpath=/pos/lib
 
 #--with-python=%{pyver} \
 "${base}/src/util-linux/configure" \
