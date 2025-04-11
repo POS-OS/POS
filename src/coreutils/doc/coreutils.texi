@@ -14803,7 +14803,7 @@ and print its name.  If given, @var{template} must include at least
 three consecutive @samp{X}s in the last component.  If omitted, the template
 @samp{tmp.XXXXXXXXXX} is used, and option @option{--tmpdir} is
 implied.  The final run of @samp{X}s in the @var{template} will be replaced
-by alpha-numeric characters; thus, on a case-sensitive file system,
+by alphanumeric characters; thus, on a case-sensitive file system,
 and with a @var{template} including a run of @var{n} instances of @samp{X},
 there are @samp{62**@var{n}} potential file names.
 
@@ -18913,6 +18913,11 @@ C locale (@pxref{Floating point}) followed by an optional unit:
 @samp{h} for hours
 @samp{d} for days
 @end display
+@macro hexDuration
+A hexadecimal number can precede a @samp{d} suffix only if the number
+has a @samp{p} style exponent, e.g., @samp{0x1p0d} means one day.
+@end macro
+@hexDuration
 A duration of 0 disables the associated timeout.
 The actual timeout duration is dependent on system conditions,
 which should be especially considered when specifying sub-second timeouts.
@@ -19088,6 +19093,8 @@ Although portable POSIX scripts must give @command{sleep} a single
 non-negative integer argument without a suffix, GNU @command{sleep}
 also accepts two or more arguments, unit suffixes, and floating-point
 numbers in either the current or the C locale.  @xref{Floating point}.
+
+@hexDuration
 
 For instance, the following could be used to @command{sleep} for
 1 second, 234 milli-, 567 micro- and 890 nanoseconds:

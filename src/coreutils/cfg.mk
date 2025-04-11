@@ -48,7 +48,7 @@ export VERBOSE = yes
 # 4914152 9e
 export XZ_OPT = -8e
 
-old_NEWS_hash = be5016485c56f34b60ba4e6d3b407489
+old_NEWS_hash = e846927f631201c953d1eb0774c23005
 
 # Add an exemption for sc_makefile_at_at_check.
 _makefile_at_at_check_exceptions = \
@@ -955,3 +955,9 @@ _gl_TS_unmarked_extern_vars = ptr_MD5_.*
 # Other tight_scope settings
 _gl_TS_dir = .
 _gl_TS_obj_files = src/*.$(OBJEXT)
+# Settings for running codespell.
+csiwl_1 = debbugs,clen,te,bu,shs,linke,fo,souch,inout,outin
+csiwl_2 = kno,ois,afile,whats,hda,indx,ot,nam
+codespell_ignore_words_list = $(csiwl_1),$(csiwl_2)
+exclude_file_name_regexp--sc_codespell = \
+  ^(THANKS\.in|tests/pr/.*(F|tn?|l(o|m|i)|bl))$$

@@ -56,7 +56,7 @@
 
 #include "system.h"
 #include "cl-strtod.h"
-#include "xstrtod.h"
+#include "dtimespec-bound.h"
 #include "sig2str.h"
 #include "operand2sig.h"
 #include "quote.h"
@@ -348,7 +348,7 @@ apply_time_suffix (double *x, char suffix_char)
       return false;
     }
 
-  *x *= multiplier;
+  *x = dtimespec_bound (*x * multiplier, 0);
 
   return true;
 }
@@ -356,22 +356,24 @@ apply_time_suffix (double *x, char suffix_char)
 static double
 parse_duration (char const *str)
 {
-  double duration;
-  char const *ep;
+  char *ep;
+  errno = 0;
+  double duration = cl_strtod (str, &ep);
+  double s = dtimespec_bound (duration, errno);
 
-  if (! (xstrtod (str, &ep, &duration, cl_strtod) || errno == ERANGE)
+  if (ep == str
       /* Nonnegative interval.  */
-      || ! (0 <= duration)
+      || ! (0 <= s)
       /* No extra chars after the number and an optional s,m,h,d char.  */
       || (*ep && *(ep + 1))
       /* Check any suffix char and update timeout based on the suffix.  */
-      || !apply_time_suffix (&duration, *ep))
+      || !apply_time_suffix (&s, *ep))
     {
       error (0, 0, _("invalid time interval %s"), quote (str));
       usage (EXIT_CANCELED);
     }
 
-  return duration;
+  return s;
 }
 
 static void
