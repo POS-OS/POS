@@ -7,7 +7,7 @@ base=$(cd "$(dirname "$0")/.." || exit 1; pwd)
 cd "${base}/../upstream/coreutils" || exit 1
 git checkout master
 git pull
-rsync --delete --delete-excluded --exclude .idea --exclude .git -av ./ "${base}/src/coreutils/"
+rsync --delete --delete-excluded --exclude .idea --exclude .git --exclude .gitmodules -av ./ "${base}/src/coreutils/"
 ucm=$(git log -1)
 
 cd "$base" || exit 1
