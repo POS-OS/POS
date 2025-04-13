@@ -466,7 +466,9 @@ _GL_CXXALIAS_SYS (copy_file_range, ssize_t, (int ifd, off_t *ipos,
                                              int ofd, off_t *opos,
                                              size_t len, unsigned flags));
 # endif
+# if __GLIBC__ >= 2
 _GL_CXXALIASWARN (copy_file_range);
+# endif
 #elif defined GNULIB_POSIXCHECK
 # undef copy_file_range
 # if HAVE_RAW_DECL_COPY_FILE_RANGE
@@ -1365,11 +1367,21 @@ _GL_WARN_ON_USE (gethostname, "gethostname is unportable - "
      ${LOGNAME-$USER}        on Unix platforms,
      $USERNAME               on native Windows platforms.
  */
-# if !@HAVE_DECL_GETLOGIN@
+# if @REPLACE_GETLOGIN@
+#  if !(defined __cplusplus && defined GNULIB_NAMESPACE)
+#   define getlogin rpl_getlogin
+#  endif
+_GL_FUNCDECL_RPL (getlogin, char *, (void), );
+_GL_CXXALIAS_RPL (getlogin, char *, (void));
+# else
+#  if !@HAVE_DECL_GETLOGIN@
 _GL_FUNCDECL_SYS (getlogin, char *, (void), );
-# endif
+#  endif
 _GL_CXXALIAS_SYS (getlogin, char *, (void));
+# endif
+# if __GLIBC__ >= 2
 _GL_CXXALIASWARN (getlogin);
+# endif
 #elif defined GNULIB_POSIXCHECK
 # undef getlogin
 # if HAVE_RAW_DECL_GETLOGIN

@@ -1625,6 +1625,7 @@ endef
 .PHONY: no-submodule-changes
 no-submodule-changes:
 	$(AM_V_GEN)if test -d $(srcdir)/.git				\
+		&& test -e $(srcdir)/.gitmodules			\
 		&& git --version >/dev/null 2>&1; then			\
 	  diff=$$(cd $(srcdir) && git submodule -q foreach		\
 		  git diff-index --name-only HEAD)			\
@@ -1644,6 +1645,7 @@ submodule-checks ?= no-submodule-changes public-submodule-commit
 .PHONY: public-submodule-commit
 public-submodule-commit:
 	$(AM_V_GEN)if test -d $(srcdir)/.git				\
+		&& test -e $(srcdir)/.gitmodules			\
 		&& git --version >/dev/null 2>&1; then			\
 	  cd $(srcdir) &&						\
 	  git submodule --quiet foreach					\
@@ -1741,7 +1743,7 @@ build-coverage:
 gen-coverage:
 	genhtml --output-directory $(COVERAGE_OUT) \
 		$(COVERAGE_OUT)/$(PACKAGE).info \
-		--highlight --frames --legend \
+		--frames --legend \
 		--title "$(PACKAGE_NAME)"
 
 coverage:
@@ -1813,6 +1815,21 @@ sc_indent:
 	  test $$fail = 1 &&						\
 	    { echo 1>&2 '$(ME): code format error, try "make indent"';	\
 	      exit 1; } || :;						\
+	fi
+
+# Check code spelling.
+# Example 'cfg.mk' settings for inspiration:
+# codespell_ignore_words_list = foo
+# exclude_file_name_regexp--sc_codespell = ^po/.*.po|doc/.*.pdf$$
+# codespell_extra_args = --summary --count
+# codespell_args = --ignore-words=doc/my-codespell-ignores.txt
+codespell_args ?= --ignore-words-list $(codespell_ignore_words_list) \
+	$(codespell_extra_args)
+sc_codespell:
+	@if ! command -v codespell > /dev/null; then			\
+	   echo 1>&2 '$(ME): sc_codespell: codespell is missing';	\
+	else								\
+	   codespell $(codespell_args) $$($(VC_LIST_EXCEPT));		\
 	fi
 
 # If you want to set UPDATE_COPYRIGHT_* environment variables,

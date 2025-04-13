@@ -3,7 +3,7 @@
 
    This file is free software: you can redistribute it and/or modify
    it under the terms of the GNU Lesser General Public License as
-   published by the Free Software Foundation, either version 3 of the
+   published by the Free Software Foundation; either version 2.1 of the
    License, or (at your option) any later version.
 
    This file is distributed in the hope that it will be useful,
@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "setlocale-fixes.h"
 #include "localename.h"
 
 #if HAVE_CFLOCALECOPYPREFERREDLANGUAGES || HAVE_CFPREFERENCESCOPYAPPVALUE
@@ -872,7 +873,7 @@ setlocale_unixlike (int category, const char *locale)
 static char *
 setlocale_unixlike (int category, const char *locale)
 {
-  char *result = setlocale_mtsafe (category, locale);
+  char *result = setlocale_fixed (category, locale);
   if (result == NULL)
     switch (category)
       {
@@ -905,22 +906,12 @@ setlocale_unixlike (int category, const char *locale)
 
 #  if LC_MESSAGES == 1729
 
-/* The system does not store an LC_MESSAGES locale category.  Do it here.  */
-static char lc_messages_name[64] = "C";
-
 /* Like setlocale, but support also LC_MESSAGES.  */
 static char *
 setlocale_single (int category, const char *locale)
 {
   if (category == LC_MESSAGES)
-    {
-      if (locale != NULL)
-        {
-          lc_messages_name[sizeof (lc_messages_name) - 1] = '\0';
-          strncpy (lc_messages_name, locale, sizeof (lc_messages_name) - 1);
-        }
-      return lc_messages_name;
-    }
+    return setlocale_messages (locale);
   else
     return setlocale_unixlike (category, locale);
 }
@@ -1814,6 +1805,8 @@ setlocale_improved (int category, const char *locale)
         return resultbuf;
       }
   }
+#  elif defined __ANDROID__
+  return setlocale_fixed_null (LC_ALL);
 #  else
   return setlocale (LC_ALL, NULL);
 #  endif

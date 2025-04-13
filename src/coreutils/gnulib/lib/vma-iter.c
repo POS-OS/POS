@@ -101,7 +101,7 @@
 # include <mach/mach.h>
 #endif
 
-#if defined __GNU__ /* GNU/Hurd */
+#if defined __gnu_hurd__ /* GNU/Hurd */
 # include <mach/mach.h>
 #endif
 
@@ -1585,7 +1585,7 @@ vma_iterate (vma_iterate_callback_fn callback, void *data)
     }
   return 0;
 
-#elif defined __GNU__ /* GNU/Hurd */
+#elif defined __gnu_hurd__ /* GNU/Hurd */
 
   /* The Hurd has a /proc/self/maps that looks like the Linux one, but it
      lacks the VMAs created through anonymous mmap.  Therefore use the Mach
@@ -1692,9 +1692,11 @@ vma_iterate (vma_iterate_callback_fn callback, void *data)
       end = start + info.size;
       flags = 0;
       if (info.protection & B_READ_AREA)
-        flags |= VMA_PROT_READ | VMA_PROT_EXECUTE;
+        flags |= VMA_PROT_READ;
       if (info.protection & B_WRITE_AREA)
         flags |= VMA_PROT_WRITE;
+      if (info.protection & B_EXECUTE_AREA)
+        flags |= VMA_PROT_EXECUTE;
 
       if (callback (data, start, end, flags))
         break;
