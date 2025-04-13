@@ -9,6 +9,7 @@ work_dir=${base}/work
 cd "$work_dir" || exit 1
 
 components="glibc
+coreutils
 util-linux
 "
 
