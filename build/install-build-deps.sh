@@ -48,5 +48,6 @@ sudo dnf -y install \
   rubygem-asciidoctor \
   systemd-devel \
   texinfo \
+  texinfo-tex \
   xz-devel \
   perl
