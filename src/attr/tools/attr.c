@@ -28,7 +28,6 @@
 #include <errno.h>
 #include <string.h>
 #include <locale.h>
-#include <libgen.h>
 
 #include <attr/attributes.h>
 
@@ -43,7 +42,7 @@
 
 static char *progname;
 
-static void
+void
 usage(void)
 {
 	fprintf(stderr, _(

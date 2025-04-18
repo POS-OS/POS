@@ -20,7 +20,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: attr\n"
 "Report-Msgid-Bugs-To: acl-devel@nongnu.org\n"
-"POT-Creation-Date: 2022-12-03 12:45+0100\n"
+"POT-Creation-Date: 2024-01-13 21:39-0500\n"
 "PO-Revision-Date: 2022-12-03 12:43+0100\n"
 "Last-Translator: Jean-Pierre Giraud <jean-pierregiraud@neuf.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -31,163 +31,28 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Lokalize 2.0\n"
 
-#: libattr/attr_copy_file.c:78 libattr/attr_copy_file.c:93
 #: libattr/attr_copy_fd.c:80 libattr/attr_copy_fd.c:95
+#: libattr/attr_copy_file.c:78 libattr/attr_copy_file.c:93
 #, c-format
 msgid "listing attributes of %s"
 msgstr "affichage des attributs de %s"
 
-#: libattr/attr_copy_file.c:113 libattr/attr_copy_file.c:130
 #: libattr/attr_copy_fd.c:115 libattr/attr_copy_fd.c:132
+#: libattr/attr_copy_file.c:113 libattr/attr_copy_file.c:130
 #, c-format
 msgid "getting attribute %s of %s"
 msgstr "obtention de l'attribut %s de %s"
 
-#: libattr/attr_copy_file.c:143 libattr/attr_copy_file.c:162
 #: libattr/attr_copy_fd.c:145 libattr/attr_copy_fd.c:164
+#: libattr/attr_copy_file.c:143 libattr/attr_copy_file.c:162
 #, c-format
 msgid "setting attributes for %s"
 msgstr "positionnement des attributs de %s"
 
-#: libattr/attr_copy_file.c:150 libattr/attr_copy_fd.c:152
+#: libattr/attr_copy_fd.c:152 libattr/attr_copy_file.c:150
 #, c-format
 msgid "setting attribute %s for %s"
 msgstr "positionnement de l'attribut %s de %s"
-
-#: tools/setfattr.c:75 tools/getfattr.c:100
-msgid "No such attribute"
-msgstr "Attribut inconnu"
-
-#: tools/setfattr.c:129
-#, c-format
-msgid "%s: %s: No filename found in line %d, aborting\n"
-msgstr "%s : %s : la ligne %d ne contient aucun nom de fichier, abandon\n"
-
-#: tools/setfattr.c:133
-#, c-format
-msgid "%s: No filename found in line %d of standard input, aborting\n"
-msgstr ""
-"%s : la ligne %d de l'entrée standard ne contient aucun nom de fichier, "
-"abandon\n"
-
-#: tools/setfattr.c:180
-#, c-format
-msgid "%s %s -- set extended attributes\n"
-msgstr "%s %s -- positionner les attributs étendus\n"
-
-#: tools/setfattr.c:181 tools/getfattr.c:385
-#, c-format
-msgid "Usage: %s %s\n"
-msgstr "Utilisation : %s %s\n"
-
-#: tools/setfattr.c:182
-#, c-format
-msgid "       %s %s\n"
-msgstr "       %s %s\n"
-
-#: tools/setfattr.c:184
-#, c-format
-msgid ""
-"  -n, --name=name         set the value of the named extended attribute\n"
-"  -x, --remove=name       remove the named extended attribute\n"
-"  -v, --value=value       use value as the attribute value\n"
-"  -h, --no-dereference    do not dereference symbolic links\n"
-"      --restore=file      restore extended attributes\n"
-"      --raw               attribute value is not encoded\n"
-"      --version           print version and exit\n"
-"      --help              this help text\n"
-msgstr ""
-"  -n, --name=nom          affecter la valeur à l'attribut étendu nom\n"
-"  -x, --remove=nom        supprimer l'attribut étendu nom\n"
-"  -v, --value=val         donner à l'attribut la valeur val\n"
-"  -h, --no-dereference    ne pas déréférencer les liens symboliques\n"
-"      --restore=fichier   rétablir les attributs étendus\n"
-"      --raw               valeur de l'attribut non typée\n"
-"      --version           afficher la version et quitter\n"
-"      --help              afficher cette aide\n"
-
-#: tools/setfattr.c:264
-#, c-format
-msgid ""
-"Usage: %s %s\n"
-"       %s %s\n"
-"Try `%s --help' for more information.\n"
-msgstr ""
-"Utilisation : %s %s\n"
-"              %s %s\n"
-"Taper « %s --help » pour plus d'informations.\n"
-
-#: tools/getfattr.c:265
-#, c-format
-msgid "%s: Removing leading '/' from absolute path names\n"
-msgstr "%s : Suppression des « / » en tête des chemins absolus\n"
-
-#: tools/getfattr.c:383
-#, c-format
-msgid "%s %s -- get extended attributes\n"
-msgstr "%s %s -- obtenir les attributs étendus\n"
-
-#: tools/getfattr.c:388
-#, fuzzy, c-format
-#| msgid ""
-#| "  -n, --name=name         get the named extended attribute value\n"
-#| "  -d, --dump              get all extended attribute values\n"
-#| "  -e, --encoding=...      encode values (as 'text', 'hex' or 'base64')\n"
-#| "      --match=pattern     only get attributes with names matching "
-#| "pattern\n"
-#| "      --only-values       print the bare values only\n"
-#| "  -h, --no-dereference    do not dereference symbolic links\n"
-#| "      --absolute-names    don't strip leading '/' in pathnames\n"
-#| "  -R, --recursive         recurse into subdirectories\n"
-#| "  -L, --logical           logical walk, follow symbolic links\n"
-#| "  -P  --physical          physical walk, do not follow symbolic links\n"
-#| "      --version           print version and exit\n"
-#| "      --help              this help text\n"
-msgid ""
-"  -n, --name=name         get the named extended attribute value\n"
-"  -d, --dump              get all extended attribute values\n"
-"  -e, --encoding=...      encode values (as 'text', 'hex' or 'base64')\n"
-"      --match=pattern     only get attributes with names matching pattern\n"
-"      --only-values       print the bare values only\n"
-"  -h, --no-dereference    do not dereference symbolic links\n"
-"      --one-file-system   skip files on different filesystems\n"
-"      --absolute-names    don't strip leading '/' in pathnames\n"
-"  -R, --recursive         recurse into subdirectories\n"
-"  -L, --logical           logical walk, follow symbolic links\n"
-"  -P  --physical          physical walk, do not follow symbolic links\n"
-"      --version           print version and exit\n"
-"      --help              this help text\n"
-msgstr ""
-" -n, --name=nom         donner la valeur de l'attribut étendu nom\n"
-" -d, --dump             donner la valeur de tous les attributs étendus\n"
-" -e, --encoding=...     typer les valeurs (« text », « hex » ou « base64 »)\n"
-"     --match=motif      ne prendre en compte que les attributs "
-"correspondants\n"
-"                        au motif\n"
-"     --only-values      n'afficher que les valeurs\n"
-" -h, --no-dereference   ne pas déréférencer les liens symboliques\n"
-"     --absolute-names   ne pas supprimer les « / » en tête des chemins\n"
-"                        absolus\n"
-" -R, --recursive        parcourir récursivement les sous-répertoires\n"
-" -L, --logical          chemin logique, suivre les liens symboliques\n"
-" -P  --physical         chemin physique, ne pas suivre les liens "
-"symboliques\n"
-"     --version          afficher la version et quitter\n"
-"     --help             afficher cette aide\n"
-
-#: tools/getfattr.c:489
-#, c-format
-msgid "%s: invalid regular expression \"%s\"\n"
-msgstr "%s : expression rationnelle non valable « %s »\n"
-
-#: tools/getfattr.c:503
-#, c-format
-msgid ""
-"Usage: %s %s\n"
-"Try `%s --help' for more information.\n"
-msgstr ""
-"Utilisation : %s %s\n"
-"Taper « %s --help » pour plus d'informations.\n"
 
 #: tools/attr.c:49
 #, c-format
@@ -267,3 +132,124 @@ msgstr "L'attribut « %s » avait une valeur de %d octets pour %s\n"
 #, c-format
 msgid "At least one of -s, -g, -r, or -l is required\n"
 msgstr "Au moins un des commutateurs -s, -g, -r ou -l est requis.\n"
+
+#: tools/getfattr.c:100 tools/setfattr.c:75
+msgid "No such attribute"
+msgstr "Attribut inconnu"
+
+#: tools/getfattr.c:265
+#, c-format
+msgid "%s: Removing leading '/' from absolute path names\n"
+msgstr "%s : Suppression des « / » en tête des chemins absolus\n"
+
+#: tools/getfattr.c:383
+#, c-format
+msgid "%s %s -- get extended attributes\n"
+msgstr "%s %s -- obtenir les attributs étendus\n"
+
+#: tools/getfattr.c:385 tools/setfattr.c:181
+#, c-format
+msgid "Usage: %s %s\n"
+msgstr "Utilisation : %s %s\n"
+
+#: tools/getfattr.c:388
+#, fuzzy, c-format
+msgid ""
+"  -n, --name=name         get the named extended attribute value\n"
+"  -d, --dump              get all extended attribute values\n"
+"  -e, --encoding=...      encode values (as 'text', 'hex' or 'base64')\n"
+"  -m, --match=pattern     only get attributes with names matching pattern\n"
+"      --only-values       print the bare values only\n"
+"  -h, --no-dereference    do not dereference symbolic links\n"
+"      --one-file-system   skip files on different filesystems\n"
+"      --absolute-names    don't strip leading '/' in pathnames\n"
+"  -R, --recursive         recurse into subdirectories\n"
+"  -L, --logical           logical walk, follow symbolic links\n"
+"  -P  --physical          physical walk, do not follow symbolic links\n"
+"      --version           print version and exit\n"
+"      --help              this help text\n"
+msgstr ""
+" -n, --name=nom         donner la valeur de l'attribut étendu nom\n"
+" -d, --dump             donner la valeur de tous les attributs étendus\n"
+" -e, --encoding=...     typer les valeurs (« text », « hex » ou « base64 »)\n"
+"     --match=motif      ne prendre en compte que les attributs "
+"correspondants\n"
+"                        au motif\n"
+"     --only-values      n'afficher que les valeurs\n"
+" -h, --no-dereference   ne pas déréférencer les liens symboliques\n"
+"     --absolute-names   ne pas supprimer les « / » en tête des chemins\n"
+"                        absolus\n"
+" -R, --recursive        parcourir récursivement les sous-répertoires\n"
+" -L, --logical          chemin logique, suivre les liens symboliques\n"
+" -P  --physical         chemin physique, ne pas suivre les liens "
+"symboliques\n"
+"     --version          afficher la version et quitter\n"
+"     --help             afficher cette aide\n"
+
+#: tools/getfattr.c:489
+#, c-format
+msgid "%s: invalid regular expression \"%s\"\n"
+msgstr "%s : expression rationnelle non valable « %s »\n"
+
+#: tools/getfattr.c:503
+#, c-format
+msgid ""
+"Usage: %s %s\n"
+"Try `%s --help' for more information.\n"
+msgstr ""
+"Utilisation : %s %s\n"
+"Taper « %s --help » pour plus d'informations.\n"
+
+#: tools/setfattr.c:129
+#, c-format
+msgid "%s: %s: No filename found in line %d, aborting\n"
+msgstr "%s : %s : la ligne %d ne contient aucun nom de fichier, abandon\n"
+
+#: tools/setfattr.c:133
+#, c-format
+msgid "%s: No filename found in line %d of standard input, aborting\n"
+msgstr ""
+"%s : la ligne %d de l'entrée standard ne contient aucun nom de fichier, "
+"abandon\n"
+
+#: tools/setfattr.c:180
+#, c-format
+msgid "%s %s -- set extended attributes\n"
+msgstr "%s %s -- positionner les attributs étendus\n"
+
+#: tools/setfattr.c:182
+#, c-format
+msgid "       %s %s\n"
+msgstr "       %s %s\n"
+
+#: tools/setfattr.c:184
+#, c-format
+msgid ""
+"  -n, --name=name         set the value of the named extended attribute\n"
+"  -x, --remove=name       remove the named extended attribute\n"
+"  -v, --value=value       use value as the attribute value\n"
+"  -h, --no-dereference    do not dereference symbolic links\n"
+"      --restore=file      restore extended attributes\n"
+"      --raw               attribute value is not encoded\n"
+"      --version           print version and exit\n"
+"      --help              this help text\n"
+msgstr ""
+"  -n, --name=nom          affecter la valeur à l'attribut étendu nom\n"
+"  -x, --remove=nom        supprimer l'attribut étendu nom\n"
+"  -v, --value=val         donner à l'attribut la valeur val\n"
+"  -h, --no-dereference    ne pas déréférencer les liens symboliques\n"
+"      --restore=fichier   rétablir les attributs étendus\n"
+"      --raw               valeur de l'attribut non typée\n"
+"      --version           afficher la version et quitter\n"
+"      --help              afficher cette aide\n"
+
+#: tools/setfattr.c:264
+#, c-format
+msgid ""
+"Usage: %s %s\n"
+"       %s %s\n"
+"Try `%s --help' for more information.\n"
+msgstr ""
+"Utilisation : %s %s\n"
+"              %s %s\n"
+"Taper « %s --help » pour plus d'informations.\n"

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: attr 2.5.1\n"
 "Report-Msgid-Bugs-To: acl-devel@nongnu.org\n"
-"POT-Creation-Date: 2022-09-22 22:15+0200\n"
+"POT-Creation-Date: 2024-01-13 21:39-0500\n"
 "PO-Revision-Date: 2022-09-23 07:04+0200\n"
 "Last-Translator: Temuri Doghonadze <temuri.doghonadze@gmail.com>\n"
 "Language-Team: Georgian <(nothing)>\n"
@@ -50,16 +50,20 @@ msgid ""
 "       %s [-LRq]  -l pathname                          # list attrs \n"
 "      -s reads a value from stdin and -g writes a value to stdout\n"
 msgstr ""
-"გამოყენება: %s [-LRSq] -s ატრსახელი [-V ატტრსახელი] ბილიკი   # მნიშვნელობის დაყენება\n"
-"        %s [-LRSq] -g ატრსახელი ბილიკი                 # მნიშვნელობის მიღება\n"
+"გამოყენება: %s [-LRSq] -s ატრსახელი [-V ატტრსახელი] ბილიკი   # მნიშვნელობის "
+"დაყენება\n"
+"        %s [-LRSq] -g ატრსახელი ბილიკი                 # მნიშვნელობის "
+"მიღება\n"
 "        %s [-LRSq] -r ატრსახელი ბილიკი                 # მნიშვნელობის წაშლა\n"
 "        %s [-LRq]  -l ბილიკი                          # ატრიბუტების სია\n"
-"       -s წაიკითხავს მნიშვნელობას სტანდარტული შეტანიდან და -g მნიშვნელობას სტანდარტულ გამოტანაზე გამოიტანს\n"
+"       -s წაიკითხავს მნიშვნელობას სტანდარტული შეტანიდან და -g მნიშვნელობას "
+"სტანდარტულ გამოტანაზე გამოიტანს\n"
 
 #: tools/attr.c:87 tools/attr.c:104 tools/attr.c:113 tools/attr.c:122
 #, c-format
 msgid "Only one of -s, -g, -r, or -l allowed\n"
-msgstr "-s, -g, -r და -l პარამეტრებიდან მხოლოდ ერთ-ერთის გამოყენებაა ნებადართული\n"
+msgstr ""
+"-s, -g, -r და -l პარამეტრებიდან მხოლოდ ერთ-ერთის გამოყენებაა ნებადართული\n"
 
 #: tools/attr.c:95 tools/attr.c:161
 #, c-format
@@ -123,7 +127,8 @@ msgstr "ასეთი ატრიბუტი არ არსებობს
 #: tools/getfattr.c:265
 #, c-format
 msgid "%s: Removing leading '/' from absolute path names\n"
-msgstr "%s: აბსოლუტური ბილიკის შემცველი სახელების წინ დაატებული \"/\"-ის მოცილება\n"
+msgstr ""
+"%s: აბსოლუტური ბილიკის შემცველი სახელების წინ დაატებული \"/\"-ის მოცილება\n"
 
 #: tools/getfattr.c:383
 #, c-format
@@ -136,12 +141,12 @@ msgid "Usage: %s %s\n"
 msgstr "გამოყენება: %s %s\n"
 
 #: tools/getfattr.c:388
-#, c-format
+#, fuzzy, c-format
 msgid ""
 "  -n, --name=name         get the named extended attribute value\n"
 "  -d, --dump              get all extended attribute values\n"
 "  -e, --encoding=...      encode values (as 'text', 'hex' or 'base64')\n"
-"      --match=pattern     only get attributes with names matching pattern\n"
+"  -m, --match=pattern     only get attributes with names matching pattern\n"
 "      --only-values       print the bare values only\n"
 "  -h, --no-dereference    do not dereference symbolic links\n"
 "      --one-file-system   skip files on different filesystems\n"
@@ -152,13 +157,17 @@ msgid ""
 "      --version           print version and exit\n"
 "      --help              this help text\n"
 msgstr ""
-"  -n, --name=name         მითითებული სახელის მქონე გაფართოებული ატრიბუტის მნიშვნელობის მიღება\n"
+"  -n, --name=name         მითითებული სახელის მქონე გაფართოებული ატრიბუტის "
+"მნიშვნელობის მიღება\n"
 "  -d, --dump              ყველა გაფრთოებული ატრიბუტის მნიშვნელობის მიღება\n"
-"  -e, --encoding=...      მნიშვნელბების კოდირება (როგორც 'text'(ტექსტი), 'hex'(თევსმეტობითი) ან 'base64'(base64-ით კოდირებული)\n"
-"      --match=pattern     მხოლოდ მითითებულ შაბლონს რომ ემთხვევა, იმ ატრიბუტების გამოტანა\n"
+"  -e, --encoding=...      მნიშვნელბების კოდირება (როგორც 'text'(ტექსტი), "
+"'hex'(თევსმეტობითი) ან 'base64'(base64-ით კოდირებული)\n"
+"      --match=pattern     მხოლოდ მითითებულ შაბლონს რომ ემთხვევა, იმ "
+"ატრიბუტების გამოტანა\n"
 "      --only-values       მხოლოდ მნიშვნელობების გამოტანა\n"
 "  -h, --no-dereference    სიმბმბულების არ-მიყოლა\n"
-"      --one-file-system   ფაილების გამოტოვება, რომლებიც სხვა ფაილურ სისტემაზე არიან\n"
+"      --one-file-system   ფაილების გამოტოვება, რომლებიც სხვა ფაილურ "
+"სისტემაზე არიან\n"
 "      --absolute-names    ბილიკის სახელებში საწყისი '/' არ მოშორდება\n"
 "  -R, --recursive         ქვესაქაღალდეების რეკურსია\n"
 "  -L, --logical           ლოგიკური სიარული, სიმბმბულებზე მიყოლა\n"
@@ -188,7 +197,9 @@ msgstr "%s: %s: ხაზზე %d ფაილის სახელი არ 
 #: tools/setfattr.c:133
 #, c-format
 msgid "%s: No filename found in line %d of standard input, aborting\n"
-msgstr "%s: ფაილის სახელი სტანდარტული შეტანის %d-ე ხაზზე მითითებული არაა. მუშაობის დასასრული\n"
+msgstr ""
+"%s: ფაილის სახელი სტანდარტული შეტანის %d-ე ხაზზე მითითებული არაა. მუშაობის "
+"დასასრული\n"
 
 #: tools/setfattr.c:180
 #, c-format
@@ -212,8 +223,10 @@ msgid ""
 "      --version           print version and exit\n"
 "      --help              this help text\n"
 msgstr ""
-"  -n, --name=სახელი         მითითებული სახელის მქონე გაფართოებული ატრიბუტის მნიშვნელობის მიღება\n"
-"  -x, --remove=სახელი       მითითებული სახელის მქნე გაფართოებული ატრიბუტის წაშლა\n"
+"  -n, --name=სახელი         მითითებული სახელის მქონე გაფართოებული ატრიბუტის "
+"მნიშვნელობის მიღება\n"
+"  -x, --remove=სახელი       მითითებული სახელის მქნე გაფართოებული ატრიბუტის "
+"წაშლა\n"
 "  -v, --value=მნიშვნელობაა   ატრიბუტის მნიშვნელობის დაყენება\n"
 "  -h, --no-dereference    სიმბმულების ბმები არ მოიხსნება\n"
 "      --restore=ფაილი      გაფართოებული ატრიბუტების აღდგენა\n"
