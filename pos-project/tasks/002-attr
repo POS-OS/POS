@@ -1,0 +1,3 @@
+Attr successfully built from VC sources
+VC sources fails on autogen.sh (autoreconf -f -i)
+error  error: possibly undefined macro: AC_FUNC_GCC_VISIBILITY
