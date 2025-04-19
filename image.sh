@@ -12,6 +12,7 @@ components="glibc
 attr
 libcap
 gmp
+coreutils
 util-linux
 "
 
