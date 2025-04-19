@@ -11,6 +11,7 @@ cd "$work_dir" || exit 1
 components="glibc
 attr
 libcap
+gmp
 util-linux
 "
 
