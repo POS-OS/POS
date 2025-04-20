@@ -50,4 +50,6 @@ sudo dnf -y install \
   texinfo \
   texinfo-tex \
   xz-devel \
-  perl
+  perl \
+  dejagnu \
+  ncurses-devel

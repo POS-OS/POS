@@ -13,6 +13,7 @@ attr
 libcap
 gmp
 coreutils
+procps
 util-linux
 "
 

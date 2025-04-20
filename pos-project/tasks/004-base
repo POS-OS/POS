@@ -1,0 +1,14 @@
+ca-certificates
+(/) procps
+tzdata
+libacl
+libcap-ng
+openssl-libs
+cracklib
+shadow-utils
+bash
+bzip2
+grep
+gzip
+curl
+sed
