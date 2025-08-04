@@ -15,7 +15,8 @@ mkdir "$work_dir/pos-$component"
 
 cd "$work_dir/$component" || exit 1
 
-export LDFLAGS=-Wl,--dynamic-linker=/pos/lib/ld-linux-x86-64.so.2
+# Likely not needed...
+#export LDFLAGS=-Wl,--dynamic-linker=/pos/lib/ld-linux-x86-64.so.2
 
 echo "rootsbindir=/pos/sbin" > configparms
 "${base}/src/${component}/configure" --prefix=/pos                            \
