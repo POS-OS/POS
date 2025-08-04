@@ -6,11 +6,14 @@ base=$(cd "$(dirname "$0")" || exit 1; pwd)
 ts=$(date --utc +%Y%m%d%H%M)
 work_dir=${base}/work
 
+[[ -f /run/.toolboxenv ]] && exit 1
+
 cd "$work_dir" || exit 1
 
 components="glibc
 attr
 libcap
+acl
 gmp
 coreutils
 procps
