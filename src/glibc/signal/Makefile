@@ -60,6 +60,7 @@ tests := \
   tst-sigset \
   tst-sigset2 \
   tst-sigsimple \
+  tst-sigtimedwait-timeout \
   tst-sigwait-eintr \
 # tests
 

@@ -220,6 +220,7 @@ install-rootsbin += ldconfig
 ldconfig-modules := \
   cache \
   chroot_canon \
+  ldconfig-parse \
   readlib \
   static-stubs \
   stringtable \
@@ -1433,6 +1434,8 @@ $(objpfx)tst-glibcelf.out: tst-glibcelf.py elf.h $(..)/scripts/glibcelf.py \
 
 ifeq ($(run-built-tests),yes)
 tests-special += $(objpfx)tst-tls-allocation-failure-static-patched.out
+tests-special += $(objpfx)tst-tls-debug-recursive.out
+tests-special += $(objpfx)tst-dl-debug-exclude.out
 endif
 
 # The test requires shared _and_ PIE because the executable
@@ -1513,7 +1516,7 @@ $(objpfx)librtld.map: $(objpfx)dl-allobjs.os $(common-objpfx)libc_pic.a
 		echo ".globl $$symbol"; \
 		echo "$$symbol:"; \
 	done | $(CC) -o $@T.o $(ASFLAGS) -c -x assembler -
-	$(reloc-link) -o $@.o $@T.o '-Wl,-(' $^ -lgcc '-Wl,-)' -Wl,-Map,$@T
+	$(reloc-link) -o $@.o $@T.o '-Wl,-(' $^ $(gnulib) '-Wl,-)' -Wl,-Map,$@T
 	rm -f %@T.o $@.o
 	mv -f $@T $@
 
@@ -1543,7 +1546,7 @@ $(objpfx)rtld-libc.a: $(objpfx)librtld.mk FORCE
 	$(MAKE) -f $< -f rtld-Rules
 
 $(objpfx)librtld.os: $(objpfx)dl-allobjs.os $(objpfx)rtld-libc.a
-	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ -lgcc '-Wl,-)' \
+	$(LINK.o) -nostdlib -nostartfiles -r -o $@ '-Wl,-(' $^ $(gnulib) '-Wl,-)' \
 		  -Wl,-Map,$@.map
 
 generated += librtld.map librtld.mk rtld-libc.a librtld.os.map
@@ -2233,9 +2236,6 @@ endif
 ifeq ($(have-thread-library),yes)
 localplt-built-dso += $(filter-out %_nonshared.a, $(shared-thread-library))
 endif
-ifneq ($(pthread-in-libc),yes)
-localplt-built-dso += $(addprefix $(common-objpfx), rt/librt.so)
-endif
 
 vpath localplt.data $(+sysdep_dirs)
 
@@ -2715,10 +2715,6 @@ $(objpfx)tst-ldconfig-soname.out : tst-ldconfig-soname.sh \
 # Test static linking of all the libraries we can possibly link
 # together.  Note that in some configurations this may be less than the
 # complete list of libraries we build but we try to maxmimize this list.
-ifeq ($(pthread-in-libc),no)
-$(objpfx)tst-linkall-static: \
-  $(common-objpfx)resolv/libanl.a
-endif
 $(objpfx)tst-linkall-static: \
   $(common-objpfx)math/libm.a \
   $(common-objpfx)resolv/libresolv.a \
@@ -2763,6 +2759,8 @@ $(objpfx)tst-big-note-lib.so: $(objpfx)tst-big-note-lib.o
 	$(LINK.o) -shared -o $@ $(LDFLAGS.so) $(dt-relr-ldflag) $<
 
 $(objpfx)tst-unwind-ctor: $(objpfx)tst-unwind-ctor-lib.so
+LDLIBS-tst-unwind-ctor += $(libunwind)
+LDFLAGS-tst-unwind-ctor-lib.so = -Wl,--unresolved-symbols=ignore-all
 
 CFLAGS-tst-unwind-main.c += -funwind-tables -DUSE_PTHREADS=0
 
@@ -3533,3 +3531,26 @@ $(objpfx)tst-origin.out: tst-origin.sh $(objpfx)tst-origin
 	$(evaluate-test)
 
 $(objpfx)tst-dlopen-sgid.out: $(objpfx)tst-dlopen-sgid-mod.so
+
+
+ifeq ($(run-built-tests),yes)
+$(objpfx)tst-tls-debug-recursive.out: tst-tls-debug-recursive.sh \
+			      $(objpfx)tst-recursive-tls \
+			      $(objpfx)tst-recursive-tlsmallocmod.so \
+			      $(patsubst %,$(objpfx)tst-recursive-tlsmod%.so, \
+				0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
+	$(SHELL) $< $(common-objpfx) '$(test-wrapper-env)' \
+		 '$(rtld-prefix)' '$(run_program_env)' \
+		 $(objpfx)tst-recursive-tls > $@; \
+	$(evaluate-test)
+
+$(objpfx)tst-dl-debug-exclude.out: tst-dl-debug-exclude.sh \
+				  $(objpfx)tst-recursive-tls \
+				  $(objpfx)tst-recursive-tlsmallocmod.so \
+				  $(patsubst %,$(objpfx)tst-recursive-tlsmod%.so, \
+				    0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
+	$(SHELL) $< $(common-objpfx) '$(test-wrapper-env)' \
+		 '$(rtld-prefix)' '$(run_program_env)' \
+		 $(objpfx)tst-recursive-tls > $@; \
+	$(evaluate-test)
+endif

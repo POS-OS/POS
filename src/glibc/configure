@@ -612,7 +612,6 @@ ac_unique_file="include/features.h"
 enable_option_checking=no
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
-pthread_in_libc
 RELEASE
 VERSION
 mach_interface_list
@@ -7069,18 +7068,17 @@ if test $libc_cv_have_sdata_section = yes; then
 
 fi
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for libunwind-support in compiler" >&5
-printf %s "checking for libunwind-support in compiler... " >&6; }
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the compiler links with libunwind" >&5
+printf %s "checking whether the compiler links with libunwind... " >&6; }
 if test ${libc_cv_cc_with_libunwind+y}
 then :
   printf %s "(cached) " >&6
 else case e in #(
-  e)
-  cat > conftest.c <<EOF
+  e) cat > conftest.c <<EOF
 int main (void) { return 0; }
 EOF
   if ${CC-cc} $CFLAGS $CPPFLAGS $LDFLAGS -static -o conftest \
-     conftest.c -v 2>&1 >/dev/null | grep ' -lunwind ' >/dev/null; then
+     conftest.c -v 2>&1 >/dev/null | grep 'libunwind.a' >/dev/null; then
     libc_cv_cc_with_libunwind=yes
   else
     libc_cv_cc_with_libunwind=no
@@ -7095,6 +7093,8 @@ if test $libc_cv_cc_with_libunwind = yes; then
   printf "%s\n" "#define HAVE_CC_WITH_LIBUNWIND 1" >>confdefs.h
 
 fi
+config_vars="$config_vars
+have-cc-with-libunwind = $libc_cv_cc_with_libunwind"
 
 ASFLAGS_config=
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether --noexecstack is desirable for .S files" >&5
@@ -8344,6 +8344,40 @@ CXX="$saved_CXX"
 config_vars="$config_vars
 test-config-cxxflags-finput-charset-ascii = $libc_cv_test_cxxflags_finput_charset_ascii"
 
+
+
+saved_CXX="$CXX"
+CXX="$TEST_CXX"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking $CXX -std=c++26 in testing" >&5
+printf %s "checking $CXX -std=c++26 in testing... " >&6; }
+if test ${libc_cv_test_cxxflags_stdcxx26+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) if { ac_try='${CXX-c++} -Werror -std=c++26 -xc++ /dev/null -S -o /dev/null'
+  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }; }
+then :
+  libc_cv_test_cxxflags_stdcxx26="-std=c++26"
+else case e in #(
+  e) libc_cv_test_cxxflags_stdcxx26=
+ ;;
+esac
+fi ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_test_cxxflags_stdcxx26" >&5
+printf "%s\n" "$libc_cv_test_cxxflags_stdcxx26" >&6; }
+
+CXX="$saved_CXX"
+
+
+config_vars="$config_vars
+test-config-cxxflags-stdcxx26 = $libc_cv_test_cxxflags_stdcxx26"
+
 conftest_code="
 extern int not_exist (void);
 
@@ -8970,7 +9004,6 @@ libc_cv_sysconfdir=$sysconfdir
 libc_cv_localstatedir=$localstatedir
 libc_cv_gcc_unwind_find_fde=no
 libc_cv_idn=no
-pthread_in_libc=yes
 abort_in_ld=no
 
 # Iterate over all the sysdep directories we will use, running their
@@ -9368,6 +9401,122 @@ printf "%s\n" "$libc_cv_have_libgcc_s" >&6; }
 config_vars="$config_vars
 have-libgcc_s = $libc_cv_have_libgcc_s"
 
+# Check which runtime library compiler uses
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for the usable compiler runtime library" >&5
+printf %s "checking for the usable compiler runtime library... " >&6; }
+if test ${libc_cv_runtime_library+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)   libc_cv_libgcc_usable=no
+  libgcc_name=`${CC-cc} $CFLAGS $CPPFLAGS -print-libgcc-file-name | sed 's:.*/::'`
+  case "$libgcc_name" in
+    libgcc*)
+      libc_cv_libgcc=-lgcc
+      libc_cv_libgcc_eh=-lgcc_eh
+      libc_cv_runtime_library=libgcc
+      ;;
+    libclang_rt*)
+      libc_cv_libgcc=-lclang_rt.builtins
+      libc_cv_libgcc_eh=
+      libc_cv_runtime_library=compiler-rt
+      ;;
+    *) { { printf "%s\n" "$as_me:${as_lineno-$LINENO}: error: in '$ac_pwd':" >&5
+printf "%s\n" "$as_me: error: in '$ac_pwd':" >&2;}
+as_fn_error $? "non supported compiler runtime library
+See 'config.log' for more details" "$LINENO" 5; } ;;
+  esac ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_runtime_library" >&5
+printf "%s\n" "$libc_cv_runtime_library" >&6; }
+config_vars="$config_vars
+libgcc-name = $libc_cv_libgcc"
+config_vars="$config_vars
+libgcc_eh-name = $libc_cv_libgcc_eh"
+
+# Check if compiler runtime library provides __sfp_handle_exceptions
+
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __sfp_handle_exceptions support" >&5
+printf %s "checking for __sfp_handle_exceptions support... " >&6; }
+if test ${libc_cv_sfp_handle_exceptions+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+void __sfp_handle_exceptions (int); __sfp_handle_exceptions (0)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  libc_cv_sfp_handle_exceptions=yes
+else case e in #(
+  e) libc_cv_sfp_handle_exceptions=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+ ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_sfp_handle_exceptions" >&5
+printf "%s\n" "$libc_cv_sfp_handle_exceptions" >&6; }
+if test "$TEST_CC" = "$CC"; then
+  libc_cv_test_sfp_handle_exceptions=$libc_cv_sfp_handle_exceptions
+else
+
+saved_CC="$CC"
+CC="$TEST_CC"
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for __sfp_handle_exceptions support in testing" >&5
+printf %s "checking for __sfp_handle_exceptions support in testing... " >&6; }
+if test ${libc_cv_test_sfp_handle_exceptions+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e)
+      cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main (void)
+{
+void __sfp_handle_exceptions (int); __sfp_handle_exceptions (0)
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  libc_cv_test_sfp_handle_exceptions=yes
+else case e in #(
+  e) libc_cv_test_sfp_handle_exceptions=no ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+     ;;
+esac
+fi
+{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_test_sfp_handle_exceptions" >&5
+printf "%s\n" "$libc_cv_test_sfp_handle_exceptions" >&6; }
+
+CC="$saved_CC"
+
+fi
+
+if test $libc_cv_sfp_handle_exceptions = yes; then
+  printf "%s\n" "#define HAVE_SFP_HANDLE_EXCEPTIONS 1" >>confdefs.h
+
+fi
+
 # Support configure.ac under sysdeps.
 
 
@@ -9515,12 +9664,6 @@ libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
 VERSION=`sed -n -e 's/^#define VERSION "\([^"]*\)"/\1/p' < $srcdir/version.h`
 RELEASE=`sed -n -e 's/^#define RELEASE "\([^"]*\)"/\1/p' < $srcdir/version.h`
 
-
-
-if test "$pthread_in_libc" = yes; then
-  printf "%s\n" "#define PTHREAD_IN_LIBC 1" >>confdefs.h
-
-fi
 
 
 # Some symbols that might be auto-generated by the compiler are redefined

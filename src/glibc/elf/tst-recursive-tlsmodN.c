@@ -19,10 +19,10 @@
 /* Compiled with VAR and FUNC set via -D.  FUNC requires some
    relocation against TLS variable VAR.  */
 
-__thread int VAR;
+__thread char VAR[32768];
 
 int
 FUNC (void)
 {
-  return VAR;
+  return VAR[0];
 }

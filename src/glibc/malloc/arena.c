@@ -423,7 +423,7 @@ alloc_new_heap  (size_t size, size_t top_pad, size_t pagesize,
       return NULL;
     }
 
-  /* Only considere the actual usable range.  */
+  /* Only consider the actual usable range.  */
   __set_vma_name (p2, size, " glibc: malloc arena");
 
   madvise_thp (p2, size);
@@ -477,10 +477,7 @@ grow_heap (heap_info *h, long diff)
       h->mprotect_size = new_size;
     }
 
-  /* mprotect preserves MADV_HUGEPAGE semantics - this means that if the old
-     region was marked with MADV_HUGEPAGE, the new region will retain that.  */
-  if (h->size < mp_.thp_pagesize)
-    madvise_thp (h, new_size);
+  madvise_thp (h, new_size);
 
   h->size = new_size;
   LIBC_PROBE (memory_heap_more, 2, h, h->size);

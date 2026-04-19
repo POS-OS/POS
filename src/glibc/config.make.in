@@ -69,7 +69,6 @@ no-fortify-source = @no_fortify_source@
 have-selinux = @have_selinux@
 have-libaudit = @have_libaudit@
 have-libcap = @have_libcap@
-have-cc-with-libunwind = @libc_cv_cc_with_libunwind@
 bind-now = @bindnow@
 have-cxx-thread_local = @libc_cv_cxx_thread_local@
 have-loop-to-function = @libc_cv_cc_loop_to_function@
@@ -91,7 +90,6 @@ build-nscd = @build_nscd@
 use-nscd = @use_nscd@
 build-hardcoded-path-in-tests= @hardcoded_path_in_tests@
 build-pt-chown = @build_pt_chown@
-pthread-in-libc = @pthread_in_libc@
 man-pages-version = @man_pages_version@
 
 # Build tools.

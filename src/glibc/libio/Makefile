@@ -135,7 +135,9 @@ tests = \
   tst-swscanf \
   tst-ungetwc1 \
   tst-ungetwc2 \
+  tst-wbackup-leak \
   tst-wfile-sync \
+  tst-wfiledoallocate-static \
   tst-widetext \
   tst-wmemstream1 \
   tst-wmemstream2 \
@@ -151,7 +153,10 @@ tests = \
   tst_wscanf \
   # tests
 
-tests-static += tst-stdio-static
+tests-static += \
+   tst-stdio-static \
+   tst-wfiledoallocate-static \
+# tests-static
 
 $(objpfx)tst-popen-fork: $(shared-thread-library)
 

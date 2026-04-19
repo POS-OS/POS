@@ -441,17 +441,13 @@ struct rtld_global
   /* Generation counter for the dtv.  */
   EXTERN size_t _dl_tls_generation;
 
-#if !PTHREAD_IN_LIBC
-  EXTERN void (*_dl_init_static_tls) (struct link_map *);
-#endif
-
   /* Scopes to free after next THREAD_GSCOPE_WAIT ().  */
   EXTERN struct dl_scope_free_list
   {
     size_t count;
     void *list[50];
   } *_dl_scope_free_list;
-#if !defined __PTHREAD_HTL
+#if __PTHREAD_NPTL
   /* List of active thread stacks, with memory managed by glibc.  */
   EXTERN list_t _dl_stack_used;
 
@@ -471,14 +467,15 @@ struct rtld_global
 
   /* Mutex protecting the stack lists.  */
   EXTERN int _dl_stack_cache_lock;
-#else
+#endif
+#if __PTHREAD_HTL
   /* The total number of thread IDs currently in use, or on the list of
      available thread IDs.  */
   EXTERN int _dl_pthread_num_threads;
 
   /* Array of __pthread structures and its lock.  */
   EXTERN struct __pthread **_dl_pthread_threads;
-  __libc_rwlock_define (EXTERN, _dl_pthread_threads_lock)
+  __mach_rwlock_define (EXTERN, _dl_pthread_threads_lock)
 #endif
 #ifdef SHARED
 };
@@ -1239,15 +1236,13 @@ extern bool __rtld_tls_init_tp_called attribute_hidden;
 extern void _dl_deallocate_tls (void *tcb, bool dealloc_tcb);
 rtld_hidden_proto (_dl_deallocate_tls)
 
-extern void _dl_nothread_init_static_tls (struct link_map *) attribute_hidden;
-
 /* Get a pointer to _dl_main_map.  */
 extern struct link_map * _dl_get_dl_main_map (void) attribute_hidden;
 
 /* Find origin of the executable.  */
 extern const char *_dl_get_origin (void) attribute_hidden;
 
-/* Return the canonalized path name from the opened file descriptor FD,
+/* Return the canonicalized path name from the opened file descriptor FD,
    or NULL otherwise.  */
 extern char * _dl_canonicalize (int fd) attribute_hidden;
 
@@ -1321,21 +1316,10 @@ extern void _dl_aux_init (ElfW(auxv_t) *av)
      attribute_hidden;
 
 /* Initialize the static TLS space for the link map in all existing
-   threads. */
-#if PTHREAD_IN_LIBC
+   threads.
+   The stack list is available to ld.so, so the initialization can
+   be handled within ld.so directly.  */
 void _dl_init_static_tls (struct link_map *map) attribute_hidden;
-#endif
-static inline void
-dl_init_static_tls (struct link_map *map)
-{
-#if PTHREAD_IN_LIBC
-  /* The stack list is available to ld.so, so the initialization can
-     be handled within ld.so directly.  */
-  _dl_init_static_tls (map);
-#else
-  GL (dl_init_static_tls) (map);
-#endif
-}
 
 #ifndef SHARED
 /* Called before relocating ld.so during static dlopen.  This can be
@@ -1387,7 +1371,7 @@ link_map_audit_state (struct link_map *l, size_t index)
 }
 
 /* Call the la_objsearch from the audit modules from the link map L.  If
-   ORIGNAME is non NULL, it is updated with the revious name prior calling
+   ORIGNAME is non NULL, it is updated with the previous name prior calling
    la_objsearch.  */
 const char *_dl_audit_objsearch (const char *name, struct link_map *l,
 				 unsigned int code)
@@ -1452,13 +1436,11 @@ _dl_audit_objclose (struct link_map *l)
 }
 #endif /* !SHARED */
 
-#if PTHREAD_IN_LIBC && defined SHARED
+#if __PTHREAD_NPTL && defined SHARED
 /* Recursive locking implementation for use within the dynamic loader.
    Used to define the __rtld_lock_lock_recursive and
    __rtld_lock_unlock_recursive via <libc-lock.h>.  Initialized to a
-   no-op dummy implementation early.  Similar
-   to GL (dl_rtld_lock_recursive) and GL (dl_rtld_unlock_recursive)
-   in !PTHREAD_IN_LIBC builds.  */
+   no-op dummy implementation early.  */
 extern int (*___rtld_mutex_lock) (pthread_mutex_t *) attribute_hidden;
 extern int (*___rtld_mutex_unlock) (pthread_mutex_t *lock) attribute_hidden;
 
@@ -1466,14 +1448,14 @@ extern int (*___rtld_mutex_unlock) (pthread_mutex_t *lock) attribute_hidden;
    Used to initialize the function pointers to the actual
    implementations.  */
 void __rtld_mutex_init (void) attribute_hidden;
-#else /* !PTHREAD_IN_LIBC */
+#else /* !__PHREAD_NPTL */
 static inline void
 __rtld_mutex_init (void)
 {
-  /* The initialization happens later (!PTHREAD_IN_LIBC) or is not
+  /* The initialization happens later (!__PHREAD_NPTL) or is not
      needed at all (!SHARED).  */
 }
-#endif /* !PTHREAD_IN_LIBC */
+#endif /* !__PHREAD_NPTL */
 
 /* Implementation of GL (dl_libc_freeres).  */
 void __rtld_libc_freeres (void) attribute_hidden;

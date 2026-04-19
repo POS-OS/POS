@@ -5213,6 +5213,20 @@ cosh 0x1.633c457f1e66bp+9
 cosh 0x2.c5d376167f4052f4p+12
 # the next value generates larger error bounds on x86_64 (binary128)
 cosh -0x2.c5d376eefcd4bbeb000452d84662p+12
+# CORE-MATH extra tests
+cosh 0x1.41fe58c623761p+2
+cosh 0x1.424ed1d05dfa7p+2
+cosh 0x1.41a83b901d5bdp+2
+cosh 0x1.40d5c37ff8185p+2
+cosh -0x1.419a5f3fa359p+2
+cosh 0x1.426a50e51bd1ep+2
+cosh -0x1.64c53499192bfp+2
+cosh 0x1.41fe58c623761p+2
+cosh 0x1.424ed1d05dfa7p+2
+cosh 0x1.41a83b901d5bdp+2
+cosh 0x1.40d5c37ff8185p+2
+cosh 0x1.426a50e51bd1ep+2
+cosh -0x1.41311766f07f6p+2
 
 cpow 1 0 0 0 ignore-zero-inf-sign
 cpow 2 0 10 0 ignore-zero-inf-sign
@@ -6980,6 +6994,7 @@ lgamma -0x3.ec4298p+0
 lgamma 0x1.ecf3fep-73
 lgamma 0x1.58ace8p+112
 lgamma -0x1.efc2a2p+14
+lgamma 0x1.895f1cp+121
 
 # Values +/- 10ulp from overflow threshold.  (Values very close to
 # overflow threshold produce results very close of that threshold,
@@ -7650,6 +7665,7 @@ log1p -0x4.f37d3c9ce0b14bdd86eb157df5d4p-4
 log1p 0x7.2eca50c4d93196362b4f37f6e8dcp-4
 log1p -0x6.3fef3067427e43dfcde9e48f74bcp-4
 log1p 0x6.af53d00fd2845d4772260ef5adc4p-4
+log1p -0x1.fffffcp-127
 
 log2 1
 log2 e
@@ -7720,6 +7736,7 @@ log2p1 0x1p100
 log2p1 0x1p1000
 log2p1 0x6.a0cf42befce9ed4085ef59254b48p-4
 log2p1 max
+log2p1 0x1.62e42cp-127
 # the following inputs yield large errors on x86_64 for binary32
 log2p1 0x1.a69b4ap-2
 log2p1 -0x1.2516d6p-2
@@ -9556,8 +9573,48 @@ sinh -0x5.ee9218p-4
 sinh -0x1.bcfc98p+0
 sinh -0x6.9bbb6df7c5d08p-4
 sinh 0x1.250bfep-11
+sinh 0x0.fffffffffffffp-1022
 # the next value generates larger error bounds on x86_64 (ldbl-96)
 sinh 0x2.c5d376167f4052f4p+12
+sinh -0x1.4a3f2b7dff682p+2
+sinh -0x1.41267a2ed2593p+2
+sinh 0x1.41c456749a084p+2
+sinh 0x1.41feabdae88c6p+2
+sinh -0x1.41634f0c2ae4dp+2
+sinh -0x1.4104fac728038p+2
+sinh -0x1.419af27adcfe8p+2
+sinh -0x1.41265ff261702p+2
+sinh 0x1.424c64d09a2d4p+2
+sinh 0x1.409364da45b54p+2
+sinh -0x1.409359e03b8fap+2
+sinh 0x1.4000685a224bcp+2
+sinh -0x1.49d5d039e0535p+2
+sinh -0x1.41e005cc32758p+2
+sinh -0x1.497208f2ae258p+2
+sinh -0x1.4037cd9cb7a82p+2
+sinh -0x1.41b923f7769e3p+2
+sinh -0x1.425754461bdfdp+2
+sinh -0x1.425761708c475p+2
+sinh 0x1.40e3ea0aeab5ap+2
+sinh 0x1.4144bd89e0eb8p+2
+sinh 0x1.403d4a3c61f18p+2
+sinh 0x1.41d7bcbdf9fccp+2
+sinh 0x1.42575956957ap+2
+sinh -0x1.09e94dfa477cp-2
+sinh -0x1.40a6d6ee4ba13p+2
+sinh -0x1.42575380f620bp+2
+sinh -0x1.41342809b65ffp+2
+sinh 0x1.420149be82e16p+2
+sinh -0x1.417c56d39aac4p+2
+sinh 0x1.41bc1dc9e7ebp+2
+sinh 0x1.410a9f2b0fd78p+2
+sinh 0x1.41d7ae912e7e2p+2
+sinh 0x1.403d745ee03bp+2
+sinh 0x1.42360842659f6p+2
+sinh 0x1.424c2ba022b28p+2
+sinh 0x1.78b7f7218cbbap-8
+sinh 0x1.71a7baa9570bdp-26
+sinh 0x1.0042fffffffffp-3
 sinh max
 sinh -max
 sinh min
@@ -10017,6 +10074,7 @@ tanh 0x1p-60
 tanh 0x1p-100
 tanh 0x1p-600
 tanh 0x1p-10000
+tanh 0x0.fffffffffffffp-1022
 # the next value generates larger error bounds on x86_64 (ldbl-96)
 tanh 0x3.b9979a543d0fbfa8p-4
 tanh max

@@ -50,16 +50,11 @@ __libc_ifunc_impl_list (const char *name, struct libc_ifunc_impl *array,
   IFUNC_IMPL (i, name, memset,
 	      IFUNC_IMPL_ADD (array, i, memset, (zva_size == 64), __memset_zva64)
 	      IFUNC_IMPL_ADD (array, i, memset, (zva_size == 64), __memset_oryon1)
-	      IFUNC_IMPL_ADD (array, i, memset, 1, __memset_emag)
 	      IFUNC_IMPL_ADD (array, i, memset, 1, __memset_kunpeng)
 	      IFUNC_IMPL_ADD (array, i, memset, sve && zva_size == 256, __memset_a64fx)
 	      IFUNC_IMPL_ADD (array, i, memset, sve && zva_size == 64, __memset_sve_zva64)
 	      IFUNC_IMPL_ADD (array, i, memset, mops, __memset_mops)
 	      IFUNC_IMPL_ADD (array, i, memset, 1, __memset_generic))
-  IFUNC_IMPL (i, name, memchr,
-	      IFUNC_IMPL_ADD (array, i, memchr, !mte, __memchr_nosimd)
-	      IFUNC_IMPL_ADD (array, i, memchr, 1, __memchr_generic))
-
   IFUNC_IMPL (i, name, strlen,
 	      IFUNC_IMPL_ADD (array, i, strlen, !mte, __strlen_asimd)
 	      IFUNC_IMPL_ADD (array, i, strlen, 1, __strlen_generic))

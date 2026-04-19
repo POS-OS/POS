@@ -27,6 +27,7 @@
 #include <sys/single_threaded.h>
 #include <shlib-compat.h>
 #include <ldsodefs.h>
+#include <libioP.h>
 
 #include <pt-internal.h>
 #include <pthreadP.h>
@@ -239,9 +240,9 @@ __pthread_create_internal (struct __pthread **thread,
      could use __thread_setid, however, we only lock for reading as no
      other thread should be using this entry (we also assume that the
      store is atomic).  */
-  __libc_rwlock_rdlock (GL (dl_pthread_threads_lock));
+  __mach_rwlock_rdlock (GL (dl_pthread_threads_lock));
   GL (dl_pthread_threads)[pthread->thread - 1] = pthread;
-  __libc_rwlock_unlock (GL (dl_pthread_threads_lock));
+  __mach_rwlock_unlock (GL (dl_pthread_threads_lock));
 
   /* At this point it is possible to guess our pthread ID.  We have to
      make sure that all functions taking a pthread_t argument can
@@ -249,6 +250,9 @@ __pthread_create_internal (struct __pthread **thread,
      the new thread might be passed its ID through pthread_create (to
      avoid calling pthread_self), read it before starting the thread.  */
   *thread = pthread;
+
+  if (start_routine)
+    _IO_enable_locks ();
 
   /* Schedule the new thread.  */
   err = __pthread_thread_start (pthread);

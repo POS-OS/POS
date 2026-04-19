@@ -19,17 +19,12 @@
 #ifndef _PTHREADP_H
 #define _PTHREADP_H	1
 
-#define __PTHREAD_HTL
-
 #include <pthread.h>
 #include <link.h>
 #include <bits/cancelation.h>
 
 /* Attribute to indicate thread creation was issued from C11 thrd_create.  */
 #define ATTR_C11_THREAD ((void*)(uintptr_t)-1)
-
-extern void __pthread_init_static_tls (struct link_map *);
-libc_hidden_proto (__pthread_init_static_tls)
 
 /* These represent the interface used by glibc itself.  */
 
@@ -200,8 +195,11 @@ int __pthread_key_delete (pthread_key_t key);
 libc_hidden_proto (__pthread_key_delete)
 int __pthread_once (pthread_once_t *once_control, void (*init_routine) (void));
 
+int __pthread_attr_destroy (pthread_attr_t *attr);
 int __pthread_getattr_np (pthread_t, pthread_attr_t *);
 libc_hidden_proto (__pthread_getattr_np)
+int __pthread_attr_setdetachstate (pthread_attr_t *attr,
+				   int detachstate);
 int __pthread_attr_getstackaddr (const pthread_attr_t *__restrict __attr,
 				 void **__restrict __stackaddr);
 libc_hidden_proto (__pthread_attr_getstackaddr)
@@ -221,6 +219,10 @@ void __pthread_testcancel (void);
 libc_hidden_proto (__pthread_testcancel)
 int __pthread_attr_init (pthread_attr_t *attr);
 int __pthread_condattr_init (pthread_condattr_t *attr);
+int __pthread_getschedparam (pthread_t thread_id, int *policy,
+			     struct sched_param *param);
+int __pthread_setschedparam (pthread_t thread_id, int policy,
+			     const struct sched_param *param);
 int __pthread_setconcurrency (int __new_level);
 libc_hidden_proto (__pthread_setconcurrency)
 int __pthread_getconcurrency (void);

@@ -673,6 +673,7 @@ endif
 
 ifeq ($(subdir),elf)
 dl-routines += \
+  dl-map-segment-align \
   dl-rseq-symbols \
   # dl-routines
 
@@ -694,9 +695,17 @@ install-bin += \
 
 $(objpfx)pldd: $(objpfx)xmalloc.o
 
-tests += tst-rseq-tls-range tst-rseq-tls-range-4096
-tests-static += tst-rseq-tls-range-static tst-rseq-tls-range-4096-static
-modules-names += tst-rseq-tls-range-mod
+tests += \
+  tst-rseq-tls-range \
+  tst-rseq-tls-range-4096 \
+# tests
+tests-static += \
+  tst-rseq-tls-range-4096-static \
+  tst-rseq-tls-range-static \
+# tests-static
+modules-names += \
+  tst-rseq-tls-range-mod \
+# modules-names
 CFLAGS-tst-rseq-tls-range.c += -DMAIN_TLS_ALIGN=4
 CFLAGS-tst-rseq-tls-range-4096.c += -DMAIN_TLS_ALIGN=4096
 CFLAGS-tst-rseq-tls-range-static.c += -DMAIN_TLS_ALIGN=4

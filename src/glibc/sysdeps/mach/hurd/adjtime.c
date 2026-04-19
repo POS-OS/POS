@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <sys/time.h>
 #include <hurd.h>
+#include <mach/time_value.h>
 
 /* Adjust the current time of day by the amount in DELTA.
    If OLDDELTA is not NULL, it is filled in with the amount
@@ -28,24 +29,47 @@ __adjtime (const struct timeval *delta, struct timeval *olddelta)
 {
   error_t err;
   mach_port_t hostpriv;
-  struct timeval dummy;
+  time_value_t rpc_delta, rpc_olddelta;
 
   err = __get_privileged_ports (&hostpriv, NULL);
   if (err)
     return __hurd_fail (EPERM);
 
-  if (olddelta == NULL)
-    olddelta = &dummy;
+  if (delta != NULL)
+    {
+      if (delta->tv_usec >=  TIME_MICROS_MAX ||
+          delta->tv_usec <= -TIME_MICROS_MAX)
+       return EINVAL;
 
-  err = __host_adjust_time (hostpriv,
-			    /* `time_value_t' and `struct timeval' are in
-                               fact identical with the names changed.  */
-			    *(time_value_t *) delta,
-			    (time_value_t *) olddelta);
+      rpc_delta.seconds = delta->tv_sec;
+      rpc_delta.microseconds = delta->tv_usec;
+    }
+  else
+#ifdef MACH_ADJTIME_USECS_OMIT
+    {
+      /* gnumach will not attempt to update the system time if the
+	 specified 'microseconds' is specifically
+	 MACH_ADJTIME_USECS_OMIT. It will still return the olddelta
+	 under these circumstances. */
+      rpc_delta.seconds = 0;
+      rpc_delta.microseconds = MACH_ADJTIME_USECS_OMIT;
+    }
+#else
+    return EINVAL;
+#endif
+
+  err = __host_adjust_time (hostpriv, rpc_delta, &rpc_olddelta);
   __mach_port_deallocate (__mach_task_self (), hostpriv);
 
   if (err)
     return __hurd_fail (err);
+
+  if (olddelta != NULL)
+    {
+      olddelta->tv_sec = rpc_olddelta.seconds;
+      olddelta->tv_usec = rpc_olddelta.microseconds;
+    }
+
   return 0;
 }
 

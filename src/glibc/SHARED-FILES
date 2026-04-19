@@ -36,8 +36,22 @@ gnulib:
   # Merged from gnulib 2025-10-29 (gnulib commit 1790ef25d8)
   include/intprops.h
   include/intprops-internal.h
+  # Merged from gnulib 2026-02-16
+  include/assure.h
+  include/flexmember.h
+  include/hash.h
+  include/next-prime.h
+  include/xalloc-oversized.h
   # Merged from gnulib 2021-09-21
   include/regex.h
+  # Merged from gnulib 2026-02-16
+  io/cycle-check.c
+  io/cycle-check.h
+  io/dev-ino.h
+  io/fts-cycle.c
+  io/fts.c
+  io/i-ring.c
+  io/same-inode.h
   locale/programs/3level.h
   # Merged from gnulib 2014-6-23
   malloc/obstack.c
@@ -47,7 +61,9 @@ gnulib:
   misc/error.c
   misc/error.h
   misc/getpass.c
+  misc/hash.c
   misc/mkdtemp.c
+  misc/next-prime.c
   # Merged from gnulib 2021-09-21
   misc/sys/cdefs.h
   posix/fnmatch_loop.c
@@ -97,6 +113,7 @@ gnulib:
   stdlib/setenv.c
   stdlib/strtoll.c
   stdlib/strtoul.c
+  stdlib/tst-stdc_rotate_right.c
   # Merged from gnulib 2014-6-26, needs merge back
   string/memchr.c
   string/memcmp.c
@@ -246,29 +263,35 @@ tzdata:
 core-math:
   # src/binary64/acosh/acosh.c, revision 1bd85b89
   sysdeps/ieee754/dbl-64/e_acosh.c
-  # src/binary64/atanh/atanh.c, revision c423b9a3
+  # src/binary64/atanh/atanh.c, revision 532e37dc
   sysdeps/ieee754/dbl-64/e_atanh.c
+  # src/binary64/cosh/cosh.c, revision 5d0c89d5
+  sysdeps/ieee754/dbl-64/e_cosh.c
   # src/binary64/tgamma/tgamma.c, revision 0f185e23
   sysdeps/ieee754/dbl-64/e_gamma_r.c
   # src/binary64/lgamma/lgamma.c, revision 0413bb7e
   sysdeps/ieee754/dbl-64/e_lgamma_r.c
+  # src/binary64/sinh/sinh.c, revision 8127b7ac
+  sysdeps/ieee754/dbl-64/e_sinh.c
   # src/binary64/asinh/asinh.c, revision cd653cf7
   sysdeps/ieee754/dbl-64/s_asinh.c
   # src/binary64/erf/erf.c, revision 384ed01d
   sysdeps/ieee754/dbl-64/s_erf.c
   # src/binary64/erfc/erfc.c, revision 55e9869e
   sysdeps/ieee754/dbl-64/s_erfc.c
+  # src/binary64/tanh/tanh.c, revision 8ea8ea35
+  sysdeps/ieee754/dbl-64/s_tanh.c
   # src/binary32/acos/acosf.c, revision 56dd347
   sysdeps/ieee754/flt-32/e_acosf.c
   # src/binary32/acosh/acoshf.c, revision d0b9ddd
   sysdeps/ieee754/flt-32/e_acoshf.c
   # file src/binary32/cosh/coshf.c, revision de59ecfb
   sysdeps/ieee754/flt-32/e_coshf.c
-  # src/binary32/tgamma/tgammaf.c, revision a48e352
+  # src/binary32/tgamma/tgammaf.c, revision 8ea8ea35
   sysdeps/ieee754/flt-32/e_gammaf_r.c
-  # src/binary32/lgamma/lgammaf.c, revision bc385c2
+  # src/binary32/lgamma/lgammaf.c, revision 8ea8ea35
   sysdeps/ieee754/flt-32/e_lgammaf_r.c
-  # src/binary32/log10/log10f.c, revision bc385c2
+  # src/binary32/log10/log10f.c, revision ebff4c43
   sysdeps/ieee754/flt-32/e_log10f.c
   # src/binary32/sinh/sinhf.c, revision bbfabd99
   sysdeps/ieee754/flt-32/e_sinhf.c
@@ -294,11 +317,11 @@ core-math:
   sysdeps/ieee754/flt-32/s_exp2m1f.c
   # src/binary32/expm1/expm1f.c, revision bc385c2
   sysdeps/ieee754/flt-32/s_expm1f.c
-  # src/binary32/log10p1/log10p1f.c revision bc385c2
+  # src/binary32/log10p1/log10p1f.c revision eb28456b
   sysdeps/ieee754/flt-32/s_log10p1f.c
-  # src/binary32/log1p/log1pf.c revision bc385c2
+  # src/binary32/log1p/log1pf.c revision 24ef43a1
   sysdeps/ieee754/flt-32/s_log1pf.c
-  # src/binary32/log2p1/log2p1f.c revision bc385c2
+  # src/binary32/log2p1/log2p1f.c revision 3fbe16be
   sysdeps/ieee754/flt-32/s_log2p1f.c
   # src/binary32/sinpi/sinpif.c, revision bbfabd99d
   sysdeps/ieee754/flt-32/s_sinpif.c

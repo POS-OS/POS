@@ -262,12 +262,18 @@ class Context(object):
                         os_name='linux-gnu')
         self.add_config(arch='i686',
                         os_name='gnu')
+        self.add_config(arch='loongarch32',
+                        os_name='linux-gnuf64',
+                        gcc_cfg=['--with-arch=la32v1.0', '--disable-multilib'])
+        self.add_config(arch='loongarch32',
+                        os_name='linux-gnusf',
+                        gcc_cfg=['--with-arch=la32rv1.0', '--disable-multilib'])
         self.add_config(arch='loongarch64',
                         os_name='linux-gnuf64',
-                        gcc_cfg=['--disable-multilib'])
+                        gcc_cfg=['--with-arch=loongarch64', '--disable-multilib'])
         self.add_config(arch='loongarch64',
                         os_name='linux-gnusf',
-                        gcc_cfg=['--disable-multilib'])
+                        gcc_cfg=['--with-arch=loongarch64', '--disable-multilib'])
         self.add_config(arch='m68k',
                         os_name='linux-gnu',
                         gcc_cfg=['--disable-multilib'])
@@ -860,12 +866,12 @@ class Context(object):
 
     def checkout(self, versions):
         """Check out the desired component versions."""
-        default_versions = {'binutils': 'vcs-2.45',
+        default_versions = {'binutils': 'vcs-2.46',
                             'gcc': 'vcs-15',
                             'glibc': 'vcs-mainline',
                             'gmp': '6.3.0',
                             'linux': '6.19',
-                            'mpc': '1.3.1',
+                            'mpc': '1.4.0',
                             'mpfr': '4.2.2',
                             'mig': 'vcs-mainline',
                             'gnumach': 'vcs-mainline',
@@ -1060,7 +1066,7 @@ class Context(object):
             'gcc': '%(baseurl)s/gnu/gcc/gcc-%(version)s/gcc-%(version)s.tar.gz',
             'gmp': '%(baseurl)s/gnu/gmp/gmp-%(version)s.tar.xz',
             'linux': 'https://www.kernel.org/pub/linux/kernel/v%(major)s.x/linux-%(version)s.tar.xz',
-            'mpc': '%(baseurl)s/gnu/mpc/mpc-%(version)s.tar.gz',
+            'mpc': '%(baseurl)s/gnu/mpc/mpc-%(version)s.tar.xz',
             'mpfr': '%(baseurl)s/gnu/mpfr/mpfr-%(version)s.tar.xz',
             'mig': '%(baseurl)s/gnu/mig/mig-%(version)s.tar.bz2',
             'gnumach': '%(baseurl)s/gnu/gnumach/gnumach-%(version)s.tar.bz2',
@@ -1368,6 +1374,7 @@ def install_linux_headers(policy, cmdlist):
                 'i586': 'x86',
                 'i686': 'x86',
                 'i786': 'x86',
+                'loongarch32': 'loongarch',
                 'loongarch64': 'loongarch',
                 'm68k': 'm68k',
                 'microblaze': 'microblaze',

@@ -197,7 +197,9 @@ tests := \
   tst-fcntl-lock-lfs \
   tst-fstatat \
   tst-fts \
+  tst-fts-bz22944 \
   tst-fts-lfs \
+  tst-fts-newflags \
   tst-ftw-bz26353 \
   tst-ftw-bz28126 \
   tst-ftw-lnk \
@@ -214,6 +216,7 @@ tests := \
   tst-mkdirat \
   tst-mkfifoat \
   tst-mknodat \
+  tst-nftw-bz33882 \
   tst-open-tmpfile \
   tst-openat \
   tst-posix_fallocate \

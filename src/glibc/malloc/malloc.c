@@ -198,14 +198,6 @@
     There are several other #defined constants and macros that you
     probably don't want to touch unless you are extending or adapting malloc.  */
 
-/*
-  void* is the pointer type that malloc should say it returns
-*/
-
-#ifndef void
-#define void      void
-#endif /*void*/
-
 #include <stddef.h>   /* for size_t */
 #include <stdlib.h>   /* for getenv(), abort() */
 #include <unistd.h>   /* for __libc_enable_secure */
@@ -241,9 +233,6 @@
 /* For ALIGN_UP et. al.  */
 #include <libc-pointer-arith.h>
 
-/* For DIAG_PUSH/POP_NEEDS_COMMENT et al.  */
-#include <libc-diag.h>
-
 /* For memory tagging.  */
 #include <libc-mtag.h>
 
@@ -258,6 +247,11 @@
 #include <random-bits.h>
 #include <sys/random.h>
 #include <not-cancel.h>
+
+verify (sizeof (unsigned long) == sizeof (size_t));
+verify (sizeof (void *) == sizeof (size_t));
+verify (sizeof (void *) == 4 || sizeof (void *) == 8);
+verify (PTRDIFF_MAX <= SIZE_MAX / 2);
 
 /*
   Debugging:
@@ -548,7 +542,7 @@ tag_at (void *ptr)
   there's no compelling reason to bother to do this.)
 
   The main declaration needed is the mallinfo struct that is returned
-  (by-copy) by mallinfo().  The SVID/XPG malloinfo struct contains a
+  (by-copy) by mallinfo().  The SVID/XPG mallinfo struct contains a
   bunch of fields that are not even meaningful in this version of
   malloc.  These fields are are instead filled by mallinfo() with
   other numbers that might be of interest.
@@ -812,7 +806,7 @@ libc_hidden_proto (__libc_mallopt)
   might set to a value close to the average size of a process
   (program) running on your system.  Releasing this much memory
   would allow such a process to run in memory.  Generally, it's
-  worth it to tune for trimming rather tham memory mapping when a
+  worth it to tune for trimming rather than memory mapping when a
   program undergoes phases where several large chunks are
   allocated and released in ways that can reuse each other's
   storage, perhaps mixed with phases where there are no such
@@ -976,7 +970,7 @@ libc_hidden_proto (__libc_mallopt)
      having to zero memory over and over again
 
   The implementation works with a sliding threshold, which is by default
-  limited to go between 128Kb and 32Mb (64Mb for 64 bitmachines) and starts
+  limited to go between 128Kb and 32Mb (64Mb for 64 bit machines) and starts
   out at 128Kb as per the 2001 default.
 
   This allows us to satisfy requirement 1) under the assumption that long
@@ -1263,9 +1257,6 @@ nextchunk-> +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 static __always_inline size_t
 checked_request2size (size_t req) __nonnull (1)
 {
-  _Static_assert (PTRDIFF_MAX <= SIZE_MAX / 2,
-                  "PTRDIFF_MAX is not more than half of SIZE_MAX");
-
   if (__glibc_unlikely (req > PTRDIFF_MAX))
     return SIZE_MAX;
 
@@ -1768,7 +1759,7 @@ struct malloc_par
   INTERNAL_SIZE_T arena_max;
 
   /* Transparent Large Page support.  */
-  enum malloc_thp_mode_t thp_mode;
+  enum thp_mode_t thp_mode;
   INTERNAL_SIZE_T thp_pagesize;
   /* A value different than 0 means to align mmap allocation to hp_pagesize
      add hp_flags on flags.  */
@@ -1823,7 +1814,7 @@ static struct malloc_par mp_ =
   .trim_threshold = DEFAULT_TRIM_THRESHOLD,
 #define NARENAS_FROM_NCORES(n) ((n) * (sizeof (long) == 4 ? 2 : 8))
   .arena_test = NARENAS_FROM_NCORES (1),
-  .thp_mode = malloc_thp_mode_not_supported
+  .thp_mode = thp_mode_not_supported
 #if USE_TCACHE
   ,
   .tcache_count = TCACHE_FILL_COUNT,
@@ -1898,29 +1889,14 @@ free_perturb (char *p, size_t n)
 
 /* ----------- Routines dealing with transparent huge pages ----------- */
 
-static __always_inline void
-thp_init (void)
-{
-  /* Initialize only once if DEFAULT_THP_PAGESIZE is defined.  */
-  if (DEFAULT_THP_PAGESIZE == 0 || mp_.thp_mode != malloc_thp_mode_not_supported)
-    return;
-
-  /* Set thp_pagesize even if thp_mode is never.  This reduces frequency
-     of MORECORE () invocation.  */
-  mp_.thp_mode = __malloc_thp_mode ();
-  mp_.thp_pagesize = DEFAULT_THP_PAGESIZE;
-}
-
 static inline void
 madvise_thp (void *p, INTERNAL_SIZE_T size)
 {
 #ifdef MADV_HUGEPAGE
 
-  thp_init ();
-
   /* Only use __madvise if the system is using 'madvise' mode and the size
      is at least a huge page, otherwise the call is wasteful. */
-  if (mp_.thp_mode != malloc_thp_mode_madvise || size < mp_.thp_pagesize)
+  if (mp_.thp_mode != thp_mode_madvise || size < mp_.thp_pagesize)
     return;
 
   /* Linux requires the input address to be page-aligned, and unaligned
@@ -2468,9 +2444,6 @@ sysmalloc (INTERNAL_SIZE_T nb, mstate av)
          previous calls. Otherwise, we correct to page-align below.
        */
 
-      /* Ensure thp_pagesize is initialized.  */
-      thp_init ();
-
       if (__glibc_unlikely (mp_.thp_pagesize != 0))
 	{
 	  uintptr_t lastbrk = (uintptr_t) MORECORE (0);
@@ -2999,10 +2972,8 @@ tcache_key_initialize (void)
 static __always_inline size_t
 large_csize2tidx(size_t nb)
 {
-  size_t idx = TCACHE_SMALL_BINS
-	       + __builtin_clz (MAX_TCACHE_SMALL_SIZE)
-	       - __builtin_clz (nb);
-  return idx;
+  size_t idx = stdc_bit_width (nb) - stdc_bit_width (MAX_TCACHE_SMALL_SIZE);
+  return idx + TCACHE_SMALL_BINS;
 }
 
 /* Caller must ensure that we know tc_idx is valid and there's room
@@ -3125,7 +3096,7 @@ tcache_get_align (size_t nb, size_t alignment)
       tcache_entry **tep = & tcache->entries[tc_idx];
       tcache_entry *te = *tep;
       bool mangled = false;
-      size_t csize;
+      size_t csize = 0;
 
       while (te != NULL
 	     && ((csize = chunksize (mem2chunk (te))) < nb
@@ -3137,16 +3108,10 @@ tcache_get_align (size_t nb, size_t alignment)
           mangled = true;
         }
 
-      /* GCC compiling for -Os warns on some architectures that csize may be
-	 uninitialized.  However, if 'te' is not NULL, csize is always
-	 initialized in the loop above.  */
-      DIAG_PUSH_NEEDS_COMMENT;
-      DIAG_IGNORE_Os_NEEDS_COMMENT (12, "-Wmaybe-uninitialized");
       if (te != NULL
 	  && csize == nb
 	  && PTR_IS_ALIGNED (te, alignment))
 	return tag_new_usable (tcache_get_n (tc_idx, tep, mangled));
-      DIAG_POP_NEEDS_COMMENT;
     }
   return NULL;
 }
@@ -3518,6 +3483,19 @@ libc_hidden_def (__libc_realloc)
 void *
 __libc_memalign (size_t alignment, size_t bytes)
 {
+  /* Round the alignment up to a power of 2.  Reject alignments that overflow
+     when rounded up.  Zero alignment is handled by _mid_memalign.  */
+  if (__glibc_unlikely (!powerof2 (alignment)))
+    {
+      if (alignment > SIZE_MAX / 2 + 1)
+	{
+	  __set_errno (EINVAL);
+	  return NULL;
+	}
+
+      alignment = stdc_bit_ceil (alignment);
+    }
+
   return _mid_memalign (alignment, bytes);
 }
 libc_hidden_def (__libc_memalign)
@@ -3527,11 +3505,9 @@ void *
 weak_function
 aligned_alloc (size_t alignment, size_t bytes)
 {
-/* Similar to memalign, but starting with ISO C17 the standard
-   requires an error for alignments that are not supported by the
-   implementation.  Valid alignments for the current implementation
-   are non-negative powers of two.  */
-  if (!powerof2 (alignment) || alignment == 0)
+/* Starting with ISO C17 the standard requires an error for alignments
+   that are not supported.  Only integral powers of 2 are valid.  */
+  if (!stdc_has_single_bit (alignment))
     {
       __set_errno (EINVAL);
       return NULL;
@@ -3576,28 +3552,6 @@ _mid_memalign (size_t alignment, size_t bytes)
   /* If we need less alignment than we give anyway, just relay to malloc.  */
   if (alignment <= MALLOC_ALIGNMENT)
     return __libc_malloc (bytes);
-
-  /* Otherwise, ensure that it is at least a minimum chunk size */
-  if (alignment < MINSIZE)
-    alignment = MINSIZE;
-
-  /* If the alignment is greater than SIZE_MAX / 2 + 1 it cannot be a
-     power of 2 and will cause overflow in the check below.  */
-  if (alignment > SIZE_MAX / 2 + 1)
-    {
-      __set_errno (EINVAL);
-      return NULL;
-    }
-
-
-  /* Make sure alignment is power of 2.  */
-  if (!powerof2 (alignment))
-    {
-      size_t a = MALLOC_ALIGNMENT * 2;
-      while (a < alignment)
-        a <<= 1;
-      alignment = a;
-    }
 
 #if USE_TCACHE
   void *victim = tcache_get_align (checked_request2size (bytes), alignment);
@@ -5063,17 +5017,32 @@ do_set_mxfast (size_t value)
 static __always_inline int
 do_set_hugetlb (size_t value)
 {
+  /* Enable THP if MALLOC_DEFAULT_THP_PAGESIZE is non-zero.  */
+  if (MALLOC_DEFAULT_THP_PAGESIZE > 0)
+    {
+      mp_.thp_mode = thp_mode_madvise;
+      mp_.thp_pagesize = MALLOC_DEFAULT_THP_PAGESIZE;
+    }
+
   if (value == 0)
-    mp_.thp_mode = malloc_thp_mode_never;
+    {
+      /* Turn off THP support completely.  */
+      mp_.thp_mode = thp_mode_never;
+      mp_.thp_pagesize = 0;
+    }
   else if (value == 1)
     {
-      mp_.thp_mode = __malloc_thp_mode ();
-      if (mp_.thp_mode == malloc_thp_mode_madvise
-          || mp_.thp_mode == malloc_thp_mode_always)
-	mp_.thp_pagesize = __malloc_default_thp_pagesize ();
+      /* Avoid querying the THP page size/mode since accessing /sys/kernel/mm
+	 is relatively slow and might not be accessible in containers.  */
+      if (MALLOC_DEFAULT_THP_PAGESIZE > 0)
+	return 0;
+
+      mp_.thp_mode = __get_thp_mode ();
+      if (mp_.thp_mode == thp_mode_madvise || mp_.thp_mode == thp_mode_always)
+	mp_.thp_pagesize = __get_thp_size ();
     }
   else if (value >= 2)
-    __malloc_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
+    __get_hugepage_config (value == 2 ? 0 : value, &mp_.hp_pagesize,
 			      &mp_.hp_flags);
   return 0;
 }
@@ -5313,25 +5282,18 @@ malloc_printerr_tail (const char *str)
 int
 __posix_memalign (void **memptr, size_t alignment, size_t size)
 {
-  void *mem;
-
   /* Test whether the SIZE argument is valid.  It must be a power of
-     two multiple of sizeof (void *).  */
-  if (alignment % sizeof (void *) != 0
-      || !powerof2 (alignment / sizeof (void *))
-      || alignment == 0)
+     two multiple of sizeof (void *) (which must be either 4 or 8).  */
+  if (alignment < sizeof (void *) || !powerof2 (alignment))
     return EINVAL;
 
+  void *mem = _mid_memalign (alignment, size);
 
-  mem = _mid_memalign (alignment, size);
+  if (mem == NULL)
+    return ENOMEM;
 
-  if (mem != NULL)
-    {
-      *memptr = mem;
-      return 0;
-    }
-
-  return ENOMEM;
+  *memptr = mem;
+  return 0;
 }
 weak_alias (__posix_memalign, posix_memalign)
 #endif
@@ -5497,19 +5459,16 @@ __malloc_info (int options, FILE *fp)
 #if IS_IN (libc)
 weak_alias (__malloc_info, malloc_info)
 
-strong_alias (__libc_calloc, __calloc) weak_alias (__libc_calloc, calloc)
-strong_alias (__libc_free, __free) strong_alias (__libc_free, free)
-strong_alias (__libc_malloc, __malloc) strong_alias (__libc_malloc, malloc)
-strong_alias (__libc_memalign, __memalign)
+weak_alias (__libc_calloc, calloc)
+strong_alias (__libc_free, free)
+strong_alias (__libc_malloc, malloc)
 weak_alias (__libc_memalign, memalign)
-strong_alias (__libc_realloc, __realloc) strong_alias (__libc_realloc, realloc)
-strong_alias (__libc_valloc, __valloc) weak_alias (__libc_valloc, valloc)
-strong_alias (__libc_pvalloc, __pvalloc) weak_alias (__libc_pvalloc, pvalloc)
-strong_alias (__libc_mallinfo, __mallinfo)
+strong_alias (__libc_realloc, realloc)
+weak_alias (__libc_valloc, valloc)
+weak_alias (__libc_pvalloc, pvalloc)
 weak_alias (__libc_mallinfo, mallinfo)
-strong_alias (__libc_mallinfo2, __mallinfo2)
 weak_alias (__libc_mallinfo2, mallinfo2)
-strong_alias (__libc_mallopt, __mallopt) weak_alias (__libc_mallopt, mallopt)
+weak_alias (__libc_mallopt, mallopt)
 
 weak_alias (__malloc_stats, malloc_stats)
 weak_alias (__malloc_usable_size, malloc_usable_size)

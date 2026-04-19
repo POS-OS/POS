@@ -1,6 +1,5 @@
-/* Memchr for aarch64, default version for internal use.
-   Copyright (C) 2018-2026 Free Software Foundation, Inc.
-
+/* Test for TLS logging in dynamic linker.
+   Copyright (C) 2026 Free Software Foundation, Inc.
    This file is part of the GNU C Library.
 
    The GNU C Library is free software; you can redistribute it and/or
@@ -14,23 +13,14 @@
    Lesser General Public License for more details.
 
    You should have received a copy of the GNU Lesser General Public
-   License along with the GNU C Library.  If not, see
+   License along with the GNU C Library; if not, see
    <https://www.gnu.org/licenses/>.  */
 
-#if IS_IN (libc)
-# define MEMCHR __memchr_generic
+__thread char tls_var[32768] __attribute__ ((tls_model ("global-dynamic")));
 
-/* Do not hide the generic version of memchr, we use it internally.  */
-# undef libc_hidden_builtin_def
-# define libc_hidden_builtin_def(name)
-
-# undef weak_alias
-# define weak_alias(a, b)
-
-/* Add a hidden definition for use within libc.so.  */
-# ifdef SHARED
-	.globl __GI_memchr; __GI_memchr = __memchr_generic
-# endif
-#endif
-
-# include "../memchr.S"
+int
+in_dso (void)
+{
+  tls_var[0] = 42;
+  return tls_var[0] - 42;
+}

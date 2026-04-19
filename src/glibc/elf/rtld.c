@@ -1192,6 +1192,11 @@ rtld_setup_main_map (struct link_map *main_map)
 
 	    /* This image gets the ID one.  */
 	    GL(dl_tls_max_dtv_idx) = main_map->l_tls_modid = 1;
+	    if (__glibc_unlikely (GLRO (dl_debug_mask) & DL_DEBUG_TLS))
+	      _dl_debug_printf ("tls: assign modid %lu to %s [%ld]\n",
+				(unsigned long int) main_map->l_tls_modid,
+				DSO_FILENAME (main_map->l_name),
+				(long int) main_map->l_ns);
 	  }
 	break;
 
@@ -1204,15 +1209,11 @@ rtld_setup_main_map (struct link_map *main_map)
 	main_map->l_relro_size = ph->p_memsz;
 	break;
       }
-  /* Process program headers again, but scan them backwards so
-     that PT_NOTE can be skipped if PT_GNU_PROPERTY exits.  */
+  /* Process program headers again, but scan them backwards since
+     PT_GNU_PROPERTY is close to the end of program headers.   */
   for (const ElfW(Phdr) *ph = &phdr[phnum]; ph != phdr; --ph)
-    switch (ph[-1].p_type)
+    if (ph[-1].p_type == PT_GNU_PROPERTY)
       {
-      case PT_NOTE:
-	_dl_process_pt_note (main_map, -1, &ph[-1]);
-	break;
-      case PT_GNU_PROPERTY:
 	_dl_process_pt_gnu_property (main_map, -1, &ph[-1]);
 	break;
       }
@@ -2246,7 +2247,7 @@ dl_main (const ElfW(Phdr) *phdr,
 
   int consider_profiling = GLRO(dl_profile) != NULL;
 
-  /* If we are profiling we also must do lazy reloaction.  */
+  /* If we are profiling we also must do lazy relocation.  */
   GLRO(dl_lazy) |= consider_profiling;
 
   /* If libc.so has been loaded, relocate it early, after the dynamic
@@ -2286,7 +2287,7 @@ dl_main (const ElfW(Phdr) *phdr,
 	_dl_relocate_object (l, l->l_scope, GLRO(dl_lazy) ? RTLD_LAZY : 0,
 			     consider_profiling);
 
-	/* Add object to slot information data if necessasy.  */
+	/* Add object to slot information data if necessary.  */
 	if (l->l_tls_blocksize != 0 && __rtld_tls_init_tp_called)
 	  _dl_add_to_slotinfo (l, true);
       }
@@ -2456,11 +2457,18 @@ process_dl_debug (struct dl_main_state *state, const char *dl_debug)
 		 && dl_debug[len] != ',' && dl_debug[len] != ':')
 	    ++len;
 
+	  bool exclude = *dl_debug == '-';
+	  const char *name = exclude ? dl_debug + 1 : dl_debug;
+	  size_t name_len = exclude ? len - 1 : len;
+
 	  for (cnt = 0; cnt < ndebopts; ++cnt)
-	    if (debopts[cnt].len == len
-		&& memcmp (dl_debug, debopts[cnt].name, len) == 0)
+	    if (debopts[cnt].len == name_len
+		&& memcmp (name, debopts[cnt].name, name_len) == 0)
 	      {
-		GLRO(dl_debug_mask) |= debopts[cnt].mask;
+		if (exclude)
+		  GLRO(dl_debug_mask) &= ~debopts[cnt].mask;
+		else
+		  GLRO(dl_debug_mask) |= debopts[cnt].mask;
 		break;
 	      }
 
@@ -2502,7 +2510,8 @@ Valid options for the LD_DEBUG environment variable are:\n\n");
 
       _dl_printf ("\n\
 To direct the debugging output into a file instead of standard output\n\
-a filename can be specified using the LD_DEBUG_OUTPUT environment variable.\n");
+a filename can be specified using the LD_DEBUG_OUTPUT environment variable.\n\
+Categories can be excluded by prefixing them with a dash (-).\n");
       _exit (0);
     }
 }
