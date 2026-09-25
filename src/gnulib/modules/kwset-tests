@@ -1,0 +1,13 @@
+Files:
+tests/test-kwset.c
+tests/macros.h
+
+Depends-on:
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-kwset
+check_PROGRAMS += test-kwset
+test_kwset_LDADD = $(LDADD) @LIBINTL@

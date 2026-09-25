@@ -1,0 +1,14 @@
+Files:
+tests/test-array_list.c
+tests/macros.h
+
+Depends-on:
+stdcountof-h
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-array_list
+check_PROGRAMS += test-array_list
+

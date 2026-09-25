@@ -1,0 +1,13 @@
+Files:
+tests/test-posix_memalign.c
+tests/macros.h
+
+Depends-on:
+stdcountof-h
+stdint-h
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-posix_memalign
+check_PROGRAMS += test-posix_memalign

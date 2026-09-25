@@ -1,0 +1,11 @@
+Files:
+tests/test-arctwo.c
+
+Depends-on:
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-arctwo
+check_PROGRAMS += test-arctwo

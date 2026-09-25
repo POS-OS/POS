@@ -1,0 +1,14 @@
+Files:
+tests/test-sh-quote.c
+tests/macros.h
+
+Depends-on:
+streq
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-sh-quote
+check_PROGRAMS += test-sh-quote
+test_sh_quote_LDADD = $(LDADD) $(LIBUNISTRING) @LIBINTL@ $(MBRTOWC_LIB) $(LIBC32CONV)

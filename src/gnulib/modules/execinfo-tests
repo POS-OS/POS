@@ -1,0 +1,13 @@
+Files:
+tests/test-execinfo.c
+tests/macros.h
+
+Depends-on:
+stdcountof-h
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-execinfo
+check_PROGRAMS += test-execinfo
+test_execinfo_LDADD = $(LDADD) @LIB_EXECINFO@

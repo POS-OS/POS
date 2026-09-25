@@ -1,0 +1,17 @@
+Files:
+tests/test-savedir.c
+tests/macros.h
+
+Depends-on:
+bool
+creat
+close
+mkdir
+strnul
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-savedir
+check_PROGRAMS += test-savedir
+test_savedir_LDADD = $(LDADD) @LIBINTL@

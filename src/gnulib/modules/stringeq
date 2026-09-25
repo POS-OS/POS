@@ -1,0 +1,21 @@
+Description:
+streq and memeq convenience functions for string equality
+
+Files:
+
+Depends-on:
+streq
+memeq
+
+configure.ac:
+
+Makefile.am:
+
+Include:
+<string.h>
+
+License:
+LGPLv2+
+
+Maintainer:
+all

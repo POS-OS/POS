@@ -1,0 +1,13 @@
+Files:
+tests/test-vaszprintf-gnu.c
+tests/test-vaszprintf-gnu.h
+tests/macros.h
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-vaszprintf-gnu
+check_PROGRAMS += test-vaszprintf-gnu

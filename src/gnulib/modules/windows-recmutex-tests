@@ -1,0 +1,12 @@
+Files:
+tests/test-windows-recmutex-type.c
+tests/macros.h
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-windows-recmutex-type
+check_PROGRAMS += test-windows-recmutex-type

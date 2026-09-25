@@ -1,0 +1,16 @@
+Files:
+tests/test-getlogin_r.c
+tests/test-getlogin.h
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+bool
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-getlogin_r
+check_PROGRAMS += test-getlogin_r
+test_getlogin_r_LDADD = $(LDADD) $(GETLOGIN_R_LIB)

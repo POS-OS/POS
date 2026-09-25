@@ -1,0 +1,28 @@
+Description:
+stdc_has_single_bit macro, stdc_has_single_bit_* functions:
+Test whether an unsigned integer has exactly one 1 bit.
+
+Files:
+lib/stdc_has_single_bit.c
+
+Depends-on:
+stdbit-h
+
+configure.ac:
+AC_REQUIRE([gl_STDBIT_H])
+gl_STDBIT_MODULE_INDICATOR([stdc_has_single_bit])
+
+Makefile.am:
+if GL_HAVE_STDBIT_H
+else
+lib_SOURCES += stdc_has_single_bit.c
+endif
+
+Include:
+<stdbit.h>
+
+License:
+LGPLv2+
+
+Maintainer:
+all

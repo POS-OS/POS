@@ -1,0 +1,15 @@
+Files:
+tests/test-linked_list.c
+tests/macros.h
+
+Depends-on:
+array-list
+linked-list-unportable-tests
+stdcountof-h
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-linked_list
+check_PROGRAMS += test-linked_list

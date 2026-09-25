@@ -1,0 +1,30 @@
+Description:
+Rotate bits in unsigned 8, 16, and 32 bit integers.
+
+Status:
+deprecated
+
+Notice:
+This module is deprecated. Use stdc_rotate_left and std_rotate_right instead.
+
+Files:
+lib/bitrotate.h
+lib/bitrotate.c
+
+Depends-on:
+extern-inline
+stdint-h
+
+configure.ac:
+
+Makefile.am:
+lib_SOURCES += bitrotate.h bitrotate.c
+
+Include:
+"bitrotate.h"
+
+License:
+LGPLv2+
+
+Maintainer:
+Simon Josefsson

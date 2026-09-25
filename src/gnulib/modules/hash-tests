@@ -1,0 +1,16 @@
+Files:
+tests/test-hash.c
+tests/macros.h
+
+Depends-on:
+hashcode-string2
+inttostr
+bool
+stdcountof-h
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-hash
+check_PROGRAMS += test-hash

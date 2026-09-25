@@ -1,0 +1,19 @@
+Files:
+tests/test-strnul-c++.cc
+tests/test-strnul-c++2.cc
+
+Status:
+c++-test
+
+Depends-on:
+ansi-c++-opt
+
+configure.ac:
+
+Makefile.am:
+if ANSICXX
+TESTS += test-strnul-c++ test-strnul-c++2
+check_PROGRAMS += test-strnul-c++ test-strnul-c++2
+test_strnul_c___SOURCES = test-strnul-c++.cc
+test_strnul_c__2_SOURCES = test-strnul-c++2.cc
+endif

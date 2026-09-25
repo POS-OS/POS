@@ -1,0 +1,11 @@
+Files:
+tests/test-rijndael.c
+
+Depends-on:
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-rijndael
+check_PROGRAMS += test-rijndael

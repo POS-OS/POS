@@ -1,0 +1,31 @@
+Description:
+Parameterizable hash table.
+
+Files:
+lib/hash.c
+lib/hash.h
+
+Depends-on:
+calloc-posix
+free-posix
+malloc-posix
+next-prime
+bool
+stdint-h
+stdc_rotate_right
+xalloc-oversized
+hashcode-string1
+
+configure.ac:
+
+Makefile.am:
+lib_SOURCES += hash.c
+
+Include:
+"hash.h"
+
+License:
+LGPLv2+
+
+Maintainer:
+Jim Meyering

@@ -1,0 +1,300 @@
+# options to filter out, and why
+--all-warnings				alias for -Wall
+--extra-warnings			alias for -Wextra
+-W					alias for -Wextra
+-WNSObject-attribute			objc and objc++
+-Wabi					this is now a no-op
+-Wabi=					c++
+-Wabsolute-value			enabled by -Wextra
+-Waddress				enabled by -Wall
+-Waddress-of-packed-member		default
+-Waggregate-return			obsolescent
+-Waggressive-loop-optimizations		default
+-Walloc-size				enabled by -Wextra
+-Walloc-size-larger-than=<bytes>	defaults to PTRDIFF_MAX
+-Walloc-zero				Gnulib fixes this problem
+-Walloca				we like alloca in small doses
+-Walloca-larger-than=<number>		FIXME: choose something sane?
+-Wanalyzer-allocation-size		enabled by -fanalyzer
+-Wanalyzer-deref-before-check		enabled by -fanalyzer
+-Wanalyzer-double-fclose		enabled by -fanalyzer
+-Wanalyzer-double-free			enabled by -fanalyzer
+-Wanalyzer-exposure-through-output-file	enabled by -fanalyzer
+-Wanalyzer-exposure-through-uninit-copy	enabled by -fanalyzer
+-Wanalyzer-fd-access-mode-mismatch	enabled by -fanalyzer
+-Wanalyzer-fd-double-close		enabled by -fanalyzer
+-Wanalyzer-fd-leak			enabled by -fanalyzer
+-Wanalyzer-fd-phase-mismatch		enabled by -fanalyzer
+-Wanalyzer-fd-type-mismatch		enabled by -fanalyzer
+-Wanalyzer-fd-use-after-close		enabled by -fanalyzer
+-Wanalyzer-fd-use-without-check		enabled by -fanalyzer
+-Wanalyzer-file-leak			enabled by -fanalyzer
+-Wanalyzer-free-of-non-heap		enabled by -fanalyzer
+-Wanalyzer-imprecise-fp-arithmetic	enabled by -fanalyzer
+-Wanalyzer-infinite-loop		enabled by -fanalyzer
+-Wanalyzer-infinite-recursion		enabled by -fanalyzer
+-Wanalyzer-jump-through-null		enabled by -fanalyzer
+-Wanalyzer-malloc-leak			enabled by -fanalyzer
+-Wanalyzer-mismatching-deallocation	enabled by -fanalyzer
+-Wanalyzer-null-argument		enabled by -fanalyzer
+-Wanalyzer-null-dereference		enabled by -fanalyzer
+-Wanalyzer-out-of-bounds		enabled by -fanalyzer
+-Wanalyzer-overlapping-buffers		enabled by -fanalyzer
+-Wanalyzer-possible-null-argument	enabled by -fanalyzer
+-Wanalyzer-possible-null-dereference	enabled by -fanalyzer
+-Wanalyzer-putenv-of-auto-var		enabled by -fanalyzer
+-Wanalyzer-shift-count-negative		enabled by -fanalyzer
+-Wanalyzer-shift-count-overflow		enabled by -fanalyzer
+-Wanalyzer-stale-setjmp-buffer		implied by -fanalyzer
+-Wanalyzer-symbol-too-complex	        warns about compiler not about program
+-Wanalyzer-tainted-allocation-size	FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-tainted-array-index		FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-tainted-assertion		FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-tainted-divisor		FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-tainted-offset		FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-tainted-size			FIXME requires -fanalyzer-checker=taint
+-Wanalyzer-throw-of-unexpected-type	enabled by -fanalyzer
+-Wanalyzer-too-complex			enabled by -fanalyzer
+-Wanalyzer-undefined-behavior-ptrdiff	enabled by -fanalyzer
+-Wanalyzer-undefined-behavior-strtok	enabled by -fanalyzer
+-Wanalyzer-unsafe-call-within-signal-handler	enabled by -fanalyzer
+-Wanalyzer-use-after-free		enabled by -fanalyzer
+-Wanalyzer-use-of-pointer-in-stale-stack-frame	enabled by -fanalyzer
+-Wanalyzer-use-of-uninitialized-value	enabled by -fanalyzer
+-Wanalyzer-va-arg-type-mismatch		enabled by -fanalyzer
+-Wanalyzer-va-list-exhausted		enabled by -fanalyzer
+-Wanalyzer-va-list-leak			enabled by -fanalyzer
+-Wanalyzer-va-list-use-after-va-end	enabled by -fanalyzer
+-Wanalyzer-write-to-const		enabled by -fanalyzer
+-Wanalyzer-write-to-string-literal	enabled by -fanalyzer
+-Warray-bounds				covered by -Warray-bounds=
+-Warray-bounds=<0,2>			handled specially by gl_MANYWARN_ALL_GCC
+-Warray-compare				enabled by -Wall
+-Warray-parameter			enabled by -Wall
+-Warray-parameter=<0,2>			enabled by -Wall
+-Wattribute-alias			covered by -Wattribute-alias=2
+-Wattribute-alias=<0,2>			handled specially by gl_MANYWARN_ALL_GCC
+-Wattribute-warning			default
+-Wattributes				default
+-Wauto-profile				useful only when profiling
+-Wbidi-chars				handled specially by gl_MANYWARN_ALL_GCC
+-Wbidi-chars=				handled specially by gl_MANYWARN_ALL_GCC
+-Wbool-compare				enabled by -Wall
+-Wbool-operation			enabled by -Wall
+-Wbuiltin-declaration-mismatch		default
+-Wbuiltin-macro-redefined		default
+-Wc++-compat				only useful for code meant to be compiled by a C++ compiler
+-Wc11-c23-compat			c compatibility
+-Wc23-c2y-compat			c compatibility
+-Wc90-c99-compat			c compatibility
+-Wc99-c11-compat			c compatibility
+-Wcalloc-transposed-args		enabled by -Wextra
+-Wcannot-profile			default
+-Wcast-align				enabled by -Wcast-align=strict
+-Wcast-function-type			enabled by -Wextra
+-Wcast-qual				FIXME maybe? too much noise; encourages bad changes
+-Wchar-subscripts			enabled by -Wall
+-Wchkp					deprecated
+-Wclobbered				enabled by -Wextra
+-Wcomment				enabled by -Wall
+-Wcomments				alias for -Wcomment
+-Wcompare-distinct-pointer-types	default
+-Wcomplain-wrong-lang			default
+-Wconversion				FIXME maybe? too much noise; encourages bad changes
+-Wcoverage-invalid-line-number		default if --coverage
+-Wcoverage-mismatch			default
+-Wcoverage-too-many-conditions		default
+-Wcoverage-too-many-paths		default
+-Wcpp					default
+-Wdangling-else				enabled by -Wparentheses
+-Wdangling-pointer			enabled by -Wall
+-Wdangling-pointer=<0,2>		enabled by -Wall
+-Wdeclaration-after-statement		needed only for pre-C99, so obsolete
+-Wdeclaration-missing-parameter-type	default
+-Wdeprecated				default
+-Wdeprecated-declarations		default
+-Wdeprecated-non-prototype		c compatibility
+-Wdeprecated-openmp			default
+-Wdesignated-init			default
+-Wdisabled-optimization			warns about compiler not about program
+-Wdiscarded-array-qualifiers		default
+-Wdiscarded-qualifiers			default
+-Wdiv-by-zero				default
+-Wduplicate-decl-specifier		enabled by -Wall
+-Wempty-body				enabled by -Wextra
+-Wendif-labels				default
+-Wenum-compare				enabled by -Wall
+-Wenum-conversion			enabled by -Wextra
+-Wenum-int-mismatch			enabled by -Wall
+-Werror-implicit-function-declaration	deprecated
+-Wexpansion-to-defined			enabled by -Wextra
+-Wfloat-conversion			FIXME maybe? borderline.  some will want this
+-Wfloat-equal				FIXME maybe? borderline.  some will want this
+-Wformat				covered by -Wformat=2
+-Wformat-contains-nul			default
+-Wformat-diag				enabled by -Wformat=2
+-Wformat-extra-args			enabled by -Wformat=2
+-Wformat-nonliteral			enabled by -Wformat=2
+-Wformat-overflow<0,2>			gcc --help=warnings artifact
+-Wformat-overflow=<0,2>			handled specially by gl_MANYWARN_ALL_GCC
+-Wformat-security			enabled by -Wformat=2
+-Wformat-truncation			covered by -Wformat-truncation=2
+-Wformat-truncation=<0,2>		handled specially by gl_MANYWARN_ALL_GCC
+-Wformat-y2k				enabled by -Wformat=2
+-Wformat-zero-length			enabled by -Wformat=2
+-Wformat=<0,2>				gcc --help=warnings artifact
+-Wframe-address				enabled by -Wall
+-Wframe-larger-than=<byte-size>		FIXME: choose something sane?
+-Wfree-nonheap-object			default
+-Whardened				default
+-Wheader-guard				enabled by -Wall
+-Wif-not-aligned			default
+-Wignored-attributes			default
+-Wignored-qualifiers			enabled by -Wextra
+-Wimplicit				enabled by -Wall
+-Wimplicit-fallthrough			covered by -Wimplicit-fallthrough=2
+-Wimplicit-fallthrough=<0,5>		handled specially by gl_MANYWARN_ALL_GCC
+-Wimplicit-function-declaration		enabled by -Wimplicit
+-Wimplicit-int				enabled by -Wimplicit
+-Wincompatible-pointer-types		default
+-Winfinite-recursion			enabled by -Wall
+-Wint-conversion			default
+-Wint-in-bool-context			enabled by -Wall
+-Wint-to-pointer-cast			default
+-Winvalid-memory-model			default
+-Winvalid-utf8				enabled by -finput-charset=UTF-8
+-Wjump-misses-init			only useful for code meant to be compiled by a C++ compiler
+-Wlarger-than-				gcc --help=warnings artifact
+-Wlarger-than=<byte-size>		FIXME: choose something sane?
+-Wleading-whitespace=			specific to project coding style
+-Wlogical-not-parentheses		enabled by -Wall
+-Wlong-long				obsolescent
+-Wlto-type-mismatch			default
+-Wmain					enabled by -Wall
+-Wmaybe-musttail-local-addr		enabled by -Wextra
+-Wmaybe-uninitialized			enabled by -Wall or -Wextra
+-Wmemset-elt-size			enabled by -Wall
+-Wmemset-transposed-args		enabled by -Wall
+-Wmisleading-indentation		enabled by -Wall
+-Wmismatched-dealloc			default
+-Wmissing-attributes			enabled by -Wall
+-Wmissing-braces			enabled by -Wall
+-Wmissing-field-initializers		enabled by -Wextra
+-Wmissing-format-attribute		obsolescent
+-Wmissing-noreturn			obsolescent
+-Wmissing-parameter-name		c and objc compatibility
+-Wmissing-parameter-type		enabled by -Wextra
+-Wmissing-profile			default
+-Wmultichar				default
+-Wmultiple-parameter-fwd-decl-lists	enabled by -Wextra
+-Wmultistatement-macros			enabled by -Wall
+-Wmusttail-local-addr			default
+-Wnarrowing				enabled by -Wall
+-Wno-alloc-size-larger-than		see -Walloc-size-larger-than
+-Wno-alloca-larger-than			see -Walloca-larger-than
+-Wno-frame-larger-than			see -Wframe-larger-than
+-Wno-larger-than			see -Wlarger-than
+-Wno-stack-usage			see -Wstack-usage
+-Wno-vla-larger-than			see -Wvla-larger-than
+-Wnonnull				enabled by -Wall or -Wformat
+-Wnonnull-compare			enabled by -Wall
+-Wnormalized				default
+-Wnormalized=[none|id|nfc|nfkc]		defaults to nfc
+-Wodr					default
+-Wold-style-declaration			enabled by -Wextra
+-Wopenacc-parallelism			OpenACC
+-Wopenmp				default
+-Woverflow				default
+-Woverride-init				enabled by -Wextra
+-Woverride-init-side-effects		default
+-Wpacked-bitfield-compat		default
+-Wpacked-not-aligned			enabled by -Wall
+-Wpadded				FIXME maybe?  warns about "stabil" member in /usr/include/bits/timex.h
+-Wparentheses				enabled by -Wall
+-Wpedantic				FIXME: too strict?
+-Wpointer-compare			default
+-Wpointer-sign				enabled by -Wall
+-Wpointer-to-int-cast			default
+-Wpragma-once-outside-header		default
+-Wpragmas				default
+-Wprio-ctor-dtor			default
+-Wpsabi					default
+-Wredundant-decls			FIXME maybe? many _gl_cxxalias_dummy FPs
+-Wrestrict				enabled by -Wall
+-Wreturn-local-addr			default
+-Wreturn-mismatch			default
+-Wreturn-type				enabled by -Wall
+-Wscalar-storage-order			default
+-Wsequence-point			enabled by -Wall
+-Wshadow-compatible-local		covered by -Wshadow
+-Wshadow-local				covered by -Wshadow
+-Wshadow=compatible-local		covered by -Wshadow
+-Wshadow=global				covered by -Wshadow
+-Wshadow=local				covered by -Wshadow
+-Wshift-count-negative			default
+-Wshift-count-overflow			default
+-Wshift-negative-value			enabled by -Wextra
+-Wshift-overflow			covered by -Wshift-overflow=2
+-Wshift-overflow=<0,2>			gcc --help=warnings artifact
+-Wsign-compare				enabled by -Wextra
+-Wsign-conversion			FIXME maybe? borderline.  some will want this
+-Wsizeof-array-argument			default
+-Wsizeof-array-div			enabled by -Wall
+-Wsizeof-pointer-div			enabled by -Wall
+-Wsizeof-pointer-memaccess		enabled by -Wall
+-Wstack-usage=<byte-size>		FIXME: choose something sane?
+-Wstrict-aliasing			enabled by -Wall
+-Wstrict-aliasing=<0,3>			FIXME: choose something sane?
+-Wstrict-overflow			deprecated and slated for removal
+-Wstrict-overflow=<0,5>			deprecated and slated for removal
+-Wstring-compare			enabled by -Wextra
+-Wstringop-overflow			covered by -Wstringop-overflow=2
+-Wstringop-overflow=<0,4>		defaults to 2
+-Wstringop-overread			default
+-Wstringop-truncation			default
+-Wsuggest-attribute=returns_nonnull	https://gcc.gnu.org/PR114833
+-Wsuggest-final-methods			c++
+-Wsuggest-final-types			c++
+-Wswitch				enabled by -Wall
+-Wswitch-bool				default
+-Wswitch-default			https://lists.gnu.org/r/bug-gnulib/2018-05/msg00179.html
+-Wswitch-enum				FIXME maybe? borderline.  some will want this
+-Wswitch-outside-range			default
+-Wswitch-unreachable			default
+-Wsystem-headers			warns about system headers on macOS and #include_next in gnulib headers
+-Wtautological-compare			enabled by -Wall
+-Wtraditional				obsolescent
+-Wtraditional-conversion		obsolescent
+-Wtrailing-whitespace			specific to project coding style
+-Wtrailing-whitespace=			specific to project coding style
+-Wtrigraphs				enabled by -Wall
+-Wtrivial-auto-var-init			subsumed by -Wmaybe-uninitialized
+-Wtsan					default
+-Wtype-limits				enabled by -Wextra
+-Wundef					FIXME maybe? too many false positives
+-Wunicode				default
+-Wunsuffixed-float-constants		triggers warning in gnulib's timespec.h
+-Wunterminated-string-initialization	enabled by -Wextra
+-Wunused				enabled by -Wall
+-Wunused-but-set-parameter		enabled by -Wextra -Wunused
+-Wunused-but-set-parameter=<0,3>	enabled by -Wextra -Wunused
+-Wunused-but-set-variable		enabled by -Wunused
+-Wunused-but-set-variable=<0,3>		enabled by -Wall
+-Wunused-const-variable			covered by -Wunused-const-variable=2
+-Wunused-const-variable=<0,2>		gcc --help=warnings artifact
+-Wunused-function			enabled by -Wunused
+-Wunused-label				enabled by -Wunused
+-Wunused-local-typedefs			enabled by -Wunused
+-Wunused-result				enabled by -Wunused
+-Wunused-value				enabled by -Wunused
+-Wunused-variable			enabled by -Wunused
+-Wuse-after-free			handled specially by gl_MANYWARN_ALL_GCC
+-Wuse-after-free=<0,3>			handled specially by gl_MANYWARN_ALL_GCC
+-Wuseless-cast				handled specially by gl_MANYWARN_ALL_GCC
+-Wvarargs				default
+-Wvla-larger-than=<number>		handled specially by gl_MANYWARN_ALL_GCC
+-Wvla-parameter				enabled by -Wall
+-Wvolatile-register-var			enabled by -Wall
+-Wxor-used-as-pow			default
+-Wzero-as-null-pointer-constant		handled specially by gl_MANYWARN_ALL_GCC
+-Wzero-length-bounds			enabled by -Wall

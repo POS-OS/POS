@@ -1,0 +1,23 @@
+@node arpa/inet.h
+@section @file{arpa/inet.h}
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/arpa_inet.h.html}
+
+Gnulib module: arpa_inet-h
+@mindex arpa_inet-h
+
+Portability problems fixed by Gnulib:
+@itemize
+@item
+This header file is missing on some platforms: mingw, MSVC 14.
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+POSIX.1-2024 allows, but does not require, this file to make visible
+all symbols from the headers @code{<inttypes.h>} and @code{<netinet/in.h>}.
+Programs should not assume that these other symbols are visible merely
+because this file is included, or that they are invisible because only
+this file is included.
+@end itemize

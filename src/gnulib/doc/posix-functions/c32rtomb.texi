@@ -1,0 +1,39 @@
+@node c32rtomb
+@subsection @code{c32rtomb}
+@findex c32rtomb
+
+ISO C23 specification:@* @url{https://www.open-std.org/jtc1/sc22/wg14/www/docs/n3220.pdf} section 7.30.1.6.
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/functions/c32rtomb.html}
+
+Gnulib module: c32rtomb
+@mindex c32rtomb
+
+Portability problems fixed by Gnulib:
+@itemize
+@item
+This function is missing on most non-glibc platforms:
+glibc 2.15, macOS 14, FreeBSD 6.4, NetBSD 10.0, OpenBSD 7.3, Minix 3.1.8, AIX 7.1, HP-UX 11.31, Solaris 11.3, Cygwin 3.4.x, mingw, MSVC 9, Android 4.4.
+@item
+This function returns 0 when the first argument is NULL in some locales on some platforms:
+AIX 7.2.
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+On some platforms, when Gnulib's @code{mbrtoc32} module is used,
+in the C locale @code{mbrtoc32} translates bytes in the range 0x80--0xFF
+to @code{char32_t} values in the range 0xDF80--0xDFFF,
+but when those @code{char32_t} values are given to this function
+it fails with @code{EILSEQ} instead of translating them back:
+glibc 2.44, FreeBSD 15, NetBSD 11, OpenBSD 7.9.
+@item
+On some platforms, when using a multibyte encoding other than UTF-8,
+this function may incorrectly convert an invalid character
+to an invalid byte sequence instead of returning @code{(size_t) -1}:
+FreeBSD 15, NetBSD 11, DragonFly BSD 6.
+@item
+This function is only defined as an inline function on some platforms:
+Haiku 2020.
+@end itemize

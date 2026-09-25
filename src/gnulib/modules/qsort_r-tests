@@ -1,0 +1,11 @@
+Files:
+tests/test-qsort_r.c
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-qsort_r
+check_PROGRAMS += test-qsort_r
