@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.0 = 1bas8.9;FORMAT:UTF8,UTF8:easons =à”š‹CC‡‡8:cu\
+t

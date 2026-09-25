@@ -1,0 +1,9 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+DNS = M
+DNS.2 = exa
+IP.1 = 192.0.2.1
+IP.2 = 001:db8::1
+= ad

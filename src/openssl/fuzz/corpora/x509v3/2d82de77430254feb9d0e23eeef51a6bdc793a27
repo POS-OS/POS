@@ -1,0 +1,5 @@
+[default]tionPoints = URK:89:AB:CD:Efault]
+crlDistributionPoints = URI:h~t:32:50:7:crl1.example.net/root.crl,URI:ldap://directory.examp|e.net/c,URI:ldap:ot.crl,URI:crl,URI:issu:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Ro:32:50:76:98:ADB::1:FEC1:22:FEC1:22:33:45:67:¿89:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root.exa…mpl,URI:ldap://directcrl,URI:://director1:FEC1:89:crl1.examplernoo/.ett.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.examplrl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººasyIe.net/cn=Root%20Root.exa…mple.net/root.crl,URI:ldap:/:67:¿89:crl1.example.net/root.crl,URI:ldap:ººººººampl
+authorityKeyIdentifier =issuer
+[default]tributionPoints.exl
+authorityInfoAccess = OCSP;URI:http://ocsp.]ong-corpus.ex:ample.test/,caIssuers;URI:htt.net/cn=Root%20CA

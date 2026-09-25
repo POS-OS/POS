@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]custom ideny
+otherName.4 = CAMELLIA-128-CFB1;FORMAT:UTF8,UTF8String:easonset

@@ -1,0 +1,9 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:89:ABonPoints = URI:hcrl,URI:ldap:ot:50:A6URI.ADB::1:Ft/root.crl,URI:ldap://dinhibitAnyPolicyirectory.exarl1.example.net/root.crl,URI:ldap:ot.crl,URI:l44:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root.exa…mple.net/root.crl,URI:t.crl,URI:ldapexample.net/root.
+authorityKeyIdentifier =issuer
+[default]tributionPoints = URI.exl
+authorityInfoAccess = OCSP;URI:http:/le.test/,caIssuers;URI:http:/root.der
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_mes]20CA

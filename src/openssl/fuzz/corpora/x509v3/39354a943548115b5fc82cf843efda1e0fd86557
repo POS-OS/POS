@@ -1,0 +1,6 @@
+[default]
+
+crlDistributionPoints = alternative_names
+[alternative_names]
+reasons= @
+cn=Root%2оA

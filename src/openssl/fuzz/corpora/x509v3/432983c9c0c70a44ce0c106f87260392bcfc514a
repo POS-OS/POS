@@ -1,0 +1,3 @@
+
+authorityKeyIdentifier =issuer
+nsCertType = client,server,email,objsign,sslCA,emailCA#t

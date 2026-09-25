@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]nri
+authorityInfoAccess = OCSP;URI:_,s

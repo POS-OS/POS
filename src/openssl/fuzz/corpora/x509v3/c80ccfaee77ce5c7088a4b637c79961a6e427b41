@@ -1,0 +1,2 @@
+[default]
+nameConstraints =permitted;IP:192.0.2.0/252.25.2.2,permitted;IP:192.0.2.0/255.5.255.0

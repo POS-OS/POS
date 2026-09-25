@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]jec
+nsCertType = client,server#e

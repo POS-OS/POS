@@ -1,0 +1,13 @@
+
+authorityKeyIdentifier =issuer
+[default]
+crlDistributionPoints = alternative_names
+
+[alt]
+sub?jectAltN*ame =8ns
+
+[alternative_names]
+otherName.1 = cipherment
+fullnameKeyAltName = @alternative_names
+
+[ass]t|

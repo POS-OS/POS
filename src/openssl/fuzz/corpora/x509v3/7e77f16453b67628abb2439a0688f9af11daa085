@@ -1,0 +1,27 @@
+[default]
+issuerAltName = DNS:i#efaulåt]
+issuerAltName = DNS:[&defa333333333333333333333ult]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.include2.3.4.2.01,1.2
+crlDistributionPoints = URI:.ex-com.net/
+noAssertion= cri
+noCheck =)tory;URI:htps://pki“eeeeeeeed:http://ocspast_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = 3-corpus.e.example.net/,caIssuerc509v3-corpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape extension korpus seed
+nsBaseUrl = https://legacy.s;URI:http://pki.example.rmitted;DNS:/issuer.der,ccaIssuers;URI:http://pki.example.net/kssuer.der,caRepository;URI:htps://pki.net/
+nsSslServerName = legacyesvice-031.cluster-ce-013.cess = OCSP;URI:http://ocsPnt o{iURI:http=:/cefault]
+1.2.3.4.100 = ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.= ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.4.100 = ASN1:SEQUENCE
+fiel4.100 = ASN1:SEQ%ENCE
+field1 = Ule.net/root.crl,

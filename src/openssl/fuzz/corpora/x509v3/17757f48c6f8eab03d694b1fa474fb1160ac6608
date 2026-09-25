@@ -1,0 +1,8 @@
+[default]
+crlDistributionPoints = alternative_names
+
+[alt]*ame =4names
+
+[alternative_names]nat
+fullname = @alt
+fulln46 = 

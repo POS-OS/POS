@@ -1,0 +1,23 @@
+[default]
+issuerAltName = DNS:i#efault]
+issuerAltName = DNS:[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies =S1.2.3.4.201,1.2.3.4.202
+crlDistributionPoints = URI:http://crl.long-corpus.example.test/root.crl
+authorityInfoAccess = OCSP;URI:tp://ocsp.long-corpus.exampltest/,caIssuers;URI:http://ca.long-corpus.example.test/root.der
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = service-001.cluster-01.9v3-.clustcorpus.example.test
+DNS.37 = serviceple.test
+DNS.52 = service-052.cluspus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape extension corpus seed
+nsBaseUrl = https:/legacy.example.net/
+nsSslServerName = legacy..comlt]
+noCheck = critical,igteice-010.cluster-10.long-ample%test

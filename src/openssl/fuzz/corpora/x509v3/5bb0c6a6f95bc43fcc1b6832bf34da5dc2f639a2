@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]cmcCAucs
+0..2278.= ASN1:EXP:1U,EXP:100C,EXP:1000CASXP:1U,EXP:1CP,

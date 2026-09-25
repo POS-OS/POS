@@ -1,0 +1,13 @@
+
+authorityKeyIdentifier  = servetAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies = opyier
+issuerAltName=issuer:copy
+
+
+##ÂSE
+subjectKeyIdentifier=hash
+vu=kealternative_na201:01:01:01:FF
+
+[long_alternative_names]
+DNS.2 = 3-corpus.examp8

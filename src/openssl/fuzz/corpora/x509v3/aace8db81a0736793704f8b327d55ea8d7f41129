@@ -1,0 +1,9 @@
+[default]
+authorityKeyIdentifier =issuer
+certificatePolicies = @proxy_ext
+
+#
+#$ onlaetÿÿÿÿ5:crl1_et
+
+[ proxy_ext ]
+userNotice.1lan2uaes = @proÿÿÿ2

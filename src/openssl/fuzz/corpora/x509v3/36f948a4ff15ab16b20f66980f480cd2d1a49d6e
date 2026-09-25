@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]trissPLICIT:t]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltme =mames
+
+[alternative_names]
+relat1.2.3.4 = .rR

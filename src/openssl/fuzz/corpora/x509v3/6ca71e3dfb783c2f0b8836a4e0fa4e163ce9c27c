@@ -1,0 +1,3 @@
+
+authorityKeyIdentifier =issuer
+1.24.1.7 = ASN1:IMP:1A.2 =1A,OCTWRAP,IMP:1CRLOID:

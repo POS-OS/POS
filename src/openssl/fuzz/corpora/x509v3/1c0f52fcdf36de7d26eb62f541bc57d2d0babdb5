@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+subjectAltName = @alternative_names
+
+[alternative_names]`DNS.Ñ
+IP.5 =9.2.1

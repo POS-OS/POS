@@ -1,0 +1,2 @@
+[default]
+certificatePolicies = 0.4.0,1..202

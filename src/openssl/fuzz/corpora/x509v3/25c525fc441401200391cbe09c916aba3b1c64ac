@@ -1,0 +1,13 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePkli.201,1
+crlDistributionPoints = URI:http://crÔ.long-corp[default]
+nameConstraints = critical,permitted;email:.))))crl
+authorityInfoAccess = OCSP;URI:htefault]
+subjectKeyIdentifier = 0ermitted;URI:.examp01:01:01:011FF
+
+[long_alternative_names]
+DNS.1 = serviidsúEF

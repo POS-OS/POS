@@ -1,0 +1,13 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:89:AB:CD:Efault]
+crlDistributionPoints = URI:h~t:32:50:76:98:ADB:,URI:ldap://d/irectory.ecrlDistributionPointsNameldap:ot.crl,URI:lda:¿89:crl1.eDNS:le.net/root.0crl,URI:ldap:ººººººamprl,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root.exa…mple.net/root.crl,URI:76:98:A8B:L:1:FEC1:22:33:45:67:¿amplernoo/.ett.crl,URI:://directory.ex.ett.crl,URI:0dap:ot.crl,URI:l,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root.exl,URI:ldap://diremple.net/root.crl,URI:ldap:ººººººamphe.net/cn=Root%20Root:1:FEC1:
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[altnsCertTypeernafault]
+subjectAltName = @altet]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:1Gc:CF22:3ÿÿÿÿ

@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2 =;EXP:P1:EX,EXP:P:3ASN1:EXP:0,EXP:P:£1:Ett

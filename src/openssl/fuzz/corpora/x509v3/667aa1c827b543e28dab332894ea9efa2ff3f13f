@@ -1,0 +1,5 @@
+
+authorityKeyIdentifier =issuer
+[default]
+0.1.2.84 = ASN1:EXP:23U12,NULL
+

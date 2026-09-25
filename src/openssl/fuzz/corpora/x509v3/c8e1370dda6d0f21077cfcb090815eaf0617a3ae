@@ -1,0 +1,3 @@
+
+authorityKeyIdentifier =issuer
+policyConstraints = critical,requireExplicitPolicy:2,inhibitPolicyMapping:o0CA

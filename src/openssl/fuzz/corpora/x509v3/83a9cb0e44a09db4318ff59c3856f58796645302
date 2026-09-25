@@ -1,0 +1,5 @@
+[default]
+nsCertType = client
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,2.2.
+subjectAltName =ertifier

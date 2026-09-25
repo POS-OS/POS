@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+
+nsCertType = client,server,email,or;em

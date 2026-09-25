@@ -1,0 +1,5 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.4999000000000001709029.49990000000000000514.499900000000000000000000;UTF8:c0;UTFaet

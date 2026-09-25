@@ -1,0 +1,7 @@
+[default]
+crlDistributionPoints = alternative_names
+
+[alt]4names
+
+[alternative_names]
+fullnameKeyUsame = @ = 

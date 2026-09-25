@@ -1,0 +1,9 @@
+[default]
+crlDistributionPoints = URI:h~= URI:h~20Root%F:10,URI:ldap.net/root.crl,URI:ldap:ot.crl,URI:lda:¿78:crl1&examplded;DNS:l,URI:ldap:ººº/root.crl,URI:98:ADA::1:FEC1:22:66:45:67l1.example.net/root.crl,URI:ldap:ººººººamphe.netRoo:
+authorityKeyIdentifier =issuer
+
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:cersededt/root.crl,URI:ldt]
+2.2.2.1 = gritical,DER:16:77a.779619p51BE:EF

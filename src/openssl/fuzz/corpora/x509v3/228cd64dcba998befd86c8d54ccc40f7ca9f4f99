@@ -1,0 +1,6 @@
+[default]
+nsCertType = client,server,objCA
+nsComment = Legcyrl
+authorityInfoAccess = OCSP;URI:http:to,caIssuers;URI:http:/er
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:01:01:

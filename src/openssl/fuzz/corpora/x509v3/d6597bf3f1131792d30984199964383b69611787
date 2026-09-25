@@ -1,0 +1,5 @@
+[default]
+authorityKeyIdentifier =issuer
+
+nameConstraints = au]
+nameConstraints = permitted;IP:2001:db8:dead::/ffff:fff:ffff::,excluded;IP:9587::/ffff::,excluded;IP:7720:db8:dead::/ffff:ffff:fff:ffff::,excludedBIP:4794:db8:dead::/f

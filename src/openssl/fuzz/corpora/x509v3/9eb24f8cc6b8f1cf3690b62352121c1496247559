@@ -1,0 +1,15 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @a.2.3.4. = er
+[default]
+subjectAltName =Ë@a4783le.nqt,excluded;email:.in
+subjectAltName = @long_alternative_names
+.includea:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = ,uuuuuuuuuuuuuuuuuuuuuuuuuuuservpxample.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy # [ v3_proxlways
+proxyCertInfo=critical,lan?guage:id-pping:Laså•tus_reqEXPLICvIetscaT:uestnguage,pathlen:0,policy:hex::AB,Leayplic sy:t,ext:AB

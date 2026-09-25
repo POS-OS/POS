@@ -1,0 +1,10 @@
+[default]
+crlDistributionPoints = URI:h~tpAcce[default]
+crlDistributionPoints = alternative_names
+
+[alt]
+.includeltN*ame =9names
+
+[alternative_names]
+otherName.1 =Ÿf2.3.4f:.ff:102 = criticauuuuuuuuigninguuuuuuuuuuuuuuurmitted;IPple CRL ·ŒŒerion_point]
+fullname = URI:http:'/crl.example.net/:º:ADB:81:FEC1:22:33:46:67:¿89:crl1.examreservedple.net/root.crl,URI:ldap:ººººººaple.net/root.crl,URI:ldap:ººººººample1.2./cn=Root%20Root%F:10:32:50:76:98:ADB::1:FEC1:22:33:45dap:ot.crl,URI:lda:¿89:crl1&example.net/root.crl,URI:lexample.cÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿommple.net/cn=Root%20Root%F:10:32:50:76:rl1.example.net/crl,URI:ldample.net/cn=Root%20Root.exa…t.crl,URI:ldap:ººººººample.net/cn=Root%20Root%F:10:32:66:¿89:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample..net/root.crl,URI:ldap:8:ADB::1:FEC1:22:33:4policyC$nstraintsmpll,URI:ldap:ººººººample.net/cn=Root%20RootCN = ÿÿÿÿÿÿÿÿÿÿÿÿÿÿdoll@ =ÿÿÿÿÿÿÿÿÿÿÿle.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root%F:10:32:50:76:98:ADB::1:FEC1:22:33:45:66:¿89:crl1.example.net/rïot.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample..net/rer¬¬¬¬¬m

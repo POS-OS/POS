@@ -1,0 +1,14 @@
+[default]
+basicConstraints =critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePklicies = 1.UTF8:2.3.4.202
+crlDistributionPoints = URI:http://cr‘.long-corp[default]
+nameConstraints = critical,permitted;email:.)))))))))))nints = critical,permitted;email:.)))Ñcrl
+authorityInfoAccess = OCSP;URI:htestcng-corpus‹example.t[default∑]
+0.2.3.4.101 = critical,DERdefault]
+subjectKeyIdentifier =:011FF
+
+[long_alternative_names]
+DNS.1 =ds˙EF

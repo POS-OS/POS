@@ -1,0 +1,13 @@
+# [ v3_}}}}}}}}}}}}lientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolittp://oc01:FF
+
+[long_alternative_names]
+DNS.0 = 3-corpus.example.test
+DNS.2 = service-002tre-
+DNS.57 = servle.net/,caIssuercluster-57.long-[x509v3-corpus.example.test
+[default]}}}}}}}}}}}}}}}}}}}}}}}}er:copyier
+issuerAltName=issuer:copy
+
+
+##ÂSE

@@ -1,0 +1,7 @@
+[default]
+crlDistributionPoints = URI:ÿÿ
+authorityKeyIdentifier =issuer
+[default]›
+1.2.3.4= DER:04:DE:AD:BE01:FF
+1.2..282 = DER:04::04::žEs]
+otherName.5 =99902.3

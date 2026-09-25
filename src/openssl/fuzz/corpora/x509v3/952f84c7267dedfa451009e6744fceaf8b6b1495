@@ -1,0 +1,9 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+ubthe.1c= 1.s
+
+[alternative_names]
+otherName.1 = 1.2.3.9;FORMAT:UTF8,SET:f

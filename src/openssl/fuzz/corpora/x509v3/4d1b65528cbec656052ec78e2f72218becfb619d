@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+[default]rmASN1:BMP:!hello
+2.8= ASN1:BMP:!h¥“lo
+2.84 = ASN1:BMP::!hello
+2.84..2.84 = ASN1:BMP:!8cu\t

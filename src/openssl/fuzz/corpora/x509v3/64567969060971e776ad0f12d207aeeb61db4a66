@@ -1,0 +1,10 @@
+
+subjectAltName = @alternative_names
+
+[alternative_names]
+DNS.0 =mple.com
+DNS.2 = 
+IP.1 = 192.0.2.1
+IP.2 = 20::1
+URI.1 = http
+email.1 =e.com

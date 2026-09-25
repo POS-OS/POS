@@ -1,0 +1,18 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:Y io
+DNS.36 = sest
+DNS.61 = -61.long-x
+DNS.81 = service-06x509v3-corpuOCSPample.test
+DNS.63 = service-063.cluster-3-corpus.example.test
+DNS.64 = service-064.cluster-64.loom
+IP.1 = 192.0.2.1
+IP.2 = 2001:db8::1
+URI.1 = htìèå≈//example.com/
+email.1 = admin@8.cluster-62.l
+DNS.v9 = test
+DNS.70 =t
+DNS.33 = srvmes]
+otherName.0 = ANSI X9.62;UTFser.@examêòe. semt

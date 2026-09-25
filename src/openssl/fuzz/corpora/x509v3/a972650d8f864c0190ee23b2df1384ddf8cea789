@@ -1,0 +1,5 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2 = 1.9;FORMAT:UTF8,IA5STRING::us.1.5.5.7.8.9/OFR

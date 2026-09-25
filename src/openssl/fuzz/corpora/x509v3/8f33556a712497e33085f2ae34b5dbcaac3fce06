@@ -1,0 +1,6 @@
+[default]
+authorityKeyIdentifier =issuer
+1.2.= ASN1:BITSTR:€.n&ames
+certificatePolicies = @proxy_ext
+[ proxy_ext ]
+language=io

@@ -1,0 +1,10 @@
+[default]
+crlDistributionPoints =)gncce[default]
+crlDistributionPoints = alternative_names
+
+[alt]
+subjectAltN*mea =9names
+
+[alternative_names]
+otherName.1 =Ÿfauluuuignierion_point]
+fullname = URI:http:/ample.nlanguagecrl,URI:ldap:ººººººaple.net/root.crl,URI:isssuerAltNameldap:ººººººa.net/root.crl,URI:ldap:ot.crl,URI:t/root.crl,URI:ldap:ºººle.neotro/t.crl,URI:ldað:o:5t0:76:ample.net/con0t=R%o.crl,URI:ld%ap:ot:50:76:h:

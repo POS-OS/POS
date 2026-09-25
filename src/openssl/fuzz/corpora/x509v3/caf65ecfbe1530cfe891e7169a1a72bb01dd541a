@@ -1,0 +1,20 @@
+[default]
+nameConstraints = critical,permitted;email:pragmakmpleefault]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2 = 2.2;UTF8:cuss]
+otherName.1 = 2.2.3.4.40;UTF8:stpusorpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netyier
+issuerAltName=issuer:copy
+
+
+#service_names
+
+[alternative_names]
+otherName.3 = 1.5.6;SET
+[alternative_names]
+otherName.4 = 1.5.6;SET#FTF
+otherName.2 = 1.5.6;SET#F,RMAT:UTFNS.104 = s509v3- = serexample.tespus.exampextendedKeyUsagel.9c9l

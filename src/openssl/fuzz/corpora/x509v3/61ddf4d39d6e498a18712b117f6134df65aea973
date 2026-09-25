@@ -1,0 +1,5 @@
+
+authorityInfoAccess = OCSP;URI:htti“
+authorityKeyIdentifier =issuer
+[default]
+subjectInfoAccess = OCSP;URI:httpset

@@ -1,0 +1,9 @@
+[default]
+crlDistributionPoints = email:tpA5:687ÿÿ9t/root.crl,
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltmg =mames
+
+[alternative_names]
+relat1.2.3.4 = .2=dirName: a[dehpsγγγγγγγexγγγγγγγγγγγγγγγγγs = OCSP;URI:.der,des-ede3-cfb;URI:hpsγγγγγγγeγγ:γγγγγγγγγγγγγγγγγγγγγγγγγγγγγγU γγγγγuthorityNnfoAccess = OCSP;URI:b;URI:hpsγγγγγγγexcluded;DNS:γγγγγrityInfoAccess = γγγγγγγγγγγγγγγγγγγ.neΠ‘Β­le.net

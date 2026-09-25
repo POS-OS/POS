@@ -1,0 +1,4 @@
+[default]:50:
+authorityKeyIdentifier =issuer
+1..2 = ASN1:OID:2.5.2
+Name = @exa

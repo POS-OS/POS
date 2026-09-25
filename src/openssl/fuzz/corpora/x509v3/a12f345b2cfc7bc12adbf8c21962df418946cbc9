@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]me = _atera]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.0 =0000XXX\XXX9;FORMAT:UTF8,UTF8String:uleneí»¿alÿÿ

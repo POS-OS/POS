@@ -1,0 +1,13 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:89:AB:CD, URI:hot.crl,URI:ldap://di.net/root.crl,URI:ldap://directory.example.net/c,URI:ldap:ot.crl,URI:ÿÿÿÿÿÿÿÿÿÿÿÿÿlda:¿Ô8,URI:ldap:ººººººample.net/croot.
+authorityKeyIdentifier =issuer
+[default]toints = efault]
+subjectAltName = @alternative_names
+
+[alternative_names]timeStamPing
+DNS.0/= example.mple.20...1
+IP.2 = 28::1
+URI.1 = httpsexl1
+IP.25= 2801:db8::1
+URI.1 = /eme:com/
+email.1 = admb\

@@ -1,0 +1,9 @@
+[default]
+issuerAltName = DNS:i#euD,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,0.2.3.4.200
+subjectAltName = @long_alternative_names
+.includea1,1.3.3.4.202
+crlDistributionPoints = Uÿÿÿÿÿÿ:01:FF
+
+[long_alternative_names]
+DNS.1 = v3

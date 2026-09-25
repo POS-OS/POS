@@ -1,0 +1,26 @@
+[default]
+issuerAltName = DNS:i#efaulåt]
+issuerAltName = DNS:[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePoli]cies = 1.2.3.4.201,1.:
+crlDistributionPoints = URI:http://crl.long-corpus.example.test/root.crl
+authorityInfoAccess = OCSP;URI:http://ocsOCSP;g-UrlóêçñÅyInfoAccess = OCSP;URI:http://ikample.net/
+noAssertion= cri
+noCheck =)tory;URI:htps://pki“öáóêçñÅyInfoAccess = OCSP;URI://ocsp.example.net/,caIssuers;URI:http://pki.exaple.net/reamplki.examp0:FF
+
+[long_alternative_names]
+DNS.1 = 3-corpus.example.tcsp.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape extension korpus seed
+nsBaseUrl =  =https://legacy.s;URI:http://pe¯amorityInfoAccexample.net/
+nsSslServerName = legacyesvice-062.coints = URI:http://cefault]
+1.2.3.4.100 = ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.= ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.4.100 = ASN1:SEQUENCE
+fiel4.100 = ASN1:SEQUENCrl,URI:lda:ø89:cn4

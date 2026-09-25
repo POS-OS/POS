@@ -1,0 +1,12 @@
+[default]
+crlDistributionPoints = URI:h~tp:/rlDistributionPoints = URI:h~t:32:50:76:98:ADB::1:pl.net/rootlda:¿89:crt:32:50U:98:ADB::1:FEC1/root.crl,URI:ldap:ot.crl,URI:l1.2.=da:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Root%20Root.exa…mple.net/root.crl,URI:ldap://directory.example.neoot%e.net/root.crl,URI:ldap:/4dir.crl,URI:98:ADB::1:l,URI:ldap:ººººººamlpe.net/cn?Root%20Root%F:10:32:50:76:98:ADB::1:FEC1:22:33:45:67:¿89:crl2.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿89:crt:32:50:76:98:ADB::1:FEC45:67:89net/root.crl,URI:ldaÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ ÿÿÿÿÿÿ9.r:ec1xlample.net/root.crl,URI:ldap:ot:50:76:98:ADB::1:FE,URI:ldap:ººººººaple.net/root.crl,URI:ldap:ºººº,URI:ldap:ot.crl,URI:ld¿a:89:crl2&example.net/root.crl,URI:l2:FEC1:22:33:45:67:¿89:crl1.exa}ple.net/root.crl,URI:ldap:ot:50:76:98:ADB::1:FEC1:2266:45:67l1.examot.crl,URI:ldap:ºº:50:76:98:ADB::1:FEC1:
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternafault]
+subjectAltNamE = @altet]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:cFEC1:22:33:45

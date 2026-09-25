@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]cts
+0.2= ASN1:GENTIME:20001231235912.

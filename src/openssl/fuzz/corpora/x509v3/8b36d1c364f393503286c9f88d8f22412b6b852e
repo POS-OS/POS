@@ -1,0 +1,5 @@
+[default]
+crlDistributionPoints = URI:da:¿89:crl1.xeaml,URI:ldºººººaml,URI:ldap://diext/root.crl,URI:ldap:ººººººampplle.net/root.
+authorityKeyIdentifier =issuer
+[default]tributoints 
+authorityInfoAccess = OCSP;URI:tCRLest/,caIssuers;URI:http:0CA

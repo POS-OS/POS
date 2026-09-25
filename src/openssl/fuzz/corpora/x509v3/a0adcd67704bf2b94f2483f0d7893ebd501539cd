@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+[default] ativ _names
+0.24.1 = critical,DER:15::01:01:
+1.4 = critical,DER:15::00:FF
+1.02  =DER:.4uet

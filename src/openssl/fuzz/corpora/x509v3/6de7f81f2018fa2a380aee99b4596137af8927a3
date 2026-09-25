@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier=issuer
+[default]R
+1.2 = critical,DER:30FFDF

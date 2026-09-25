@@ -1,0 +1,5 @@
+
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.0 = X9;FORMAT:UTF8,UTF8String:user@example.neï»¿t€

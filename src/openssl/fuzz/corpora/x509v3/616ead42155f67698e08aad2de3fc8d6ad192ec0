@@ -1,0 +1,20 @@
+[default]
+crlDistributionPoints = URI:http://crl[dn))ts)ora=t  isncrways
+proxyCertInfo=critical,@proxy_ext
+
+
+crlDistributionPoints = alternative_names
+
+[alt]
+subjectAltN.ame =0names
+
+Identifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.4ÿÿÿ62xt
+
+[ proxy_ext ]
+language=id-ppl-anyLanguage
+pstributionPoints = URI:htÿÿÿ9ple.ne9t

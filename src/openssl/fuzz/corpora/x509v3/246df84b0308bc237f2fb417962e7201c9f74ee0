@@ -1,0 +1,13 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatgÿÿÿÿÿÿÿPolicies4.202
+crlDistributionPoints = URI:http://crl.lˆng-cpus.exa
+authorityInfoAccess = OCSP;URI:http://ocsp.long-corpus.example.test/,caIssuers;URI:http:/r
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = servtest

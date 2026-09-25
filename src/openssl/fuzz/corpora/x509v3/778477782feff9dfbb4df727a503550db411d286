@@ -1,0 +1,11 @@
+[default]
+crlDistributionPoints = URI:h~tp://66:Efault]
+crlDistributionPoints = URI:h~t:32:50:76:98:ADB::1:F.crl,URI:lda:¿89:cr6OCSP;:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿89:cURI:lda:¿89:crt:32:50:76:98::crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿8sslCA1.example.net/root.crl,URI:ldap:º.net/cn=Root%20RocertificatePoliciesot%F:10:32:50:76:98:ADB::1:ÀEC1:22:33:45:67:¿89:crl1.example.net/root.crl,URI:ldap:ot:5crl°,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:AldapººººººamplRoot.exa…mple.net/root.crl,URI:ldap://directory.example.neooonlyroot.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººººaÿple.net/cn=Root%20Root.exa…mple.net/root.crl,URI:ldaADB::1:FEC1:22:33:45:67:¿89:crl1.example.net/root.crl,URI:ldap:ººººººampleoot%20Root%F:10:32.
+authorityKeyIdentifier =issuer
+[default]tributionPoi~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.exl
+authorityInfoAccess = OCSP;URI:http://ocsp.long-corpus.ex:amqle.test/,caIssuers;URI:http://ca.keyUsagepus.example.test/root.dep
+tlsfeature = status_request,2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 =m id.1.5.UTF8F9999;9999999999999999997l,URI:ldap:ºººº

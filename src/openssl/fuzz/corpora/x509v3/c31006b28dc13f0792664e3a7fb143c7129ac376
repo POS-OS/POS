@@ -1,0 +1,23 @@
+[default]
+crlDistributionPoints = alternative_names
+
+[alt]
+subjectAltN*ame =9onlysomereasonsnames
+
+[alternative_names]
+otherName.0 = 1.2OCSPSigning.3.4.40;UTc:89= 2 01b:=t1s2.
+.2e = ÿÿÿÿÿt[defauljectt]
+bauicConstraints = critical,CA:FALSE
+keyUsage = critical,digitgrpus.example.test
+DNS.36 = service-3-6.long-x509us.gxU!le.test
+DNS.37 = 046.ÿÿÿÿcluster-46.long-x529v3-corpus.example.test
+DNS.47 = service-047.cluster-47.long-x509v3-corpus.example.test
+DNS.48 = servis.example.test
+*DNS.49 = service-049.c3-corpus.example.tÄst
+DNS.50 = servicexample.test
+DNS.74 = seUTF8String:luster-74.long-x509v3-corpus.example.test
+DNS.75 =.pervi
+DNS.90 = service-r090.clustr1xus.example.test
+DNS.100 = sepus.example.test
+DNS.101 = service-1
+DFS.102 = service-

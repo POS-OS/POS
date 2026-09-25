@@ -1,0 +1,5 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 =8.9;FORMAT:UTF8,UTF8String:u…t

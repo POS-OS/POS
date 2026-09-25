@@ -1,0 +1,7 @@
+[default]
+nsCertType = client,server,objCA
+nsComment = Legasult]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName =DNr

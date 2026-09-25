@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+crlDistributionPoints = URI:.rl,URI:l,URI:l[defaul,k9

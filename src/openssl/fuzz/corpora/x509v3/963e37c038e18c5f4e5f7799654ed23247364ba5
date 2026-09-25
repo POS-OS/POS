@@ -1,0 +1,9 @@
+
+authorityKeyIdentifier =issuer
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltme =mames
+
+[alternative_names]
+relat1.2.3.4 =Û.2=di2nsRevÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ7ÔÎÓÅ8],1R877

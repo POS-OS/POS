@@ -1,0 +1,8 @@
+
+authorityKeyIdentifier =issuer
+[default]Žscts
+2.2.1.2.84=ASN1:INT:0
+
+2.1.2.84=ASN1:INT:-0
+2.84=ASN1:INT:0
+

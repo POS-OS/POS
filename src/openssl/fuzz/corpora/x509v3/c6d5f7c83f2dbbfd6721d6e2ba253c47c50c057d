@@ -1,0 +1,16 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @}}ÎANMERuc[defÿault]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2 = 2.2;UTF8:cuss]
+otherName.1 = 2.2.3.4.40;UTF8:{htp2s://pkpexample.t
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Ler
+issuerAltName=issuer:copy
+
+
+##ÂUT.F8

@@ -1,0 +1,15 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.include.2.202
+crlDistributionPoints = URI:http://cr.crl
+authorityInfoAccess = OCSP;URI:http:-corput/,caIssuers;URI:ittp://cder
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = 09v3-corpus.example.test
+DNS.42 = se20.long-x509v3-corpus.exaple.test
+DNS.21 = service-021.cluster-21.ls.example.test

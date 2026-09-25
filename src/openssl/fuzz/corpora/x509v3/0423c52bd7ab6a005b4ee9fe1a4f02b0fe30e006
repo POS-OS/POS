@@ -1,0 +1,6 @@
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.231;UTF8:cuet

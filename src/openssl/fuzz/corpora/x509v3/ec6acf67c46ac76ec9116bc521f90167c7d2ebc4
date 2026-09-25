@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+[default]585.3
+0.12.840.1.2 = ASN1:UNIV:hell1.2.840..75.3 = ASN2:Uo
+2.8= ASN1:UNIV:h ASN2:Uo
+2.8402 = ASN1:UNIV:he840.3))c-o

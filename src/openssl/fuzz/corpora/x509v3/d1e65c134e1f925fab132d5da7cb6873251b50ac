@@ -1,0 +1,13 @@
+
+authorityKeyIdentifier =issuer
+[default]
+[default]R:30l#t]de&ault]
+crlDistributionPoints = alternative_names
+
+[a]tL
+subjzct=8names
+
+[alternative_names]
+ot;Un = OCS.××××cess@ = OCSP;UR2
+..2e = pn[ecaIssuers;o:FF
+1.2.3.4.102 = istribut.3i.e

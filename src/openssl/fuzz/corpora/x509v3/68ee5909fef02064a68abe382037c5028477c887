@@ -1,0 +1,94 @@
+[default]
+crlDistributionPoints = URI:http://crl[default]
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+=))))
+aAissuingDistributionPoint =default\	
+=
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	
+='\	ˇˇˇˇ\	
+='\	
+='\	
+=]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjecstatus_requesttAltName = @long_altern1.2.840.1erAuth,clientAuth,des-13554.4.1585.2 = ASN1:UNIV:hell1.2.840..72 = ASN2:Uo
+2.840.12.840.113554.1.2.840.113554.4.1585.1 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.12.840.113554.4.15840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = A840..72585.3 = ASN2:Uo
+2.840.12.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 =ed
+nsBaseUrl = https://legacy.examnteep./l
+nsSslServerName = legacy.exas
+authorityKeyIGdentifier =issuer
+[1efault]
+subjectAltName =issuer
+[default]
+subjectAltName =Icorpus.example.test
+DNS.22 = service-022.cluster-22.long-x509v3-corpus.example.test
+DNS.23 = service-023.cluster-23.long-x509v3-corpus.example.tes7777777777777777777777777777777777777777t
+DNS.24 = service-024.cluster-24.long-x509v3-corpus.example.test
+DNS.25 = service-025.cluster-25.long-x509v3-corpus.example.test
+DNS.26 = service-026.cluster-26.long-x509v3BOOLEAN:example.test
+DNS.27 = service-027.cluster-27.long-x509v3-corpus.example.test
+DNS.28 = service-028.clusservice-030.cluster-30.long-x509v3-corpus.example.test
+DNS.31 = service-031orpus.example.test
+DNS.32 = service-032.cluster-32.long-x509v3-corpus.example.test
+DNS.33 = service-033.cluster-33.e.test
+DNS.33 = service-034.cluster-34.long-x509v3-cor9999999999902.3.4.49999999999
+DNS.2 = www.ex9999.invpus.example.test
+DNS.35 =corpus.example.test
+DNS.36 = service-036.cluster-36.long-x509v3-URI.1 = corpus.example.test
+DNS.37 = service-037.cluster-37.long-x509v3-coX509v3 Arp¿us.example.test
+DNS.38 = service-038.cluster-38.long-x509v3-corpus.example.test
+DNS.39 = service-039.clusTer-39.long-x509v3-corpus.examplÓe.test
+DNS.40 = service-040.cluster-40.long-x509v3-ßêçèus.example.test
+DNS.41 = service-041.cluster-41.long-x509v3-corpus.example.test
+DNS.42 = servicuster-42.ˇlong-x509v3-corpus.example.test
+DNS.43 = service-043.cluster-43.long-x509v3-corpus.example.test
+DNS.44 = service-044.cluster-44.long-x509v3-corpus.example.test
+DNS.45 = service-045.cluster-45.long-x509v3-corpus.example.test
+DNS.46 = service-046.cluster-46.long-x509v3-corpus.example.test
+DNS.47 = service-047.cluster-47.long-x509v3-corpus.example.test
+DNS.48 = service-048.cluster-48us.example.test
+DNS.50 = servicexample.test
+DNS.74 = service-074.cluster-74.long-x509v3-corpus.example.test
+DNS.75 = service-075.cluster-75.long-x509v3-corpus.example.test
+DNS.76 = service-076.cluster-76.öêëò-xst
+DNS.77 = service-077.cluster-77.long-x509v3-corpus.example.test
+DNS.78 = service-078.cluster-78.long-x509v3-corpus.example.test
+DNS.79 = service-079.cluster-79.long-x509v3-corpus.example.test
+DNS.80 = service-080.cluster-us.example.test
+DNS.81 = service-081.cluster-81.long-x509v3-corpus.example.test
+DNS.82 = service-082.cluster-82.long-x5093-cvorpus.example.test
+DNS.83 = service-083.cluster83.long-x509v3-corpus.example.test
+DNS.84 = service-084.cluster-84.long-x509v3-corpus.example.test
+DNS.85 = e-085.cluster-85.long-x509v3-corpus.example.test
+DNS.86 = service-086.cluster-86.long-x509v3-corpus.example.test
+DNS.87 = service-007.cluster-87.long-x509v3-corpus.example.test
+DNS.88 = service-088.cluster-88.long-x509v3-corpus.example.test
+DNS.89 = service-089.cluster-89.long-x509v3-corpus.example.teus.exampleexam999ple.test
+DNS.103 = service-103.cluster-03.long-x509authorits.example.test
+DNS.052 = servicg-104.ckeyEnciphermentx509v3-coassociatedNameest
+DNS.105 = service-105.cluster-05.long-x509v3-corpus.example.test
+DNS.106 = service-106.cluster-06.long-x509v3-corpus.example.test
+DNS.107 = service-1le.test
+DNS.108 = service-108.cluster-08.long-x509v3-corpus.example.test
+DNS.1.ne9t09 = service-109.cluster-09.long-x509v3-corpus.example.test
+DNS.110 = service-110.cluster-10.long-x509v3-corpus.example.test

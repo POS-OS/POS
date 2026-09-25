@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]trA
+2.840 = ASN1:FORMAT:BITLIST,BITSTR:1,il

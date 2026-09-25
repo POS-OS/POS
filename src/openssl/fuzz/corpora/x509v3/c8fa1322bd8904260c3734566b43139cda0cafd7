@@ -1,0 +1,4 @@
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2 = 1.2.3..8.9;FORMAT:UTF8,IA5STRING:tAlternative_na.3.6.1.5.5.OCTETSTG:7.8.6.1.5.5.OCTETSTRING:7.8.9;FAt

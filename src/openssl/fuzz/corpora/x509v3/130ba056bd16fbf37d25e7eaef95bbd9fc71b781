@@ -1,0 +1,11 @@
+[default]
+issuerAltName = DNS:i#efaultonstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_naO 
+authorityKeyIdentifier =issuer
+[default]
+crlDistributionPoints = URI:h.rlalvernatilt]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Leg.200
+subjectAltName = @long_alterve_nameslervice-010.cluster-10.long/amplI.test

@@ -1,0 +1,7 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,0.2.3.4.20
+subjectAltName = @l]
+authorityKeyIdentifier= dßstriba.\rlt
+subjectKeyIdentifier =dddddf= ÿ.

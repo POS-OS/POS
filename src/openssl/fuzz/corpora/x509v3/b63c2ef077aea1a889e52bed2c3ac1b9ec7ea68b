@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]e.
+email.2 =`admikve_“

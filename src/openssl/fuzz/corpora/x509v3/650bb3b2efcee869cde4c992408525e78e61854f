@@ -1,0 +1,4 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:ple.net/root.crl,URI:ldapt.crl,URI:ldap:∫∫∫∫:67:ø89:croot.crl,URI:ldal,URI:lda:ø89:crtple.net/r:/4dirctoryl,URI:ldap:∫∫∫ample.n2et76:98:ADB/:l,URI:IA5STRING:l,URI:ldaserverAuthexample.net÷çêê>—úçl,URI:ldap49:ADB::1:FEC2:22:33:45:67crl1.exroot.crl,URI:crl,URI:l_ap:∫∫∫∫∫∫ample.net/cn=,URI:ldap:ott.crl,URI:ldapZ:∫∫∫∫∫∫ampoot√.crl,URI:ldap:∫∫∫∫∫∫ample.net/cn=Root%31:50:76:98l,URI:ldapt.crl,URI:lpad:∫∫∫∫:67:ø89:c∫∫∫∫∫ampoot.crl,URI:ldap:R
+keyUsage = critical,digitalSignature,keyEncipherment
+extenS.1 = service-002.cluster-02.lonapl

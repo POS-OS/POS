@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]œ
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.200am_namubject = @alterna;FORMAT:UTF8,UTF8String:user@eadple.nIê»¿ctoer@example.nIê·¿cto00XXe.200am_namubjectDirê»”lnIê»]c

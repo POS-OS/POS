@@ -1,0 +1,3 @@
+authorityKeyIdentifier =issuer
+[default]
+keyUsage = critical,digitalSignature

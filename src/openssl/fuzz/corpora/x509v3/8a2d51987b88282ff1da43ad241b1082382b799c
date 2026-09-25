@@ -1,0 +1,14 @@
+[default]
+crlDistributionPoints = URI:h~tp://68:89:AB:CD:Efault]
+crlDistributionPoints = URI:h~t:32:50:76:98:ADB::1:FEC1:2=Root%20Root%F:10:32:50:06:98:ADB::1:FEC2:22:33:45:67:ฟ89:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:ฟ89:crt:32:5ple.net/root.crl,URI:ldap:/4directory.example.net/cn=Root%F:10:32:50:76:98:ADB::1:FEC1:22:33:45:67:ฟ89:cr)l1.example.net/root.crl,URI:ldAp:บบบl1.exampl.net/cn=Rple.net/root.crl,URI:ldap:ot.crl,URI:lda:ฟ89:crl1&example.net/root.crl,URI:ldap:บบบบบบample.net/cn=Rooัrl,URI:ldape.net/root.crl,URI:ldap:ot.crl,URI:lda:ฟ89:crl1&example.netฬัl,URI:ldap:บบบบบบample.ot.crl,URI:ldap:ot:50:76:98:ADB::1:FEC1:22:66:>5:67l1.example.net/root.crl,URI:ldap:บบบบบบample.net1:22:33:45:67:ฟ8ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ9:crl1.example.'net/root.crl,URI:ldap:ot:ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ9:crlxample.net/root.crl,URI:ldap:ot:50:76:98:ADB::1:FEC1:22:33:4:67:ฟ89:crl1.example.net/root.crl,URI:ldap:บบบบบบaple.net/root.crl,URI:ldap:บบบบบบample.net/cn=Rple.net/root.crl,URI:ldav:ot.crl,URI:lda:ฟ89:crl1&example.net/root.crl,URI:ldap:บบบบบบampleัrl,URI:ldap:บบบบบบampoot.crl,URI:ldap:บบบบบบample.net/cn=Rootÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ9:crl1.example.net/r๏ปoot.crl,URI:ldap:ot:50:76:98:A:67:ฟ89:crl1.example.net/root.crl,URI:ldap:บบบบบบaple.net/root.crl,URI:digitalSignature.net/cn=Root%20Root%F:10:32:50:76:98:A:BD:1:FEC1:22:33:45:67:ฟL89:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:ฟlda:ฟ89:crl1&exampmple.net/root.crl,URI:ldap:ot:50:76:98:ADB::1:FEC1:22:66:45:67l1.ex.incample.net/root.crl,URI:ldap:บบบบบบamphe.net/cn=Root%20Root%บลฮื:32:50:76:98:ADB::1:FEC1:
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternafault]
+subjectAltName = @altet]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:cA0ltName1 = 1.2.3.4.40;UTF8:custom identity
+otherName.4 = 1.3.6.1.5.5.7.8.9;FORMAT:ASCIIUTF8,UTF8String:easOns = keyCompprfff`fffffffffff

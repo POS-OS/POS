@@ -1,0 +1,2 @@
+[default]
+nameConstraints =permitted;email:.t,permitted;URI:.e,excluded;email:.

@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]trisueifiIMPLICIT:t]
+crlDistributionPoints =dirName: alternative_names
+
+
+subjectAltme =mames
+
+[alternative_names]
+re.2.3.4 = .rR

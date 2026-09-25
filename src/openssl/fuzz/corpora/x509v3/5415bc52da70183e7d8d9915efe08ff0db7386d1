@@ -1,0 +1,9 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2c= 1.2.3.4.40;UTF8::custom idenames]
+otherName.1.1c= 1.2.3.4.40;UTF8:
+otherName.2 = 1.2.3.4.40;UTF8:c

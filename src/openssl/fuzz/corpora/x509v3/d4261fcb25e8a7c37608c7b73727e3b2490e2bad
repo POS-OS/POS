@@ -1,0 +1,2 @@
+[default]
+authorityInfoAccess = OCSP;URI:+,caIssuers;URI:ht,caIssuers;URI:hr.e,caRepository;URI:f

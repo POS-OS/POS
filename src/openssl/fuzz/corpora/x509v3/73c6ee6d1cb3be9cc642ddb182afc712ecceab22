@@ -1,0 +1,12 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2c= 1.2.3.4.40;UTF8:custom identermes]
+otherName.2 = 1.2.3.4.40;UTF8:cuative_names]
+otherName.1c= 1.2.3.4.40;UTF8:cuss
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:curtom identity
+otherName.0 = 1.3.6.1.5.5.7.8.9;FORMAT:UTF8,UTF8String:ur@ity
+otherName.4 = 1.3..9;FORMAT:UTF8,UTF8String:u1st

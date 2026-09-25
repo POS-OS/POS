@@ -1,0 +1,21 @@
+[default]
+crlDistributionPoints = URI:http://crl[de = @ = efault]
+subjectAltName = @alternative_names
+
+[alternative_names]timeStampinclientAuthg
+DNS.5/= example.mple.20...1
+IP.9 = 28::1
+URI.1 = https://exl1
+IP..25= 2801:db8::1
+URI.1 = s.1 = 2.2.le.20...1
+IP.2 = 28::1
+URI.1 = ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿt
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = L¢gacy Netscape extension ÿÿÿÿer
+issuerAltName=issuer:copy
+
+
+##ÂSBITLIST:E
+subjectKeyIdentifier=hash
+vu=kealternative_naice-089.clu0.long-x509v3-corpus.exampleš‹šŒt

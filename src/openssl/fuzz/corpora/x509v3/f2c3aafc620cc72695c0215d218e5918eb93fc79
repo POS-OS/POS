@@ -1,0 +1,4 @@
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.0 =

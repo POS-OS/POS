@@ -1,0 +1,6 @@
+[default]
+1.2.3.01 = critical,DER:15::01:01:FF
+1.2..2.3.4fff::.101 =:<9:crl1.e
+authorityKeyIdentifier =issuer
+[default]tibutt_V1
+1.2..203 = critical,DER:30

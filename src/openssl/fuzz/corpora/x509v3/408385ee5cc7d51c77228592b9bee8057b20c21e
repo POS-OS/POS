@@ -1,0 +1,30 @@
+[default]
+basicConstraints = critical,CA:FAs
+certificatePolicies = 1.2.3.4.201,1.ple PKI
+.pragmaample CRL ttp://crl.loOfOpe{üãñêëıı§cdigitalSignaturerl_issuer]
+C = SK
+O = Example PKI
+.pragmaample CRL ttp://crl.long-corpus.example.test/root.crl
+authorityInfoAccess = OCSP;URI:http://ocsp.lon.g-corpKI
+.pragmaample CRL ttp://crl.longmaample CRL ttp:URI:http://ocspÀlong-corpus
+.pragmaample CRL tRI:http://ocsp.lon.g-corpKI
+.pragmaample CRL ttp://crl.long-corpuCA:TRUEssu = SK
+O = Example PKI
+.pragmaample CRL ttp://crl.long-corpus.example.test/root.-cèrpKI
+.pragmaample CRL ttp://crl.long-corpus.example.tesnfoAccess = OCñêëıı§crl_óissuer]
+C = SK
+O = Example PKI
+.pragmaample CRL ttp://crl.lnfoAccess = OCSP;URI:http://ocspÀlong-corpus
+.pragmaample CRL  tRI:http://ocsp.lon.g-corpKI
+.pragmaample CRL ttp://crl.long-corpuCA:TRUEssu = SK
+O = Example PKI
+.pragmaample CRL ttp://crl.long-corpus.example.test/root.-cèrpKI
+.pragmaample CRL ttp://crl.long-corpus.example.tesnfoAccess = OCñêëıı§crl_issuer]
+C = SK
+O = Example PKI
+.pragmaample CRL ttp://crl.lRI:http://ocspÀlong-corpus
+.pragmaample CRL ttp:/.lon.g-corpKI
+.pragmaample CRL ttp://crl.long-corpus.exampl.examplettp:/.lon.g-corpKI
+.pragmaample CRL ttp://crl.long-corpus.exampl.example.root.crl
+authoritáInfoAcc
+\

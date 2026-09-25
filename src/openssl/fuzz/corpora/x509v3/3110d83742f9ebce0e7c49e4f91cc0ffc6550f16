@@ -1,0 +1,11 @@
+
+authorityKeyIdentifier =issuer
+[default]trissueifiIM[default]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjecRtAltme =mames
+
+[alternative_names]
+relat1.2.3.4 = 2=dirName: a[dgfault]
++tlsfeature =2,1,1877,1[defas =  ASN1:&871,181,877

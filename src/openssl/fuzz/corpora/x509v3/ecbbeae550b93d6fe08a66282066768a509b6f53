@@ -1,0 +1,11 @@
+[default]
+1.2.3. = critical,ASN1:BOOLEAN:TRUE
+field4=t]
+2.2.30 = critical,ASN1:BOOLEAN:TRUE
+field4=γ]efault]
+1.2.3.4.1015 = critical,ASN1:BOOLEAN:TRUE
+2..4.1000 = critical,ASN1:BOOLEAN:TRUE
+field4=γ]efau
+1.2.3.4.1000 = critical,ASN1:BOOLEAN:TRUE
+2.3.4.100 = critical,ASN1:BOOLEAN:TRUE
+field4= OCTEγγγγγ®γγγγ

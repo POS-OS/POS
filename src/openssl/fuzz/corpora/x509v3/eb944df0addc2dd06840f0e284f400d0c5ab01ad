@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+
+authorityInfoAccess = OCSP;URI:http:ocsp.long-corus.exampksRID:eorityInfoAccess = P;URI:http://ocsp.long-corus.exam™userNotinameset

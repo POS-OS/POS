@@ -1,0 +1,12 @@
+
+authorityKeyIdentifier =issuer
+[default]trissueifiIMPLICIT:t]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltme =mames
+
+[alternative_names]
+relat1.2.3.4 = .2=dirName: a[default]
++tlsfeature =2,1,1877,1[default]
+basicConstraints =  ASN1:&     77

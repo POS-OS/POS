@@ -1,0 +1,5 @@
+[lt]yet
+.pragma= includedir:udude	..
+.include	..
+.include	.inc.
+.includes

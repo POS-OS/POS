@@ -1,0 +1,7 @@
+# [ p:as
+proxyCertInfo=critical,@proxy_ext
+[ proxy_ext ]
+lanl=0,1,1,¿,5,i
+pathlen=0
+po=BBBBBBlic ]
+language=idea-ecb

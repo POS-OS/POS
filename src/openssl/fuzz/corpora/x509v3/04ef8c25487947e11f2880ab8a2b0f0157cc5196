@@ -1,0 +1,6 @@
+#::aLway
+proxyCertInfo=critical,@proxy_ext
+[ proxy_ext ]
+
+=0
+policy=tex|:BC

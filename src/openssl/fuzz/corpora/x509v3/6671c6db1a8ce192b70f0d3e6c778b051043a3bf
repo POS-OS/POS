@@ -1,0 +1,2 @@
+[default]
+crlDistributionPoints =URI://l,URI:teap:///,URI:l, URI:hcrl,URI:hcrl,URI:llaxa

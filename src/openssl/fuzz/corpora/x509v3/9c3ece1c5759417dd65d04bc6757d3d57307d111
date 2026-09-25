@@ -1,0 +1,7 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+
+IP = 192.0.2.1
+IP.2= 2

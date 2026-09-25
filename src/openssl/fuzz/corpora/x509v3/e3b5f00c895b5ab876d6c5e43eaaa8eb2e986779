@@ -1,0 +1,24 @@
+[default]
+subjectAltName = @alteivtraeyInfoAccess = OCSP;URI:http:/ivenae.net/
+noAssertion= cri
+noCheck =),caRepcNAMERec[default]
+subjectAltName = @alternative_names
+
+[alternative_~ames]
+otherName.0 = 2.2;UTF8:cuss]
+otherName.1 = 2.2.3.4.40;UTF8:stpus.eng-x509v3-corpus.emxpale.test
+[default]
+nsCertType = client,server
+issuerAltName=issuer:copy
+
+
+##ÂSE
+subjectKeyIdentifier=hash
+vu=kealternativ bje = Aalôernative_óe
+
+[alternative_names]
+otherName.0 = 1.2.3.4.8.9;FORMAT:UTF8,UTF8String:easoffeffffffffffffffñˆˆˆfple.t?est
+DNS.110 = service-110.cluer-10.long-1
+IP.2 = 28::1
+URI.1 = https://epl1
+IP.25=001:db8::1

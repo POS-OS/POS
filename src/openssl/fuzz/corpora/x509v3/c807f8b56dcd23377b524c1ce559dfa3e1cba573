@@ -1,0 +1,5 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,2.3.200
+s_alt =

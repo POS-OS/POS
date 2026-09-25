@@ -1,0 +1,2 @@
+
+nameConstraints = permitted;email:.,permitted;URI:.exampl,	permitted;URI:.,excluded;email:.

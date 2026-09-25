@@ -1,0 +1,7 @@
+[default]
+crlDistributionPoints = URI:h~tp
+authorityKeyIdentifier=keyid,issuer
+issuerAltName=issuer:copy
+
+
+#<

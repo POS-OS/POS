@@ -1,0 +1,6 @@
+#_]
+basicConstraints=critical,CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer
+issuerAltName=issuer:copy
+

@@ -1,0 +1,5 @@
+[default]
+basicConstraints = CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage =0.2.3.
+subjectAltName =

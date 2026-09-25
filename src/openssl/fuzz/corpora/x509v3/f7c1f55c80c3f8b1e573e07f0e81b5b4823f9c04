@@ -1,0 +1,17 @@
+[ault]ts ifier =issuer
+[default]trissueifiIMPLICIT:t]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltme =mames
+
+[alternative_names]
+relat1.2.3.4 = .2=dirRevocationUrl8777,1,7ubjectAltme =mames
+
+[alternative_names]
+relat0.2.3.4 = .2=dirName:[default]
+authorityKeyIdentifier =issuer
+certificatePolicies = @proxy_ext
+
+#
+#$ onlaetÿÿÿÿ 5:a

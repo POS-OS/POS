@@ -1,0 +1,11 @@
+
+authorityKeyIdentifier =issuer
+[default]nss]
+crlDistributionPoints = alternative_names
+
+[alt]
+subjectAltN*=9name3
+
+[alternative_names]
+otherNam.= ÿ ÿÿ1ÿt]
+reasons=y

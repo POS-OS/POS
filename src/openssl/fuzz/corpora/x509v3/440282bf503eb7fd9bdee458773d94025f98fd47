@@ -1,0 +1,22 @@
+[default]
+crlDistributionPoints = URI:http://crl[default]
+nameConstraints = critical:.)lt]
+nameConstraints = critical,permitted;email:.))))))))))))))))))))))))))))))))))))))8)))critical,permitted;email:.)))))))))))))))))))et,permitted;URI:.example.net,excluded;email:.invalid;URIt,excluded;email:.in))))))))))))onstraints = critical,permitted;email:.#efault]
+issuerAltName = DNS:[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.6.4.200
+subjectAltName = @long_alte3 = ASN2:Uo
+2.840.12.840.113554.1.2.840.113554.4.1585.1 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8440.113554.4.15840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = A840..72585.3 = ASN2:Uo
+2.840.12.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8402.840.1135554.1585.2 = ASN1:UNIV:hÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞellUo
+2.840.12.840.1135554.45.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = e= ASN2:Uo
+2.840.11.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASNe-002ter-08.ce-)57.-x509v3-corpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscapel:.invaliat,permitted;URI:.example.net,excluded;email:.:.))))))[default]nyPo))))))))))))))))))))))))))))))))8)))))))))))))onstraint
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName =I

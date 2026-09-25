@@ -1,0 +1,2 @@
+[default]
+nameConstraints = critical,permitted;IP:1.0.2.0/255.55.2.5.0

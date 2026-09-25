@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]eu
+basicConstraints = critical,CA:yes

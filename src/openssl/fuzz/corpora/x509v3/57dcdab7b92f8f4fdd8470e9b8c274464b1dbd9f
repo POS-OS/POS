@@ -1,0 +1,38 @@
+[default]
+crlDistributionPoints = URI:http://crl[\Š\Š\ú\Š\ú\ú\ú\Šdefault]
+nameConstraints = critical,permitted;email:.)lt]
+nameConstraints = critical,permitted;email:.))))))))))))))))))))))))))))))))))))))))))^^^^cal,permitted;email:.)))))))XXXXXX))))))))et,permitted;URI:.exmple.net,excluded;email:.invalid;URI:.example.net,excluded;email:.in)))))))ical,permitted;email:.)))))))))))))))))))))))))))))))))examplu.net,excluded;email:.%n)))))))ical,permitted;email:.))))))))))))))))))))))))))))))))))))))8)Ê)))))))))))on)ple.net,excluded;email:.%n)))))))ical,permitted;email:.))))))))))))))))))))))))))))))# [ v3_proxy ]
+basicConstraints=CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+proxyCertInfo=critical,@proxy_ext
+
+#y_ext
+
+[ proxy_ext ]
+language=id-ppl-anyLanguage
+pathlen=0
+policy=text:BC
+lDistributionPoint             = Organization Name (eg, company)
+organizationName_value          = Dodgy Brothers
+
+0.commonName			= Common Name (eg, YOUR name)
+0.commonName_value		= Brother 1
+
+1.commonName			= Common Name (eg, YOUR name)
+1.commoCN = nName_value		= Brother [ v3_proxy ]
+basicConstraints=CA:FALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+proxyCertInfo=critical,@proxy_ext
+
+[ proxy_ext ]
+language=id-ppl-anyLanguage
+pathlen=0
+policy=text:BC
+lDistributionPoints = URI:htÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿault]
+inhibi1.2.?=DER:tA3nyPolicy = 00000000000000000_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01D:FF
+
+[long_alternative_names]
+DNS.1 = service-001contentCommitme

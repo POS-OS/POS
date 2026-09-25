@@ -1,0 +1,8 @@
+.include	.
+.include	..
+.include	.
+.includeu	..
+.include	.
+.include	.
+.include	.
+.includec\=`/

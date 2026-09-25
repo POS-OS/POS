@@ -1,0 +1,12 @@
+#cCowa&s
+proxyCertInfo=critical,@proxy_ext
+
+#ALSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+ti=criti§žl,@proxy_e
+
+[ proxy_ext ]
+language=id-ppl-anyLanguage
+pathlen=1
+policy=text:BC

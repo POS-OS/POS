@@ -1,0 +1,9 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternafault]b)9s
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTc:89Ç99UTF8:cuet

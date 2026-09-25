@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName =`@alternative_names
+
+[eafaul;t]
+s =tes
+
+[alternative_names]nrv{
+otherName.= NetsEr;FORMAT,uet

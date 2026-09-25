@@ -1,0 +1,12 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[no]
+ame = @al
+[alternative_names]
+otherName.2 = 1.2.3.4.40;UTF8:cAltName18.cluster-68.lohibitAnyPolicy =555555555555555555555555555555555555555999999ng-x509v3rpus.example.test
+DNS.69 = servhce-169.cluster-69.long-x509t3-corpus.example.tst
+DNS.= service-070.cluster-70.long-x509v3-corpus.example.test
+DNS= sre8:cuet

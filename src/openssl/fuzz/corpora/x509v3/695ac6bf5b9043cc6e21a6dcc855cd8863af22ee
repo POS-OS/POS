@@ -1,0 +1,13 @@
+[default]
+authorityKeyIdentifier =issuer
+1.2.= ASN1:BITSTR:€.n&ames
+certificatePolicies = @proxy_ext
+
+#
+#$ BITSTR:€.nlÿ
+
+[ proxy_ext ]
+userNotice.1lan2= @proxy_ext
+
+#
+#$ o2

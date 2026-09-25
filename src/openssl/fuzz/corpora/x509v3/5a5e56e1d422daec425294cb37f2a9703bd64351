@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alt t]
+subjectAltName = @alternative_names
+[alternative_names]
+otherName.2 = 1.23.4.9;FORMAT:UTF8,UTF8String:easo keyCofffëˆˆsˆfff

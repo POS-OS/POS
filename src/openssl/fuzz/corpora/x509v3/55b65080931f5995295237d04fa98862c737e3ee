@@ -1,0 +1,10 @@
+[default]
+crlDistributionPoints = URI:h~p.enlet/root.crl,URI:ldapserverAuthry.exCIT:t]
+crlDistributionPoints =dirName: alternative_names
+
+[al4]
+subjectAltme =9names
+
+[alternative_names]
+relativen,ame= U//directory.example.neootigitSEQUENCE
+field1 = Ule.net/root.crURI:lda:¿89:crl1.example.net/root.crl,URI:ldap:ººººTf&ic6:ººample.S

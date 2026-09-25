@@ -1,0 +1,5 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:89:AB:CD:Efnet/j,URI:ldap:ot.crl,URI:lda:ø89:crt:32:50:76:98::crl1.example.net/root.crl,URI:*ssuerANameldap:ot.crl,URI:lda:ø89:crl1rl,URI:ldap:∫∫∫∫∫∫ample.net/cp:∫∫∫∫∫∫aRoot%F:10:32:50.crl,URI:l∏ap:ot:50:76:98FEC1:22:33:45:67:ø89:crl1.example.fullnamenet/root.crl,URI:ldap:root.crl,URI:ldap:ot.crl,URI:lda:ø89:crl1.exXmple.ndt/root.crl,URI:lda33:45:67:ø8T9:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:ø89:crl1.ex/root.crl,URI:ldap:∫∫∫∫∫∫ample.net/cn=@Root%to.crl,URI:ldap://°irectory.example.neoot%20Root%F:10:32:50:ett.crl,URI:ldap:ot.crl,URI:lda:ø89:crl1.example.net/root.dièñtalSi10:32:50:authorityKeyIdentif2:33:45
+authorityKeyIdentifier =issuer
+[default]tributionPoint.exl
+authorityInfoAccess = OCSP;URI:http:rvice-000.net/c:=Root%20CA

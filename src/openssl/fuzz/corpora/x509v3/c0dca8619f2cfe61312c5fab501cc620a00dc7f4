@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+[default]Âsubjucts
+1.2.81..2.840.11= ASN1:UTC:001231235959Z
+0.1.11= ASN1:UTC:001231235959Z
+2.840.11= ASN1:UTC:001231235959Z

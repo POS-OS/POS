@@ -1,0 +1,5 @@
+[default]
+subjectAltName =@alternative_names
+
+[alternative_names]
+otherName.1 = ;UTF8:custom id.1.5.5.7.8.9;FORMAT:UTF8,UTF8Stri;UTF8:cusexample.n.net

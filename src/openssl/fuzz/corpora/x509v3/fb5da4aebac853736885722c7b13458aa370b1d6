@@ -1,0 +1,20 @@
+# [ v3_}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}re,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies = 1.2.3.4.201,1.2
+crlDistributionPoints = URI:http://crl.//ocsexcludeœ»J
+[long_alternative_names]
+DNS.1 = 3-corpus.example.test
+DNS.2 = service-002tre-
+DNS.57 = service-0= OCSP;URI:httocsp.example.net/long-x509v3-corpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape extension ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿcorpus seed
+nsBaseUrl = hotps://legacy.s;UR= legacyesvice-062olicies}}}}er:copyier
+issuerAltName=issuer:copy
+
+
+##ÂSE
+subjectKeyIdentifier=hash
+vu=keyid,issu y
+

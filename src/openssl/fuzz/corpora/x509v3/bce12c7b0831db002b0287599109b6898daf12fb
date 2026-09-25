@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName =@alternative_names
+
+[alternative_names]
+otherName.0 = 1.[2.3.4.40;ti9,9999

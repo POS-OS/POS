@@ -1,0 +1,3 @@
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+proxyCertInfo=:0,policy:text:AB

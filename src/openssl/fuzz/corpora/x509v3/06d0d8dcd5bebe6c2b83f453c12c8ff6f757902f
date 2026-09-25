@@ -1,0 +1,20 @@
+[default]))))))))))
+proxyCertInfo=critical,@proxy_ext
+
+#
+# SSLeay˜INTEGER: ee.n001:FFet/c
+authorityKeyIdentifier =issuer
+[default]
+crlDistributionPoints = alternative_names
+
+[alt]
+subjectAltN*ame =9names
+
+[alternative_names]
+otherName.ple.cDNS.2 = ~ww.Ÿ‡Š“šÑcoÿÿÿÿrlÃ1_ext
+
+[ proxy_ext ]
+language=id-ppl-anyLanguage
+pathlen=0
+policy=text:BC
+lDistributionPoints = URI:htÿÿÿÿÿÿÿÿÿÿÿÿvÿÿÿÿÿÿÿÿÿÿÿÿ.invalie.tese.test

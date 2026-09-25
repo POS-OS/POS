@@ -1,0 +1,6 @@
+[default]
+subjectAltName =@alternative_names
+
+[alternative_names]
+otherName.0 = 1.XX;FORMAT:UTF8,UTF8String:﻿tple.ne﻿ne﻿tple.ne﻿tSU
+

@@ -1,0 +1,8 @@
+# [ vtier=hash
+authorityKeyIdentifier=keyid,issuer:always
+proxyCertInfo=@proxy_ext
+
+#
+
+[ proxy_ext ]
+language=id-pplC

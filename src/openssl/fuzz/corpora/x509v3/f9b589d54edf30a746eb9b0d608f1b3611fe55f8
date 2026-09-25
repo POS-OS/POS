@@ -1,0 +1,17 @@
+[default]E,pathash
+authorityKeyIdentifier=keyid
+#­#
+#
+#
+#
+#
+#issue[default]
+crlDistributionPoints = alternative_names
+
+
+
+[alt]ames
+
+[alternative_names]
+oame.1 = t
+fullnameKyUsame = @alternSN1:NUL

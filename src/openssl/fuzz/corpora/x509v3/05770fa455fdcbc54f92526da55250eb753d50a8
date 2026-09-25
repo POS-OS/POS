@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.499999999999999999999999999999999999999999999999902.3.4J;UTF8:cuet

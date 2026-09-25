@@ -1,0 +1,7 @@
+[default]
+crlDistributionPoints = URI:¬¬¬¬¬‚‚5:.net/cinfo,URI:ldap:ot.crl,URI:lda:¿89:crt:32:50:76:98::crl1et/root.crl,URI:isslo,URI:lda:¿89:,URI:ldap:ººººººample.net/cn=Root%10R
+authorityKeyIdentifier =issuer
+[default]tribuh.exl
+authorityInfoAccess = OCSP;URI:x:ampLe.to;h/,caIssuers;URI:http://camsEFS.thorityInfoAccess = OCSP;Utp:/,caIssuers;URI:http://ca.long-corpus.exampld.test/foot.der
+tlsfeature = status_request,status_request_v2
+1.2.5.4I.203 = ot.::1:F:

@@ -1,0 +1,34 @@
+name: Fetch test vectors
+description: Fetches the wycheproof and x509-limbo repositories
+
+runs:
+  using: "composite"
+
+  steps:
+    # Codeload snapshots skip the git protocol entirely: no ref
+    # negotiation, no server-side pack generation, no client-side object
+    # hashing, and no .git directory to write. The two downloads run in
+    # parallel.
+    - name: Download test vectors
+      shell: bash
+      run: |
+        download() {
+          curl --fail --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 2 \
+            --output "$2.tar.gz" \
+            "https://codeload.github.com/$1/tar.gz/$3"
+          mkdir "$2"
+          tar -xzf "$2.tar.gz" --strip-components=1 -C "$2"
+          rm "$2.tar.gz"
+        }
+        download C2SP/wycheproof wycheproof "$WYCHEPROOF_REF" &
+        wycheproof_pid=$!
+        download C2SP/x509-limbo x509-limbo "$X509_LIMBO_REF" &
+        x509_limbo_pid=$!
+        wait "$wycheproof_pid"
+        wait "$x509_limbo_pid"
+      env:
+        # Latest commit on the wycheproof main branch, as of Sep 03, 2026.
+        WYCHEPROOF_REF: "3fa63dd0344abb611f1fb1d77e119938603ea230" # wycheproof-ref
+        # Latest commit on the x509-limbo main branch, as of Sep 03, 2026.
+        X509_LIMBO_REF: "3f8cba420e90322223486086054401189b7b320e" # x509-limbo-ref

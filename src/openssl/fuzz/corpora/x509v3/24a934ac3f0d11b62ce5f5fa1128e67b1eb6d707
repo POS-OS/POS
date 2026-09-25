@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]tributlt]
+crlDistributionPoints = alternative_names
+
+[alt]
+=9names
+
+[alternative_names]
+relativename= ,k[;ss 5R

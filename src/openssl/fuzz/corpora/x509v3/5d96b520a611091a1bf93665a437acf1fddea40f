@@ -1,0 +1,7 @@
+[default]
+0.2.= critical,ASN1:BOOLEAN:TRUE
+field4=ã
+2.1.0 = critical,ASN1:BOOLEAN:TRUE
+
+2.2.3.= critical,ASN1:BOOLEAN:TRUE
+field4= Oãã

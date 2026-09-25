@@ -1,0 +1,4 @@
+authorityKeyIdentifier =issuer
+0.5.2 = ASN1:IMP:6UTF12,NULL
+
+2..839 = A00

@@ -1,0 +1,22 @@
+[default]
+issuerAltName = DNS:i#elt]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies = 1.2.3.4.201,1.2.3.4.202
+crlDistributionPoints = URI:httple.test/root.crl
+authorityInfoAccess = OCSP;URI:http://ocsp.long-corpus.example.test/,caIssuers;URI:http://ca.l
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = service-001.cluste-copus.exam%le.test
+DNS.2 = service-002test
+DNS.9 = ivrcssetct-AuthRevR-09.klong-x509v3-coervice-035.cluster-s.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Lepus seed
+nsBaseUrl = https://legacy.example.net/
+nsSslServerName = leg01:01:FFt
+KxGOST = servt

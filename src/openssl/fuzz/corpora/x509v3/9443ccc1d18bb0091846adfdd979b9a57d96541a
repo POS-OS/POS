@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]200
+subjectAltName = @long_alternative_names
+.includeateP]
+subjectKeyIdentifier =dddddddd34
+nPoints = URI:http://crl.
+
+[long_alternative_names]
+DNS.e.1 = 1.2_nameset

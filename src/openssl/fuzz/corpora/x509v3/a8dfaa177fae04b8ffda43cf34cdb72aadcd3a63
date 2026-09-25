@@ -1,0 +1,5 @@
+
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.2c=e.9;FORMAT:UTF8,BOOLEAN:ng:u

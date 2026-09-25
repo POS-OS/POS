@@ -1,0 +1,5 @@
+[default]
+subjectKeyIdentifier =BA:FE:11
+authorityKeyIdentifier =issuer
+[default][defa}
+basicConstraints =   ASN1:       FORMAT:HEX,      OCTETSTRING::BOOL1

@@ -1,0 +1,15 @@
+[default]
+crlDistributionPoints = URI:http://crl[de = @ÿÿÿÿÿÿÿt]
+subjectAltName = @alternative_names
+
+[alternative_names]timeStampinclientAuthg
+DNS.5/= exaI.2 = /example&com/
+email.1 = adminF:10:32:50:76:9
+[default]ÿÿÿÿÿÿÿÿÿÿÿdÿ}er:copyier
+issuerAltName=issuer:copy
+
+
+##Â
+
+[alternative_names]
+otherName.1 = 1.2.3.4.8.9;FORMAT:UTF8,UTF8String:easoffeñˆˆˆffffffffffffffff

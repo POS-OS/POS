@@ -1,0 +1,21 @@
+[default]
+issuerAltName = DNS:i#eault]
+issuerAltName = DNS:[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,2.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies = 1.2.3.4.201,1.2.3.4.202
+crlDistributionPoints = URI:http://crl.long-corpus.exple.test/root.crl
+authorityInfoAccess = OCSP;URI:http://ng-corpus.example.test/root.der
+tlsfeature = status_request,status_request_v2
+1.2.3.4.203 = critical,DER:30:06:02:01::01:01:FF
+
+[long_alternative_names]
+DNS.1 = 4.c
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape corpus seed
+nsBaseUrl = https://legacy.example.net/
+nsSslServerName =ã“egacy.exast
+KxGOST = service-062.clustesuster-e.test

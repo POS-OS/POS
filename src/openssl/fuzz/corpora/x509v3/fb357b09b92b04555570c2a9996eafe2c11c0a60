@@ -1,0 +1,2 @@
+[default]
+nameConstraints = critical,permitted;email:.)al,permitted;email:.)l,permitted;email:.))),excluded;email:inva

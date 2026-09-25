@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+proxyCertInfo=critical,@proxy_ext
+
+# ic
+
+[ proxy_ext ]pe
+pathlen=0
+polklicy=text:Bacy.ex2021xts
+language=idea-ecb

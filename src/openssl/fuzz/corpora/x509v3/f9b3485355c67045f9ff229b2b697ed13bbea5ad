@@ -1,0 +1,2 @@
+[default]
+nameConstraints = critical,permitted;email:e.net,excluded;email:.ile.net,excluded;email:.cal,permitted;email:.)))))mple.net,excluded;email:.ileet,excluded;email:.ca,excluded;email:.é/vali}dú

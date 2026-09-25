@@ -1,0 +1,1 @@
+extendedKeyUsage = serverAuth,OCSPSigning,ipsecIKE,2..13.,OCSP,ipsecIKE,.4.20

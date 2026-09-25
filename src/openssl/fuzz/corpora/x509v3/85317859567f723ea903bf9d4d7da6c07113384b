@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names'
+[alternative_names]
+otherName.1 =;FORMAT:UTF8,UtF8String:eason8htp.://pkiÒš‡—t

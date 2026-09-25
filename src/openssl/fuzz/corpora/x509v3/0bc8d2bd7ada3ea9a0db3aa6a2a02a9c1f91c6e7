@@ -1,0 +1,5 @@
+[default]
+crlDistributionPoints = alternative_names
+
+[alternative_names]Ø#a.crl
+CRLissuer =4 = 

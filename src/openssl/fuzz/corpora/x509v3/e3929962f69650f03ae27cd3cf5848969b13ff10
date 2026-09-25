@@ -1,0 +1,2 @@
+[default]
+authorityInfoAccess = OCSP;URI:http:,caIssuers;URI:httt/,caIssuers;URI:.net/,caIssuers;URI: O,caIssuers;URI:httt/,caIssuers;URI:.net/,caIssuers;URI:http:http:/,caIURI:httpI:hy/

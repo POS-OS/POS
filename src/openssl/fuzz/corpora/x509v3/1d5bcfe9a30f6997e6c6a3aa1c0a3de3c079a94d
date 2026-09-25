@@ -1,0 +1,6 @@
+
+authorityKeyIdentifier =issuer
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.e.8 = 11.5.9;FORMAT:UTF8,UTF8String:easòilProtecti:4t

@@ -1,0 +1,12 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.include3.4.202
+crlDistributionPoints = URI:http:
+authorityInfoAccess = OCSP;URI:ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿder
+tlsfeature = sta:FF
+
+[long_alternative_names]
+DNS.1 = service-t

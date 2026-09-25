@@ -1,0 +1,12 @@
+[default]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+sme =mames
+
+[alternative_names]
+relat1.2.3.4 =#P$e
+#re:
+#  
+#$e
+#ldap:บบบบบบ:11:32:5'c

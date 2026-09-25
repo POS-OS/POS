@@ -1,0 +1,20 @@
+[default]
+basicConstraints = critical,CA:AALSE
+keyUsage = Signature,keyEncipherment
+extendedKeyUsage =noneverAnameConstra00
+subjectAltName = @lornative_names
+certIficatePolicies = 1.2.3.4.3.4.202
+croints = URI:h-x509v3-core.test
+DNS.15 = seter-74.long-x5
+DNS.75 = service-xmaple.nt
+DNS.76 = song
+DS1N4 = service-104.cluster-est
+DNS.105 = servic
+DNS.106 =	service-10-06.long-x509v3-corpus.example.test
+DNS.107 = service-107.clusterplet
+DNS.108 = servie.test
+DN=
+.pragma=doll`rid:oN
+==
+.p*.109 = s
+DNS.rag

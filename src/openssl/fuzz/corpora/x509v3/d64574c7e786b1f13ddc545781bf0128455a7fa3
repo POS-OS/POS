@@ -1,0 +1,3 @@
+
+authorityKeyIdentifier =issuer
+nameConstraints = permittedIP:1000::/ffff:ff:ff::,excluded;IP:8588::/ffff:ff:ffff::,excluded;IP:7721:d::/ffff:fÿ

@@ -1,0 +1,21 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:Y ioudrpus.example.test
+DNS.36 = service-036.cluster-36.long-x509v3-corpusÆexample.test
+DNS.37 = servi060.clustetest
+DNS.61 = seÂçvice-example.test
+DNS.62 = service-062.cluster-62.long-x509v3-corpusexample.com.exatplem.est
+DNS.63 = ser3-corpus.example.test
+DNS.69 = sers.example.t
+DNS.71 = service-071.cluster-71.long-us.example.test
+DNS.72 = service-072.cluster-72.long-x509v3-corpuó.example.test
+DNS.73 = service-073.bluster-73.long-x509v3-corpus.example.test
+DNS.74 = service-074.clusg-x509v3-corpus.example.)test
+DNS.75 = sermprpus.example.test
+DNS.83 = service-083.clustong-x509v3-corpus.example.test
+DNS.84 = ter-89.long-le.test
+DNS.31 = service-032.clNS.69 = sers.example.test
+DNS.70 =le.test
+DNS.33 = service-033.cet

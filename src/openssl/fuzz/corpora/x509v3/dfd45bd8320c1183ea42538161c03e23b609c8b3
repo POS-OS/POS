@@ -1,0 +1,20 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePol
+1.4.3.4.206 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]x509v3-corpus.exampÿe.test
+DNS.4S.45 = service-045.cluster-45.long-x509v3-corpus.example.tust
+[default]
+1.2.3.4.101 = critical,DER:15::01:01:FF
+1.2..2.4.4.101 = critical,DER:15::01:01:FF
+1.2.3.4.1101 = critical,DER:15::01:01:FF
+0.2..2.4.4.101 = critical,DER:15::01:01:FF
+1.2.3.4.102 = D-049.clustder
+tlsfeature = status_request,status_request_v2
+1.2..101 = critical,DER:15::01:01:FF
+1.2..2.3.4.101 = critical,DER:15::01:01:FF
+1.2.3.4.102 = DER:03.4nonRepudiatioet

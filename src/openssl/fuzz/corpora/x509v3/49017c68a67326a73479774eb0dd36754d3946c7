@@ -1,0 +1,11 @@
+[default]
+
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_altern
+authorityKeyIdentifier =issuer
+[default]
+crlDistributionPoints = URI:h.rl,URI:ldreclt]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = .200
+subjectAltName = rst

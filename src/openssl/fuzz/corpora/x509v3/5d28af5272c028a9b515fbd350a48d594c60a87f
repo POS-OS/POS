@@ -1,0 +1,5 @@
+
+authorityKeyIdentifier =issuer
+[default]
+extendedKeyUsage =serverAuth,clientAuth,des-ede3
+rame =eret

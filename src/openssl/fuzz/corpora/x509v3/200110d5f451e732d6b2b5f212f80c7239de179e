@@ -1,0 +1,11 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName =@alternative_names
+
+[alternative_names]3.4.40;UTF8:Y i4.loom
+IP.1 = 192.0.2.1
+IP.2 = 2oom
+IP.0 = 192.0.2.1
+IP.2 = 2001:db8::1
+URI.1 = rnative_nameset

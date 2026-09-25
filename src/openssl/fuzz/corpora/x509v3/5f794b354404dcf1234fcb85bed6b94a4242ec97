@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.he4 = Netscape Base Url;FORMAT:UTF8,UTF8String:easot

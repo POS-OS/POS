@@ -1,0 +1,9 @@
+[default]r=hash
+authorityKeyIdentifier=keyid,issuer:always
+proxyCertInfo=critical,@proxy_ext
+
+[ proxy_ext ]
+language=id-ppl-independent
+pathlen=0
+policy=text:BC
+ls = URI:Commme

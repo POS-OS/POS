@@ -1,0 +1,2 @@
+[default]t]
+extendedKeyUsage = serverAuth,OCSPSigning,ipsecIKE,0.2.3.4.,serverAuth,OCSPSigning,ipsecIKE,OCSPSigning,ipsecIKE,0.2.3.4.,serverAuth,O,ipsecIKE,0.2.,0.2.3.4.,iUI

@@ -1,0 +1,7 @@
+# [ v3_proxy¿]
+basicConstraints=CA:FALSE
+subjectKeyIdentifier=ha
+noCheck =eNasicCoSE
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid,issuer:always
+eyIdentifiitical,@proxyoly=text:BC

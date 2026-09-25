@@ -1,0 +1,5 @@
+1.1.2 = ASN1:FORMAT:ASCIIB,BITSTR:496
+
+
+authorityKeyIdentifier =issuer
+1.25.1.2 = ASN1:FORMAT:ASCIIBIT

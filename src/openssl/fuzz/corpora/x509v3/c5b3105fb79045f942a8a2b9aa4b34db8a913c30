@@ -1,0 +1,11 @@
+
+authorityKeyIdentifier =issuer
+[default]triRI:h[default]
+crlDistributionPoints = alternative_names
+
+[alt]mes
+
+[alternative_names]
+otherName.0 = 1.2.3.4E!cipherment
+fullnamePoints = URI:h[default] irment
+fullnameKeributiogPoints = URI:h[recssuerss 0R

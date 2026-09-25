@@ -1,0 +1,13 @@
+[default]
+crlDistributionPoints = URI:h~tp://66:89
+authorityKeyIdentifier =issuer
+[default]tributionPoits = efault]
+subjectAltName = @alternative_names
+
+[alternative_names]timmpi
+IP.2 = 28::1
+URI.1 = https/exl1
+IP..25= 28b8::1
+URI...1 = https://exl1
+IP.25= 2801:db8::1
+URI.1 = 1 = admp:

@@ -1,0 +1,8 @@
+[default]
+crlDistributionPoints = URI:h25:76:9
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+sme =8names˜
+[alternative_names]
+rc4-hmac-md5= URc8:ººample.S

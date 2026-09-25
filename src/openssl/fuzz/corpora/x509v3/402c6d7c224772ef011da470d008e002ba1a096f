@@ -1,0 +1,2 @@
+[default]
+issuerAltName = DNS:t,URI:t,URI:ca,RID:.P3

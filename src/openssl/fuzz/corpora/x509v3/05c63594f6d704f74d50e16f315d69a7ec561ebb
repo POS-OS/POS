@@ -1,0 +1,6 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+email.2 =лллл
+email.1 =

@@ -1,0 +1,5 @@
+[default]
+nsCertType = client,server,objCA
+nsComment = Leg
+keyUsage = digitalSignature,keyEncipherment
+sag=.d4.

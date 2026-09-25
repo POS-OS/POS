@@ -1,0 +1,11 @@
+
+authorityKeyIdentifier =issuext2.23.140.:FEC22:
+authorityKeyIdentifier =none,177,1,187[default]
+subjectAltName =email:mopy
+
+
+##ÂSE
+subjectKeyIdentifier=hash
+vu=kealternatherst
+[default]
+nsCertType = ctificeyUsage = ip,rebatename

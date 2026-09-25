@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]t]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjectAltme =9names
+
+[alternative_names]
+rer =iess 0R

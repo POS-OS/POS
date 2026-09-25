@@ -1,0 +1,5 @@
+
+authorityKeyIdentifier =issuer
+[default]
+1.14 = ASN1`:EXP:30U12,NULL
+. =

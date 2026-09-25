@@ -1,0 +1,6 @@
+[default]/:opoli1:
+authorityKeyIdentifier =issuer
+[default]
+1.2.84 = ASN1`:EXP:53687012,NULL
+
+2.95 = Aÿÿÿÿÿÿÿ

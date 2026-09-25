@@ -1,0 +1,2 @@
+authorityKeyIdentifier =issuer
+extendedKeyUsage = serverAuth,clientAuth,0.2.3ltr

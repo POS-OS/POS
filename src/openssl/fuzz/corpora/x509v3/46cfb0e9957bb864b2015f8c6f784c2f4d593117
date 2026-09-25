@@ -1,0 +1,9 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @long_alternative_names
+.includeatePolic:.)lt]
+nameConstraints = critical,permitted;email:ritical,permitted;email:.))))))))))t,permitted;URI:.example.net,excluded;email:.invai~dRUl;I:.example.net,excluded;email:.in))/))06:02:01:01:01:02:FF
+
+[long_alternative_names]
+DNS.1 = service999úet

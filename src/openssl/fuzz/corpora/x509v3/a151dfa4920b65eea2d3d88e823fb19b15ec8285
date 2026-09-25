@@ -1,0 +1,6 @@
+[default]
+nsCertType = client,server,objCA
+nsComment =LSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,0.2.3200
+subjectAltName =o@ nrt—šr

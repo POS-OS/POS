@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+
+basicConstraints = pathlen:0xt

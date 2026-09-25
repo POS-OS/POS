@@ -1,0 +1,5 @@
+1.1.0 = ASN1:FORMAT:BITLIST,BITSTR:496
+
+
+authorityKeyIdentifier =issuer
+1.20 = ASN1:FORMAT:BITLIST,BI

@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]]
+2.1.2 = critical,DER:15082190199a

@@ -1,0 +1,5 @@
+
+authorityKeyIdentifier =issuer
+[default]998#
+
+1.2.84.2 = ASN1:FORMAT:UTF8,T61:÷s1

@@ -1,0 +1,12 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]ng-x509v3-ple.tAst
+DNS.71 = st
+DNS.72 =ervice-0example.test
+DNS.73 = ttest
+DNS.74 = see.test
+DNS.75 = serv
+DNS.38 = service-076.clustsmple.teng-le.test
+DNS.3. = sertest
+DNS.33 = se.n.net

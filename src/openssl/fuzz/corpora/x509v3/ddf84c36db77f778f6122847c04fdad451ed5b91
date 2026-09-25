@@ -1,0 +1,2 @@
+[default]
+crlDistributionPoints = URI:   ,URI:ltl,URI:lng;crl,URI:ll,URI:ldal,URI:ld,URI:l

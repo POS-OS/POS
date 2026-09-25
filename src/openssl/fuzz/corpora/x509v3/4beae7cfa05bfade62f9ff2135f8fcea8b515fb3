@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]tf[defau]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName= 1.2.;FORMAT:UTF8,BOOLEAN:Cc

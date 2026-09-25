@@ -1,0 +1,5 @@
+[default]
+crlDistributionPoints = URI:h~tp:strNRI:h:crl1.example.net/root.crl,URI:ldap:ot.crl,URI:lda:¿89:crl1.examðle.net/root.crl,URI:FEC1:22:33:45:67:¿89Acrl1.example.net/root.crl,URI:ldaDB::1:FEC1:22net/root.crl,URI:FEC1:odirNameot.crl,URI:ldap:ot:/root.crl,URI:ld1p:ot.crl%,URI:lda:¿78:crl1.examp.includeoot.crl,URI:ldap:ººººººample.net/cn=Root%ot.crl,URI:ldap:L = rectory.exampl4:67:¿89:crl1.example.net/root.crl,URI:ldap:ººººººample.net/cn=Ret/root.cr@l,URI:ld1p:ot.crl%,URI:lda:.crl,URI:ldap:ººº:¿89:ct.crl,URI:ld1p:ot.crl%,URI:ldroot.crl,URI:ldap:ººººººample.net/cn=Root%21Rkot.exa1.example.net/root.
+authorityKeyIdentifier =issuer
+[default]tributionPoin33:45:67:¿ssationOf
+authorityInfoAccess = OCSP;URI:httÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿCA

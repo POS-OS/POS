@@ -1,0 +1,5 @@
+
+authorityKeyIdentifier =issuer
+[default]9
+
+1.4.2 = ASN1:FORMAT:UTF8,T61:÷email.1

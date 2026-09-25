@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]]
+nameConstraints = critical,permitted;IP:192.0.2.0/255.255.2.2,permitted;IP:192.0.2.0/2.

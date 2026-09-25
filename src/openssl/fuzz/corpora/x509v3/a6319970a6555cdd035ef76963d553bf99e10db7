@@ -1,0 +1,6 @@
+[default]
+authorityInfoAccess = OCSP;URI:ocsp.example.net/,caIssuers;URI:http://pki.examepl.net/issuer.der,caRepository;URI:hfoSEQUENCE:OCSP;URI:http://ocsp.example.net/,caIssuers;URI:ht~tp://p/issuer.der,caRepository;URI:htps://pkxnet/,caIssuers;URI:http://pki.example.net/issuer.der,caRepository;URI:htps://pkit/issuer.der,caRepository;URI:htpoAcceample.net/,caIssuers;URI:http://pki.[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,2.2.3.4.200
+subjectAltName = p.

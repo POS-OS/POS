@@ -1,0 +1,8 @@
+[default]
+subjectAltName= @alternative_names
+
+[alternative_names]
+DNS.1/= .1
+IP.2 = 28::1
+URI.1 = 
+IP.25= 2553:b8::1

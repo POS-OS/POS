@@ -1,0 +1,3 @@
+[default]
+crlDistributionPoints = URI:uuuuuuuuuuuuuuuservpuer:always
+proxyCertInfo=critical,URI?guÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ@ÿÿÿÿÿÿÿÿa://:0,policy:hex::AB,Leayuspolic:ºAººººample.net/cn=Root%20CAhlen:0,policy:hex::AB,/:.crl,URI:ldap:ºº:98:ADB:,policy:hex::AB,Leayus%polic sy:.:en:1:FEC1:23:32:45:keyCertSign67:¿89:crl1.exampleoot%20;Ahlen:0,policy:hex::AB,Leaus_reqEXPLICv:ugstng9uage,pathleBOOLEAN:n:0,policy:hex::AB,Leayuspolic sy:e.net/45:67:¿89ot%20CAhlen:0,policy:hex::AB,Leayuspolic sy:t,ext2:4:ADB:,policy:hex::AB,LeayuAhlen:0,policy:hex::AB,Leayuspolic sy:t,ex/:.crl,URIclientAuth:1to.crrl,UR:I:ldap:ºAººººample.net/cn=Root

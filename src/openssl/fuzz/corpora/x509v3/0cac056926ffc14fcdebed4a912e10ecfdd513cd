@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+inhibitAnyPolicy = 0000000000000000000000000000000000000000

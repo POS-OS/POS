@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]u
+nameConstraints =excluded;IP::192.0.2.0/5.

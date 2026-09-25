@@ -1,0 +1,7 @@
+# sh
+authorityKeyIdentifier=keyid,issu\er:always
+proxyCertInfo=cr:alx,@proxy_ext
+
+[ proxy_ext ]
+ln=0
+policy=text:ÏC

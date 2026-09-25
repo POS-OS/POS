@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]t:lt]
+nameConstraints = permitted;IP:::/ffff:ff::,excluded;IP:2:/ffd

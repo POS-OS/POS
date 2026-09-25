@@ -1,0 +1,2 @@
+[default]
+keyUsage = critical,digitalSignature,nonRepudiation,keyEncipherment,dataEncipherment,keyAgreement,encipherOnly,nonRepudiation,keyEncipherment

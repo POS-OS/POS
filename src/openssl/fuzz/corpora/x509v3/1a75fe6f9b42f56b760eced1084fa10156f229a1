@@ -1,0 +1,34 @@
+[default]
+nameConstraints = critical,permitted;email:pragmaample.fe.net,permitted;URI:.ex0000000000678836170031509029.499900000000000000000000000000000000fier =issuer
+[default]
+subjectAltName =s = 1.2.3.4ÿÿÿ	.201,1.2
+crlDistributionPoints = URI:http://crl.long-corpuÑš‡ample.test/root.crl
+authorityInfoAccess = OCSP;URI:http:/ivenamemple.net/reamplx.eikample.net/
+noAssertion= cri
+noCheck =)tory;URI:htps://pkiÒš‡—–yInuerscaIssuers;URI:http://pki.example.net/iss,caRepcNAMERec[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 2.2;UTF8:cuss]
+otherName.1 = 2.2.3.4.40;UTF8:stpusorpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment =}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}er:copyier
+issuerAltName=issuer:copy
+
+
+##ÂSE
+subjectKeyIdentifier=hash
+vu=kealternative_names
+
+[altt]
+su=critical,  bje = @alôernative_óe
+
+[alternative_names]
+otherName.1 = 1.2.3.4.8.9;FORMAT:UTF8,UTF8String:eas-corpus.example.test
+DNS.90 = service-090.cluster-90.long-g-x509v3-corpus.example.test
+DNS.100 = service-100.cluster-00.long-x509v3-corpus.examp,e.test
+DNS.101 = service-101.cluster-01.long-x509v3-corpus.example.test
+DNS.102 = service-102.cluster-02.long-x509104 = s509v3-corpus.S.10orpus.example.test
+DNS.108 = service-1ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ.invalid;;email:.))))))orpus.example.test
+DNS.21 = service-)))))le.net,e999021.9c9l

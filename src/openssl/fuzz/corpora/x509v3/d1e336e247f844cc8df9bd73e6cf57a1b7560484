@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]$subject
+extendedKeyUsage = serverAuth,clientAuth,1.20.4,RID:1.0200

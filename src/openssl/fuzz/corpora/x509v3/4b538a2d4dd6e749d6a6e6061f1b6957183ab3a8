@@ -1,0 +1,8 @@
+[default]
+issuerAltName = DNS:it]0
+subjectAltName = @long_alternative_names
+.includeatePolici
+authorityInfoAccess = @OC;URIF
+
+[long_alternative_names]
+DNS.1 = ser!t

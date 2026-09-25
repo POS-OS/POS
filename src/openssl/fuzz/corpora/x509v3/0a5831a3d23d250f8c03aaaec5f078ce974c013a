@@ -1,0 +1,4 @@
+[default]
+crlDistributionPoints = URI::5
+AES-192-CFB1=DER:10:EF
+/cn=

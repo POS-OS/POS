@@ -1,0 +1,9 @@
+
+subjectAltName = @alternative_names
+
+[alternative_names]s.examp.test
+DNS.76 = seÌvtest
+DNS.79 =pus.extest
+DNS= st
+DNS.3 = service-033
+

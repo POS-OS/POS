@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+nameConstraints = permittedéIP:b9:deaa::/ffff:ff:f:ff::,excluded;IP:db8:dead::/f))

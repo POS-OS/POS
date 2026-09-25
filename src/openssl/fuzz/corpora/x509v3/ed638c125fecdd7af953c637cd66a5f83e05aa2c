@@ -1,0 +1,13 @@
+[default]
+crlDistributionPoints = URI:h~tp://67:89:rtionPoints = URI:h~t:32:50:76:98:ADB::1:FEC1:22:33:45:67:89:crl1.example.net/root.crl,URI:ldap://directory.example.net/c,URI:ld:ot.crl,URI:lda:¿89:crt:32:50:76:98::crexcluded;e:root.crl,URI:issuerAltNameldap:ot.crl,URI:lda:¿89:crl,URI:ldap:ººººººample.net/cn=Root%20Root%F:10:3`2:50:76:98:ADB::1:FEC1:22:31.example.net/root.crl,URI:ldap:ººººº
+authorityKeyIdentifier =issuer
+[default]trib))onttedal,p,permitted;emtnsa= i critical,permitted;email:.)lt]
+nameConstraints = critical,permitted;email:.))))-)))))))8)))))))))))))onstraints = critical,permitted;email:.)))))))))))))))1))))))))))et,permitted;URI:.example.net,excluded;email:critical,permitted;email:.)))))))))))))))1))))))))))et,permitted;URI:.example.net,excluded;email:.i‰‰ž“–›ÄªRI:.example.net,excluded;email:.in))XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_alternative_names
+certifica21 = servics2.3.4.203 = critical,DER:30:06:001:01:FF01:01:FF
+
+[long_alternative_names]
+DNS.1 = serviclt

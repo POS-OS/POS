@@ -1,0 +1,3 @@
+
+authorityKeyIdentifier =issuer
+crlDistributionPoints = URI:h~t

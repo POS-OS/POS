@@ -1,0 +1,6 @@
+1..884 = ASN1:BMP:!hello
+2.84..4.8= ASN1:BMP:!hello
+2.84..4.84 = ASN1:BMP:!hello
+2.80..2.84= ASN1:BMP:!heo
+2.84..2.84= ASN1:BMP:!hello
+2.84 = ASN1:BMP

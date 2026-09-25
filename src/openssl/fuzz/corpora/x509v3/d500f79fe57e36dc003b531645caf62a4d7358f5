@@ -1,0 +1,13 @@
+='\	
+='\	
+='\	
+='\	))))
+aAissuingDistributionPoint =default\	
+='\	
+='t]
+nameConstraints = crit
+authorityKeyIdentifier=issuedefault]
+subjectAltName = @a.2.3.4.203
+subject03 = critical,DER
+crlDistributionPoints = Uexample.test/root.crl
+authorityInfoAccess = OCSP;URI:http://ocsp.

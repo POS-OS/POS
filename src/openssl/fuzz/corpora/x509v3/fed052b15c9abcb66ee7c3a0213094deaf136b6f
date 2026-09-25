@@ -1,0 +1,7 @@
+
+authorityKeyIdentifier =issuer
+[default]@al#e
+subjectAltName = @alternative_names
+
+[alternative_names]e1.l.6s]
+otherName.1 =''Nam%.9;FORMAT:''UTF8',UTF8String:eoffffðˆˆ'''ˆ

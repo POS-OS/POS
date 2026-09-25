@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]trissu:t]
+crlDistributionPoints =dirName: alternative_names
+
+[alt]
+subjtAltme =mames
+
+[alternative_names]
+relat0.2.3.4 =1,1871,1R877

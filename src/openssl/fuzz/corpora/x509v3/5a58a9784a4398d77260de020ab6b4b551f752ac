@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+2..84 = ASN1`:EXP:28UF8,UTF8String:T5

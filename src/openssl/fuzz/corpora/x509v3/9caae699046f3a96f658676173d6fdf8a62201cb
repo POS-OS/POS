@@ -1,0 +1,7 @@
+[default]
+1.2.3.4. = DER:04:04#:[d
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @aiAasciatedNamealF
+1.2.4.02 = DER:04:04#:[,Dt]
+subjectAltName =2eset

@@ -1,0 +1,43 @@
+[default]
+crlDistributionPoints = URI:http://crl[default]
+nameConstraints = critical,permitted;email:.)lt]
+nameConstraints = critical,permitted;email:.)))))×Ö)))))))))))))))))))))))))))))))8)))))))))))))onstraiName = DNS:i#efault]
+issuerAltName = DNS:[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,1.2.3.4.200
+subjectAltName = @long_altern1.2.840.113554...72585.3 = ASN2:Uo
+2.840.12.840.113554.1.2.840.113554.4.1585.1 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.12.840.113554.4.15840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = A840..72585.3 = ASN2:Uo
+2.840.12.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8402.840.1135554.1585.2 = ASN1:UNIV:hÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞÞtlsfeature= 388889ÞÞÞÞÞÞÞÞÞellUo
+2.840.12.840.1135554.45.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = e= ASN2:Uo
+2.840.11.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8402.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72586.3 = 0..722585.3 = ASN2:o
+2.840.12.840.1135554.4.1585.2 = ASN1:UNIV:he840..72509v3-corpus.example.test
+[default]
+nsCertType = client,server,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscape extension corpus seed
+nsBaseUrl = https://le~20R[default]
+1.2.3.800 = ASN1:SEQUENCE
+field1 = UTt]
+0.2.3= ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.4.100 = ASN1:lt]
+1.2.1.2.3.43.400 = ASN1:SEQUENCE
+field1 = UTt1 = UTt]
+0.2.3.4.100 = ASN1:SEQUENCE
+fiel4.100 = ASN1:SSindirectCRLEQUENCE
+f4.100 = ASN1:SEQUE100ÿÿÿSN1:lt]
+1.2.3.400 = ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.= ASN1:SEQUENCE
+field1 = UTt]
+0.2.3.5.100 = ASN1:SEQUENCE
+fiel4.100 = ASN1:SSEQU»±¼º
+f4.100 = ASN1:NCE
+field1 =erNgacy.ex = legacy.exast
+KxGOST = service-062.ctifier =issuer
+[default]
+subjectAltName =I

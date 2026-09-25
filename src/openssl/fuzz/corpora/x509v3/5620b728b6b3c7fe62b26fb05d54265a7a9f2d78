@@ -1,0 +1,16 @@
+
+#
+#
+#ud;URI:
+authorityKeyIdentifier=keyid
+
+#
+#ifier =ways
+proxyCertInfo=critical,@proxy_ext
+
+#
+# ical,DER:3:06:02.21
+[ proxy_ext ]policyC3.3.4:subonaissuejge
+pathlen=5
+policy=text:ssBacy.enage=tAints
+language=idea-ecb

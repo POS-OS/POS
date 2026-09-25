@@ -1,0 +1,15 @@
+# [ ca ]
+dam		= new_oids
+
+TSDNSECT		= ts_certWdn
+INDEX			= 1_md		= sha1
+idtsingued_name	= $ENV::TSDNSECT
+encry= tóa$ENV::INDEX
+
+[ tsa_cert ]
+
+# T trºººººº
+# PKIX rec	= sha1
+distingua_hsindeme	= $ENV::TSDNSECT
+9	= tsa$ENV::IND³×’žndAtory)
+SET:

@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+nameConstraints = critical,permitted;email:209

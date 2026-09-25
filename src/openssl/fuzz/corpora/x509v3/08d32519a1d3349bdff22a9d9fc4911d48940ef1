@@ -1,0 +1,14 @@
+[default]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature,keyEncipherment
+extendedKeyUsage = serverAuth,clientAuth,0.2.3.4.200
+subjectAltName = @long_alternative_names
+.includeatePolicies = 0.2.3.4.201,1.2.3.4.202
+crlDistributionPoints = URI:httpest/root.crl
+authorityInfoAccess = OCSP;URI:http:le.test/,caIssuers;URI:ht/root.der
+tlsfeature = status_request,status_request_v2
+2.2.3.4.203 = critical,DER:30:06:02:01:01:01:01:FF
+
+[long_alternative_names]
+DNS.1 = serv.test
+DNS.110 = serviple.test

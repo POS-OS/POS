@@ -1,0 +1,5 @@
+[default]
+crlDistributionPoints = URI:h#.prcB:CD:Efn":501
+authorityKeyIdentifier =issuer
+[default]31
+freshestCRL=%%%%%

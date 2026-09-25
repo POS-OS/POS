@@ -1,0 +1,6 @@
+[default]nyP@
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.1 = 1.2.3.4.40;UTF8:cAlity
+otherName.4 = CAMELLIA-128-CFB1;FORMAT:UTF8,UTF8String:e72

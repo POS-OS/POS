@@ -1,0 +1,4 @@
+
+authorityKeyIdentifier =issuer
+[default]
+authorityInfoAccess = xed;email:os.t

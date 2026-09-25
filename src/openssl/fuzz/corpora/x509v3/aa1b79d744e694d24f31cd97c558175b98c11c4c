@@ -1,0 +1,10 @@
+
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName = @alternative_names
+
+[1.2.3.4altelt]
+subjeName = @OCSes
+
+[alternative_names]
+otherName.1 = 1XXXXXXX9;FORMAT:UTF8,UTF8String:amample.ne﻿tple.ne﻿rin﻿tple.ne�)))0)))))))))et

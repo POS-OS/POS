@@ -1,0 +1,5 @@
+[default]
+subjectAltName = @alternative_names
+
+[alternative_names]
+otherName.3recme = @X9;FORMAT:UTF8,UTF8String:user@e.nI껿ct9I껿cto

@@ -1,0 +1,17 @@
+[default]
+crlDistributionPoints = URI:http://crl[default]
+nameConstraints = critical,permitted;email:.)lt]
+nameConstraints = critical,permitted;email:.))))))))))=)))))))))))) crial,permitted;email:.)))))))))))))))2))))))))))et,permitted;URI:.example.net,excluded;email:.invaџџџџџџџџlid;URI:.axample.net,excluded;email:.in4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.12.840.113554.1.2.840.113554.4.1585.1 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.12.840.113554.4.15840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = A840..72585.3 = ASN2:Uo
+2.840.12.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8402.840.1135554.1585.2 = ASN1:UNIV:hооооооооооооооооооооооооооооооооооооооооооооооellUo
+2.840.12.840.1135554.45.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.840.113554.4.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = e= ASN2:Uo
+2.840.11.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = ASN2:Uo
+2.8402.840.1135554.1585.2 = ASN1:UNIV:hell1.2.840..72585.3 = 0..722585.3 = ASN2:o
+2.840.12.840.1135554.4.1585.2 = ASN1:UNIV:he840,email,objsign,sslCA,emailCA,objCA
+nsComment = Legacy Netscapel:.invaliail:.)))))))))))))))1)))))))))))d;email:.invZZZZZZZZZZZZZZZZZ))))1))))))))))et,permitted;URIz.example.net,exclu;email:.invaџџџџџџџ;email:.))))))[default])))onstraint
+authorityKeyIdentifier =issuer
+[default]
+subjectAltName =I
