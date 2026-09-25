@@ -1,0 +1,101 @@
+name: Release - ICU4C artifacts on Fedora
+
+on:
+  workflow_dispatch:
+    inputs: &all_inputs
+      runTests:
+        description: 'Run the tests.'
+        type: boolean
+        default: true
+      gitReleaseTag:
+        description: 'Release tag to upload to. Must start with "release-"'
+        type: string
+  workflow_call:
+    inputs: *all_inputs
+
+env:
+  RELEASE_FOLDER: '${{ github.workspace }}/releaseDist'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04  # Updated in BRS
+    environment: release-env
+
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/fedora-docker-gcr:20240929
+      credentials:
+        username: ${{ secrets.DOCKER_CONTAINER_USER_NAME }}
+        password: ${{ secrets.DOCKER_CONTAINER_REGISTRY_TOKEN }}
+
+    permissions:
+      contents: write # So that we can upload to release
+      id-token: write # For artifact attestation
+      attestations: write # For artifact attestation
+
+    steps:
+
+    - name: Install gh (GitHub CLI)
+      run: |
+        # Don't install it in the docker image, get the latest (pros and cons)
+        dnf install -y gh
+
+    - name: Checkout and setup
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Config and build ICU4C proper
+      run: |
+        pushd icu4c/source
+        ./runConfigureICU Linux/gcc
+        make -j8
+        popd
+
+    - name: Run tests
+      if: ${{ inputs.runTests }}
+      run: |
+        pushd icu4c/source
+        make check
+        popd
+
+    - name: Build release ICU4C
+      run: |
+        pushd icu4c/source
+        make DESTDIR=${RELEASE_FOLDER}/icu releaseDist
+        popd
+
+    - name: Collect artifacts in one folder
+      run: |
+        # Get the OS version in VERSION_ID
+        source /etc/os-release
+        # Get the ICU version in github_rel_version
+        source icu4j/releases_tools/shared.sh
+        pushd ${RELEASE_FOLDER}
+        tar -czf icu4c-${github_rel_version}-Fedora_Linux${VERSION_ID}-x64.tgz icu
+        rm -fr icu
+        popd
+
+    - name: Upload build results
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: icu4c-fedora-binaries
+        path: ${{ env.RELEASE_FOLDER }}
+        retention-days: 3 # TBD if we want to keep them longer
+        overwrite: true
+
+    - name: Upload to release
+      if: ${{ inputs.gitReleaseTag && startsWith(inputs.gitReleaseTag, 'release-') }}
+      run: |
+        gh release upload ${INPUTS_GITRELEASETAG} ${RELEASE_FOLDER}/* --clobber --repo=${{ github.repository }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUTS_GITRELEASETAG: ${{ inputs.gitReleaseTag }}
+
+    - name: Generate artifact attestation
+      if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'workflow_call'
+      uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+      with:
+        subject-path: ${{ env.RELEASE_FOLDER }}

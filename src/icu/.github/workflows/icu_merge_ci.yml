@@ -1,0 +1,176 @@
+# Copyright (C) 2021 and later: Unicode, Inc. and others.
+# License & terms of use: http://www.unicode.org/copyright.html
+#
+# GitHub Action continuous integration script for ICU post-merge tasks.
+
+name: GHA ICU Merge CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'maint/maint*'
+  workflow_dispatch:
+    # To trigger the Env Test workflow manually, follow the instructions in
+    # https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow
+
+# For non-release branches (namely: PRs), only run CI on the most recent commit. Cancel
+# runs on previous commits mid-flight when new commits are pushed.
+# https://docs.github.com/en/actions/using-jobs/using-concurrency#example-only-cancel-in-progress-jobs-on-specific-branches
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !contains(github.ref, 'maint/') && github.ref != 'main' }}
+
+env:
+  SHARED_MVN_ARGS: '--show-version --no-transfer-progress'
+
+permissions:
+  contents: read
+
+jobs:
+
+  # Initialize the Maven artifact cache
+  # Using Java 11 because Java version is not deemed significant for downloading artifacts,
+  # and is the lowest version we support, so the cached artifacts can be used by any other version.
+  #
+  # This job is created according to the cache strategy of reuse from a single job:
+  # https://github.com/actions/cache/blob/main/caching-strategies.md#make-cache-read-only--reuse-cache-from-centralized-job
+  icu4j-mvn-init-cache:
+    runs-on: ubuntu-24.04  # Updated in BRS
+    steps:
+      - name: Checkout and setup
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Cache local Maven repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      # Download all of the artifacts needed for the code and build plugins
+      - name: Download all artifacts
+        run: |
+          cd icu4j;
+          mvn ${SHARED_MVN_ARGS} dependency:go-offline -P '!old_jdk_taglet'
+
+  # Test ICU4J with little-endian ICU4C data only
+  icu4j-little-endian-data-test:
+    needs: icu4j-mvn-init-cache
+    runs-on: ubuntu-24.04  # Updated in BRS
+    steps:
+      - name: Checkout and setup
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Lookup read-only cache of local Maven repository
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+          lookup-only: true
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: ICU4J little-endian
+        run: |
+          cd icu4c/source;
+          ICU_DATA_BUILDTOOL_OPTS=--include_uni_core_data ./runConfigureICU Linux;
+          make -j -l4.5 check;
+          mkdir /tmp/icu4j_data_test;
+          cp -P data/out/tmp/icudt*l* /tmp/icu4j_data_test/
+          cd ../../icu4j;
+          mvn ${SHARED_MVN_ARGS} clean;
+          mvn ${SHARED_MVN_ARGS} -Dicu4c.data.path=/tmp/icu4j_data_test install
+
+  # Build ICU and tests sample on some windows configurations
+  icu4c-windows-msvc-postmerge:
+    runs-on: windows-2025  # Updated in BRS
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        config: [Debug, Release]
+        include:
+          - arch: x86
+            platform: Win32
+          - arch: x64
+            platform: x64
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3.0.0
+      - name: Build Solution
+        run: msbuild icu4c/source/allinone/allinone.sln /p:Configuration=${{ matrix.config }} /p:Platform=${{ matrix.platform }}
+      - name: Run Tests (icucheck.bat)
+        run: icu4c/source/allinone/icucheck.bat ${{ matrix.arch }} ${{ matrix.config }}
+      - name: Build Sample Solution
+        run: msbuild icu4c/source/samples/all/all.sln /p:Configuration=${{ matrix.config }} /p:Platform=${{ matrix.arch }}
+      - name: Test Samples (samplecheck.bat)
+        run: icu4c/source/samples/all/samplecheck.bat ${{ matrix.arch }} ${{ matrix.config }}
+
+  icu4c-windows-cygwin-gcc:
+    runs-on: windows-2025  # Updated in BRS
+    timeout-minutes: 50
+    env:
+      ICU_CI_CACHE: c:\icu-ci-cache
+      CYG_URL: https://cygwin.com/setup-x86_64.exe
+      CYG_MIRROR: http://mirrors.kernel.org/sourceware/cygwin/
+      CYG_PACKAGES: automake,gcc-core,gcc-g++,make,pkg-config,perl,python3
+      CYG_ROOT: c:\cygwin-root
+      CYG_CACHE: 'c:\icu-ci-cache\cygwin64-v3'
+      CYG_CACHED_SETUP: 'c:\icu-ci-cache\cygwin64-v3\setup.exe'
+      CYG_VERSION_KEY: cygwin-3.2
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - name: Configure Git to checkout with Unix line endings (LF)
+        run: |
+          git config --global core.autocrlf input
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Restore Cygwin cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ env.CYG_CACHE }}
+          key: ${{ hashFiles('.github/workflows/icu_merge_ci.yml') }}
+      - name: Download Cygwin setup
+        shell: pwsh
+        run: |
+          if ( !(Test-Path "${{ env.CYG_CACHED_SETUP }}" -NewerThan (Get-Date).AddDays(-7)) )
+          {
+            Write-Host "Cached Cygwin setup does not exist or is older than 7 days, downloading from external site."
+            New-Item -Force -Type Directory ${{ env.CYG_CACHE }}
+            Write-Host "Downloading Cygwin setup..."
+            $start_time = Get-Date
+            (New-Object System.Net.WebClient).DownloadFile("${{ env.CYG_URL }}", "${{ env.CYG_CACHED_SETUP }}")
+            Write-Output "Download took: $((Get-Date).Subtract($start_time).Seconds) second(s)."
+          }
+      - name: Install Cygwin
+        run: |
+          ${{ env.CYG_CACHED_SETUP }} --no-verify --quiet-mode --no-shortcuts --no-startmenu --no-desktop --upgrade-also --only-site --site "${{ env.CYG_MIRROR }}" --root "${{ env.CYG_ROOT }}" --local-package-dir "${{ env.CYG_CACHE }}" --packages "${{ env.CYG_PACKAGES }}"
+      - name: Check Cygwin environment
+        run: |
+          ${{ env.CYG_ROOT }}/bin/sh -lc 'echo Hello' && ${{ env.CYG_ROOT }}/bin/sh -lc 'uname -a'
+      - name: Build ICU (source and test)
+        run: |
+          ${{ env.CYG_ROOT }}/bin/bash -lc "cd $(cygpath \"${{ github.workspace }}\") && cd icu4c/source && ./runConfigureICU Cygwin && make tests -j -l4.5"
+        env:
+          CC: gcc
+          CXX: g++
+      - name: Run Tests
+        run: |
+          ${{ env.CYG_ROOT }}/bin/bash -lc "cd $(cygpath \"${{ github.workspace }}\") && cd icu4c/source && make -j -l4.5 check"
+        env:
+          CC: gcc
+          CXX: g++

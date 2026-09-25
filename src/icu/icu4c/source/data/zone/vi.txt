@@ -1,0 +1,715 @@
+﻿// © 2016 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
+vi{
+    zoneStrings{
+        "America:Bahia_Banderas"{
+            ec{"Bahia Banderas"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Merida"{
+            ec{"Merida"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Bắc Dakota"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Bắc Dakota"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Bắc Dakota"}
+        }
+        "Asia:Hong_Kong"{
+            ec{"Hồng Kông"}
+        }
+        "Asia:Macau"{
+            ec{"Ma Cao"}
+        }
+        "Asia:Pyongyang"{
+            ec{"Bình Nhưỡng"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanay"}
+        }
+        "Asia:Rangoon"{
+            ec{"Rangoon"}
+        }
+        "Asia:Saigon"{
+            ec{"TP Hồ Chí Minh"}
+        }
+        "Asia:Shanghai"{
+            ec{"Thượng Hải"}
+        }
+        "Asia:Taipei"{
+            ec{"Đài Bắc"}
+        }
+        "Asia:Ulaanbaatar"{
+            ec{"Ulan Bator"}
+        }
+        "Asia:Vientiane"{
+            ec{"Viêng Chăn"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Nam Georgia"}
+        }
+        "Etc:UTC"{
+            ls{"Giờ Phối hợp Quốc tế"}
+        }
+        "Etc:Unknown"{
+            ec{"Vị trí không xác định"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Đảo Man"}
+        }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
+        "Europe:Moscow"{
+            ec{"Mát-xcơ-va"}
+        }
+        "Europe:Prague"{
+            ec{"Praha"}
+        }
+        "Pacific:Easter"{
+            ec{"Đảo Phục Sinh"}
+        }
+        "Pacific:Enderbury"{
+            ec{"Đảo Canton"}
+        }
+        "Pacific:Honolulu"{
+            ec{"Honolulu"}
+        }
+        "meta:Acre"{
+            ld{"Giờ mùa hè Acre"}
+            lg{"Giờ Acre"}
+            ls{"Giờ chuẩn Acre"}
+        }
+        "meta:Afghanistan"{
+            ls{"Giờ Afghanistan"}
+        }
+        "meta:Africa_Central"{
+            ls{"Giờ Trung Phi"}
+        }
+        "meta:Africa_Eastern"{
+            ls{"Giờ Đông Phi"}
+        }
+        "meta:Africa_Southern"{
+            ls{"Giờ chuẩn Nam Phi"}
+        }
+        "meta:Africa_Western"{
+            ls{"Giờ Tây Phi"}
+        }
+        "meta:Alaska"{
+            ld{"Giờ mùa hè Alaska"}
+            lg{"Giờ Alaska"}
+            ls{"Giờ chuẩn Alaska"}
+        }
+        "meta:Amazon"{
+            ld{"Giờ mùa hè Amazon"}
+            lg{"Giờ Amazon"}
+            ls{"Giờ chuẩn Amazon"}
+        }
+        "meta:America_Central"{
+            ld{"Giờ mùa hè miền Trung"}
+            lg{"Giờ miền Trung"}
+            ls{"Giờ chuẩn miền Trung"}
+        }
+        "meta:America_Eastern"{
+            ld{"Giờ mùa hè miền Đông"}
+            lg{"Giờ miền Đông"}
+            ls{"Giờ chuẩn miền Đông"}
+        }
+        "meta:America_Mountain"{
+            ld{"Giờ mùa hè miền núi"}
+            lg{"Giờ miền núi"}
+            ls{"Giờ chuẩn miền núi"}
+        }
+        "meta:America_Pacific"{
+            ld{"Giờ mùa hè Thái Bình Dương"}
+            lg{"Giờ Thái Bình Dương"}
+            ls{"Giờ chuẩn Thái Bình Dương"}
+        }
+        "meta:Anadyr"{
+            ld{"Giờ mùa hè Anadyr"}
+            lg{"Giờ Anadyr"}
+            ls{"Giờ Chuẩn Anadyr"}
+        }
+        "meta:Apia"{
+            ld{"Giờ mùa hè Apia"}
+            lg{"Giờ Apia"}
+            ls{"Giờ chuẩn Apia"}
+        }
+        "meta:Arabian"{
+            ld{"Giờ mùa hè Ả Rập"}
+            lg{"Giờ Ả Rập"}
+            ls{"Giờ chuẩn Ả Rập"}
+        }
+        "meta:Argentina"{
+            ld{"Giờ mùa hè Argentina"}
+            lg{"Giờ Argentina"}
+            ls{"Giờ chuẩn Argentina"}
+        }
+        "meta:Argentina_Western"{
+            ld{"Giờ mùa hè miền tây Argentina"}
+            lg{"Giờ miền tây Argentina"}
+            ls{"Giờ chuẩn miền tây Argentina"}
+        }
+        "meta:Armenia"{
+            ld{"Giờ mùa hè Armenia"}
+            lg{"Giờ Armenia"}
+            ls{"Giờ chuẩn Armenia"}
+        }
+        "meta:Atlantic"{
+            ld{"Giờ mùa hè Đại Tây Dương"}
+            lg{"Giờ Đại Tây Dương"}
+            ls{"Giờ chuẩn Đại Tây Dương"}
+        }
+        "meta:Australia_Central"{
+            ld{"Giờ mùa hè Miền Trung Australia"}
+            lg{"Giờ Miền Trung Australia"}
+            ls{"Giờ chuẩn Miền Trung Australia"}
+        }
+        "meta:Australia_CentralWestern"{
+            ld{"Giờ mùa hè Miền Trung Tây Australia"}
+            lg{"Giờ Miền Trung Tây Australia"}
+            ls{"Giờ chuẩn Miền Trung Tây Australia"}
+        }
+        "meta:Australia_Eastern"{
+            ld{"Giờ mùa hè Miền Đông Australia"}
+            lg{"Giờ Miền Đông Australia"}
+            ls{"Giờ chuẩn Miền Đông Australia"}
+        }
+        "meta:Australia_Western"{
+            ld{"Giờ mùa hè Miền Tây Australia"}
+            lg{"Giờ Miền Tây Australia"}
+            ls{"Giờ chuẩn Miền Tây Australia"}
+        }
+        "meta:Azerbaijan"{
+            ld{"Giờ mùa hè Azerbaijan"}
+            lg{"Giờ Azerbaijan"}
+            ls{"Giờ chuẩn Azerbaijan"}
+        }
+        "meta:Azores"{
+            ld{"Giờ mùa hè Azores"}
+            lg{"Giờ Azores"}
+            ls{"Giờ chuẩn Azores"}
+        }
+        "meta:Bangladesh"{
+            ld{"Giờ mùa hè Bangladesh"}
+            lg{"Giờ Bangladesh"}
+            ls{"Giờ chuẩn Bangladesh"}
+        }
+        "meta:Bhutan"{
+            ls{"Giờ Bhutan"}
+        }
+        "meta:Bolivia"{
+            ls{"Giờ Bolivia"}
+        }
+        "meta:Brasilia"{
+            ld{"Giờ mùa hè Brasilia"}
+            lg{"Giờ Brasilia"}
+            ls{"Giờ chuẩn Brasilia"}
+        }
+        "meta:British"{
+            ld{"Giờ mùa hè Vương quốc Anh"}
+            lg{"Giờ Vương quốc Anh"}
+        }
+        "meta:Brunei"{
+            ls{"Giờ Brunei Darussalam"}
+        }
+        "meta:Cape_Verde"{
+            ld{"Giờ mùa hè Cape Verde"}
+            lg{"Giờ Cape Verde"}
+            ls{"Giờ Chuẩn Cape Verde"}
+        }
+        "meta:Casey"{
+            ls{"Giờ Casey"}
+        }
+        "meta:Chamorro"{
+            ls{"Giờ Chamorro"}
+        }
+        "meta:Chatham"{
+            ld{"Giờ mùa hè Chatham"}
+            lg{"Giờ Chatham"}
+            ls{"Giờ chuẩn Chatham"}
+        }
+        "meta:Chile"{
+            ld{"Giờ mùa hè Chile"}
+            lg{"Giờ Chile"}
+            ls{"Giờ chuẩn Chile"}
+        }
+        "meta:China"{
+            ld{"Giờ mùa hè Trung Quốc"}
+            lg{"Giờ Trung Quốc"}
+            ls{"Giờ chuẩn Trung Quốc"}
+        }
+        "meta:Christmas"{
+            ls{"Giờ Đảo Christmas"}
+        }
+        "meta:Cocos"{
+            ls{"Giờ Quần Đảo Cocos"}
+        }
+        "meta:Colombia"{
+            ld{"Giờ mùa hè Colombia"}
+            lg{"Giờ Colombia"}
+            ls{"Giờ chuẩn Colombia"}
+        }
+        "meta:Cook"{
+            ld{"Giờ mùa hè Quần Đảo Cook"}
+            lg{"Giờ Quần Đảo Cook"}
+            ls{"Giờ chuẩn Quần Đảo Cook"}
+        }
+        "meta:Cuba"{
+            ld{"Giờ mùa hè Cuba"}
+            lg{"Giờ Cuba"}
+            ls{"Giờ chuẩn Cuba"}
+        }
+        "meta:Davis"{
+            ls{"Giờ Davis"}
+        }
+        "meta:DumontDUrville"{
+            ls{"Giờ Dumont-d’Urville"}
+        }
+        "meta:East_Timor"{
+            ls{"Giờ Đông Timor"}
+        }
+        "meta:Easter"{
+            ld{"Giờ mùa hè Đảo Phục Sinh"}
+            lg{"Giờ Đảo Phục Sinh"}
+            ls{"Giờ chuẩn Đảo Phục Sinh"}
+        }
+        "meta:Ecuador"{
+            ls{"Giờ Ecuador"}
+        }
+        "meta:Europe_Central"{
+            ld{"Giờ mùa hè Trung Âu"}
+            lg{"Giờ Trung Âu"}
+            ls{"Giờ chuẩn Trung Âu"}
+        }
+        "meta:Europe_Eastern"{
+            ld{"Giờ mùa hè Đông Âu"}
+            lg{"Giờ Đông Âu"}
+            ls{"Giờ chuẩn Đông Âu"}
+        }
+        "meta:Europe_Further_Eastern"{
+            ls{"Giờ Viễn đông Châu Âu"}
+        }
+        "meta:Europe_Western"{
+            ld{"Giờ mùa hè Tây Âu"}
+            lg{"Giờ Tây Âu"}
+            ls{"Giờ chuẩn Tây Âu"}
+        }
+        "meta:Falkland"{
+            ld{"Giờ mùa hè Quần đảo Falkland"}
+            lg{"Giờ Quần đảo Falkland"}
+            ls{"Giờ chuẩn Quần đảo Falkland"}
+        }
+        "meta:Fiji"{
+            ld{"Giờ mùa hè Fiji"}
+            lg{"Giờ Fiji"}
+            ls{"Giờ chuẩn Fiji"}
+        }
+        "meta:French_Guiana"{
+            ls{"Giờ Guiana thuộc Pháp"}
+        }
+        "meta:French_Southern"{
+            ls{"Giờ Nam Cực và Nam Nước Pháp"}
+        }
+        "meta:GMT"{
+            ls{"Giờ Trung bình Greenwich"}
+        }
+        "meta:Galapagos"{
+            ls{"Giờ Galapagos"}
+        }
+        "meta:Gambier"{
+            ls{"Giờ Gambier"}
+        }
+        "meta:Georgia"{
+            ld{"Giờ mùa hè Georgia"}
+            lg{"Giờ Georgia"}
+            ls{"Giờ chuẩn Georgia"}
+        }
+        "meta:Gilbert_Islands"{
+            ls{"Giờ Quần Đảo Gilbert"}
+        }
+        "meta:Greenland"{
+            ld{"Giờ mùa hè Greenland"}
+            lg{"Giờ Greenland"}
+            ls{"Giờ chuẩn Greenland"}
+        }
+        "meta:Greenland_Eastern"{
+            ld{"Giờ mùa hè miền đông Greenland"}
+            lg{"Giờ miền đông Greenland"}
+            ls{"Giờ chuẩn miền đông Greenland"}
+        }
+        "meta:Greenland_Western"{
+            ld{"Giờ mùa hè miền tây Greenland"}
+            lg{"Giờ miền tây Greenland"}
+            ls{"Giờ chuẩn miền tây Greenland"}
+        }
+        "meta:Gulf"{
+            ls{"Giờ chuẩn Vùng Vịnh"}
+        }
+        "meta:Guyana"{
+            ls{"Giờ Guyana"}
+        }
+        "meta:Hawaii"{
+            ls{"Giờ Hawaii"}
+        }
+        "meta:Hawaii_Aleutian"{
+            ld{"Giờ mùa hè Hawaii-Aleut"}
+            lg{"Giờ Hawaii-Aleut"}
+            ls{"Giờ chuẩn Hawaii-Aleut"}
+        }
+        "meta:Hong_Kong"{
+            ld{"Giờ mùa hè Hồng Kông"}
+            lg{"Giờ Hồng Kông"}
+            ls{"Giờ chuẩn Hồng Kông"}
+        }
+        "meta:Hovd"{
+            ld{"Giờ mùa hè Hovd"}
+            lg{"Giờ Hovd"}
+            ls{"Giờ chuẩn Hovd"}
+        }
+        "meta:India"{
+            ls{"Giờ chuẩn Ấn Độ"}
+        }
+        "meta:Indian_Ocean"{
+            ls{"Giờ Ấn Độ Dương"}
+        }
+        "meta:Indochina"{
+            ls{"Giờ Đông Dương"}
+        }
+        "meta:Indonesia_Central"{
+            ls{"Giờ Miền Trung Indonesia"}
+        }
+        "meta:Indonesia_Eastern"{
+            ls{"Giờ Miền Đông Indonesia"}
+        }
+        "meta:Indonesia_Western"{
+            ls{"Giờ Miền Tây Indonesia"}
+        }
+        "meta:Iran"{
+            ld{"Giờ mùa hè Iran"}
+            lg{"Giờ Iran"}
+            ls{"Giờ chuẩn Iran"}
+        }
+        "meta:Irish"{
+            ld{"Giờ chuẩn Ireland"}
+            lg{"Giờ Ireland"}
+        }
+        "meta:Irkutsk"{
+            ld{"Giờ mùa hè Irkutsk"}
+            lg{"Giờ Irkutsk"}
+            ls{"Giờ chuẩn Irkutsk"}
+        }
+        "meta:Israel"{
+            ld{"Giờ mùa hè Israel"}
+            lg{"Giờ Israel"}
+            ls{"Giờ chuẩn Israel"}
+        }
+        "meta:Japan"{
+            ld{"Giờ mùa hè Nhật Bản"}
+            lg{"Giờ Nhật Bản"}
+            ls{"Giờ chuẩn Nhật Bản"}
+        }
+        "meta:Kamchatka"{
+            ld{"Giờ mùa hè Petropavlovsk-Kamchatski"}
+            lg{"Giờ Petropavlovsk-Kamchatski"}
+            ls{"Giờ chuẩn Petropavlovsk-Kamchatski"}
+        }
+        "meta:Kazakhstan"{
+            ls{"Giờ Kazakhstan"}
+        }
+        "meta:Kazakhstan_Eastern"{
+            ls{"Giờ Miền Đông Kazakhstan"}
+        }
+        "meta:Kazakhstan_Western"{
+            ls{"Giờ Miền Tây Kazakhstan"}
+        }
+        "meta:Korea"{
+            ld{"Giờ mùa hè Hàn Quốc"}
+            lg{"Giờ Hàn Quốc"}
+            ls{"Giờ chuẩn Hàn Quốc"}
+        }
+        "meta:Kosrae"{
+            ls{"Giờ Kosrae"}
+        }
+        "meta:Krasnoyarsk"{
+            ld{"Giờ mùa hè Krasnoyarsk"}
+            lg{"Giờ Krasnoyarsk"}
+            ls{"Giờ chuẩn Krasnoyarsk"}
+        }
+        "meta:Kyrgystan"{
+            ls{"Giờ Kyrgystan"}
+        }
+        "meta:Line_Islands"{
+            ls{"Giờ Quần Đảo Line"}
+        }
+        "meta:Lord_Howe"{
+            ld{"Giờ mùa hè Lord Howe"}
+            lg{"Giờ Lord Howe"}
+            ls{"Giờ chuẩn Lord Howe"}
+        }
+        "meta:Magadan"{
+            ld{"Giờ mùa hè Magadan"}
+            lg{"Giờ Magadan"}
+            ls{"Giờ chuẩn Magadan"}
+        }
+        "meta:Malaysia"{
+            ls{"Giờ Malaysia"}
+        }
+        "meta:Maldives"{
+            ls{"Giờ Maldives"}
+        }
+        "meta:Marquesas"{
+            ls{"Giờ Marquesas"}
+        }
+        "meta:Marshall_Islands"{
+            ls{"Giờ Quần Đảo Marshall"}
+        }
+        "meta:Mauritius"{
+            ld{"Giờ mùa hè Mauritius"}
+            lg{"Giờ Mauritius"}
+            ls{"Giờ chuẩn Mauritius"}
+        }
+        "meta:Mawson"{
+            ls{"Giờ Mawson"}
+        }
+        "meta:Mexico_Pacific"{
+            ld{"Giờ mùa hè Thái Bình Dương Mexico"}
+            lg{"Giờ Thái Bình Dương Mexico"}
+            ls{"Giờ chuẩn Thái Bình Dương Mexico"}
+        }
+        "meta:Mongolia"{
+            ld{"Giờ mùa hè Ulan Bator"}
+            lg{"Giờ Ulan Bator"}
+            ls{"Giờ chuẩn Ulan Bator"}
+        }
+        "meta:Moscow"{
+            ld{"Giờ mùa hè Matxcơva"}
+            lg{"Giờ Matxcơva"}
+            ls{"Giờ chuẩn Matxcơva"}
+        }
+        "meta:Myanmar"{
+            ls{"Giờ Myanmar"}
+        }
+        "meta:Nauru"{
+            ls{"Giờ Nauru"}
+        }
+        "meta:Nepal"{
+            ls{"Giờ Nepal"}
+        }
+        "meta:New_Caledonia"{
+            ld{"Giờ mùa hè New Caledonia"}
+            lg{"Giờ New Caledonia"}
+            ls{"Giờ chuẩn New Caledonia"}
+        }
+        "meta:New_Zealand"{
+            ld{"Giờ mùa hè New Zealand"}
+            lg{"Giờ New Zealand"}
+            ls{"Giờ chuẩn New Zealand"}
+        }
+        "meta:Newfoundland"{
+            ld{"Giờ mùa hè Newfoundland"}
+            lg{"Giờ Newfoundland"}
+            ls{"Giờ chuẩn Newfoundland"}
+        }
+        "meta:Niue"{
+            ls{"Giờ Niue"}
+        }
+        "meta:Norfolk"{
+            ld{"Giờ mùa hè Đảo Norfolk"}
+            lg{"Giờ Đảo Norfolk"}
+            ls{"Giờ chuẩn Đảo Norfolk"}
+        }
+        "meta:Noronha"{
+            ld{"Giờ mùa hè Fernando de Noronha"}
+            lg{"Giờ Fernando de Noronha"}
+            ls{"Giờ chuẩn Fernando de Noronha"}
+        }
+        "meta:Novosibirsk"{
+            ld{"Giờ mùa hè Novosibirsk"}
+            lg{"Giờ Novosibirsk"}
+            ls{"Giờ chuẩn Novosibirsk"}
+        }
+        "meta:Omsk"{
+            ld{"Giờ mùa hè Omsk"}
+            lg{"Giờ Omsk"}
+            ls{"Giờ chuẩn Omsk"}
+        }
+        "meta:Pakistan"{
+            ld{"Giờ mùa hè Pakistan"}
+            lg{"Giờ Pakistan"}
+            ls{"Giờ chuẩn Pakistan"}
+        }
+        "meta:Palau"{
+            ls{"Giờ Palau"}
+        }
+        "meta:Papua_New_Guinea"{
+            ls{"Giờ Papua New Guinea"}
+        }
+        "meta:Paraguay"{
+            ld{"Giờ mùa hè Paraguay"}
+            lg{"Giờ Paraguay"}
+            ls{"Giờ chuẩn Paraguay"}
+        }
+        "meta:Peru"{
+            ld{"Giờ mùa hè Peru"}
+            lg{"Giờ Peru"}
+            ls{"Giờ chuẩn Peru"}
+        }
+        "meta:Philippines"{
+            ld{"Giờ mùa hè Philippin"}
+            lg{"Giờ Philippin"}
+            ls{"Giờ chuẩn Philippin"}
+        }
+        "meta:Phoenix_Islands"{
+            ls{"Giờ Quần Đảo Phoenix"}
+        }
+        "meta:Pierre_Miquelon"{
+            ld{"Giờ Mùa Hè Saint Pierre và Miquelon"}
+            lg{"Giờ St. Pierre và Miquelon"}
+            ls{"Giờ chuẩn St. Pierre và Miquelon"}
+        }
+        "meta:Pitcairn"{
+            ls{"Giờ Pitcairn"}
+        }
+        "meta:Ponape"{
+            ls{"Giờ Ponape"}
+        }
+        "meta:Pyongyang"{
+            ls{"Giờ Bình Nhưỡng"}
+        }
+        "meta:Reunion"{
+            ls{"Giờ Reunion"}
+        }
+        "meta:Rothera"{
+            ls{"Giờ Rothera"}
+        }
+        "meta:Sakhalin"{
+            ld{"Giờ mùa hè Sakhalin"}
+            lg{"Giờ Sakhalin"}
+            ls{"Giờ chuẩn Sakhalin"}
+        }
+        "meta:Samara"{
+            ld{"Giờ mùa hè Samara"}
+            lg{"Giờ Samara"}
+            ls{"Giờ chuẩn Samara"}
+        }
+        "meta:Samoa"{
+            ls{"Giờ chuẩn Samoa"}
+        }
+        "meta:Seychelles"{
+            ls{"Giờ Seychelles"}
+        }
+        "meta:Singapore"{
+            ls{"Giờ Singapore"}
+        }
+        "meta:Solomon"{
+            ls{"Giờ Quần Đảo Solomon"}
+        }
+        "meta:South_Georgia"{
+            ls{"Giờ Nam Georgia"}
+        }
+        "meta:Suriname"{
+            ls{"Giờ Suriname"}
+        }
+        "meta:Syowa"{
+            ls{"Giờ Syowa"}
+        }
+        "meta:Tahiti"{
+            ls{"Giờ Tahiti"}
+        }
+        "meta:Taipei"{
+            ld{"Giờ mùa hè Đài Bắc"}
+            lg{"Giờ Đài Bắc"}
+            ls{"Giờ chuẩn Đài Bắc"}
+        }
+        "meta:Tajikistan"{
+            ls{"Giờ Tajikistan"}
+        }
+        "meta:Tokelau"{
+            ls{"Giờ Tokelau"}
+        }
+        "meta:Tonga"{
+            ld{"Giờ mùa hè Tonga"}
+            lg{"Giờ Tonga"}
+            ls{"Giờ chuẩn Tonga"}
+        }
+        "meta:Truk"{
+            ls{"Giờ Chuuk"}
+        }
+        "meta:Turkey"{
+            ld{"Giờ mùa hè Thổ Nhĩ Kỳ"}
+            lg{"Giờ Thổ Nhĩ Kỳ"}
+            ls{"Giờ chuẩn Thổ Nhĩ Kỳ"}
+        }
+        "meta:Turkmenistan"{
+            ld{"Giờ mùa hè Turkmenistan"}
+            lg{"Giờ Turkmenistan"}
+            ls{"Giờ chuẩn Turkmenistan"}
+        }
+        "meta:Tuvalu"{
+            ls{"Giờ Tuvalu"}
+        }
+        "meta:Uruguay"{
+            ld{"Giờ mùa hè Uruguay"}
+            lg{"Giờ Uruguay"}
+            ls{"Giờ chuẩn Uruguay"}
+        }
+        "meta:Urumqi"{
+            ls{"Giờ Urumqi"}
+        }
+        "meta:Uzbekistan"{
+            ld{"Giờ mùa hè Uzbekistan"}
+            lg{"Giờ Uzbekistan"}
+            ls{"Giờ chuẩn Uzbekistan"}
+        }
+        "meta:Vanuatu"{
+            ld{"Giờ mùa hè Vanuatu"}
+            lg{"Giờ Vanuatu"}
+            ls{"Giờ chuẩn Vanuatu"}
+        }
+        "meta:Venezuela"{
+            ls{"Giờ Venezuela"}
+        }
+        "meta:Vladivostok"{
+            ld{"Giờ mùa hè Vladivostok"}
+            lg{"Giờ Vladivostok"}
+            ls{"Giờ chuẩn Vladivostok"}
+        }
+        "meta:Volgograd"{
+            ld{"Giờ mùa hè Volgograd"}
+            lg{"Giờ Volgograd"}
+            ls{"Giờ chuẩn Volgograd"}
+        }
+        "meta:Vostok"{
+            ls{"Giờ Vostok"}
+        }
+        "meta:Wake"{
+            ls{"Giờ Đảo Wake"}
+        }
+        "meta:Wallis"{
+            ls{"Giờ Wallis và Futuna"}
+        }
+        "meta:Yakutsk"{
+            ld{"Giờ mùa hè Yakutsk"}
+            lg{"Giờ Yakutsk"}
+            ls{"Giờ chuẩn Yakutsk"}
+        }
+        "meta:Yekaterinburg"{
+            ld{"Giờ mùa hè Yekaterinburg"}
+            lg{"Giờ Yekaterinburg"}
+            ls{"Giờ chuẩn Yekaterinburg"}
+        }
+        "meta:Yukon"{
+            ls{"Giờ Yukon"}
+        }
+        regionFormat{"Giờ {0}"}
+        regionFormatDaylight{"Giờ mùa hè {0}"}
+        regionFormatStandard{"Giờ chuẩn {0}"}
+    }
+}

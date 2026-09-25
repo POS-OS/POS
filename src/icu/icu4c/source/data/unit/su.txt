@@ -1,0 +1,30 @@
+﻿// © 2016 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
+su{
+    durationUnits{
+        hm{"h.mm"}
+        hms{"h.mm.ss"}
+        ms{"m.ss"}
+    }
+    unitsNarrow{
+        consumption{
+            mile-per-gallon-imperial{
+                other{"{0}m/gUK"}
+            }
+        }
+        force{
+            kilowatt-hour-per-100-kilometer{
+                other{"{0} kWh/100 km"}
+            }
+        }
+        volume{
+            fluid-ounce-imperial{
+                other{"{0}fl oz Im"}
+            }
+            gallon-imperial{
+                other{"{0}galIm"}
+            }
+        }
+    }
+}

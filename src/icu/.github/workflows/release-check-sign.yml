@@ -1,0 +1,121 @@
+name: Release - Create checksums and GPG sign
+
+on:
+  workflow_dispatch:
+    inputs: &all_inputs
+      gitReleaseTag:
+        description: 'Release tag to upload to. Must start with "release-"'
+        type: string
+  workflow_call:
+    inputs: *all_inputs
+
+env:
+  RELEASE_FOLDER: '${{ github.workspace }}/releaseDist'
+
+permissions:
+  contents: read
+
+jobs:
+  sign_and_checksums:
+    if: ${{ inputs.gitReleaseTag && startsWith(inputs.gitReleaseTag, 'release-') }}
+    runs-on: ubuntu-24.04  # Updated in BRS
+    environment: release-env
+
+    permissions:
+      contents: write # So that we can upload to release
+
+    steps:
+
+    - name: Checkout and setup
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up JDK
+      uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+    - name: Get all release files
+      run: |
+        mkdir -p ${RELEASE_FOLDER}
+        pushd ${RELEASE_FOLDER}
+        gh release download ${INPUTS_GITRELEASETAG} -p "*.zip" -p "*.tgz" -p "*.jar" --repo=${{ github.repository }}
+        popd
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUTS_GITRELEASETAG: ${{ inputs.gitReleaseTag }}
+
+    - name: Checksums and sign
+      run: |
+        source icu4j/releases_tools/shared.sh
+        pushd ${RELEASE_FOLDER}
+        sha512sum -b icu4c*              > SHASUM512.txt
+        md5sum -b *.jar                  > icu4j-${github_rel_version}.md5
+        md5sum -b icu4c-*-data-bin-*.zip > icu4c-${github_rel_version}-binary.md5
+        md5sum -b icu4c-*-sources.*      > icu4c-${github_rel_version}-sources.md5
+        find . -type f -exec gpg --no-tty --batch --pinentry-mode loopback --passphrase=$MAVEN_GPG_PASSPHRASE -a --output {}.asc --detach-sig {} \;
+        popd
+      env:
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+    - name: Upload to release
+      run: |
+        gh release upload ${INPUTS_GITRELEASETAG} LICENSE --clobber --repo=${{ github.repository }}
+        gh release upload ${INPUTS_GITRELEASETAG} ${RELEASE_FOLDER}/*.md5         --clobber --repo=${{ github.repository }}
+        gh release upload ${INPUTS_GITRELEASETAG} ${RELEASE_FOLDER}/*.asc         --clobber --repo=${{ github.repository }}
+        gh release upload ${INPUTS_GITRELEASETAG} ${RELEASE_FOLDER}/SHASUM512.txt --clobber --repo=${{ github.repository }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUTS_GITRELEASETAG: ${{ inputs.gitReleaseTag }}
+
+  sign_and_checksums_icu4x:
+    if: ${{ inputs.gitReleaseTag && startsWith(inputs.gitReleaseTag, 'icu4x/') }}
+    runs-on: ubuntu-24.04  # Updated in BRS
+    environment: release-env
+
+    permissions:
+      contents: write # So that we can upload to release
+
+    steps:
+
+    - name: Checkout and setup
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+
+    - name: Set up JDK
+      uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+    - name: Get all release files
+      run: |
+        mkdir -p ${RELEASE_FOLDER}
+        pushd ${RELEASE_FOLDER}
+        gh release download ${INPUTS_GITRELEASETAG} -p "*.zip" --repo=${{ github.repository }}
+        popd
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUTS_GITRELEASETAG: ${{ inputs.gitReleaseTag }}
+
+    - name: Checksums and sign
+      run: |
+        pushd ${RELEASE_FOLDER}
+        find . -type f -exec gpg --no-tty --batch --pinentry-mode loopback --passphrase=$MAVEN_GPG_PASSPHRASE -a --output {}.asc --detach-sig {} \;
+        popd
+      env:
+        MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+    - name: Upload to release
+      run: |
+        gh release upload ${INPUTS_GITRELEASETAG} ${RELEASE_FOLDER}/*.asc         --clobber --repo=${{ github.repository }}
+      env:
+        GH_TOKEN: ${{ github.token }}
+        INPUTS_GITRELEASETAG: ${{ inputs.gitReleaseTag }}

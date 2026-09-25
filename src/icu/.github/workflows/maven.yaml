@@ -1,0 +1,71 @@
+name: Publish snapshot icu4j.jar to GH Maven
+on:
+  release:
+    types: [created]
+  workflow_dispatch:
+    # To trigger the Env Test workflow manually, follow the instructions in
+    # https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow
+
+env:
+  SHARED_MVN_ARGS: '--show-version'
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-22.04  # Updated in BRS
+    permissions:
+      packages: write
+    outputs:
+      version: ${{ steps.mvn-proj-version.outputs.version }}
+      version-type: ${{ steps.mvn-proj-version-type.outputs.version-type }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+      - name: Store Maven project version
+        id: mvn-proj-version
+        run: |
+          cd icu4j
+          version="`mvn help:evaluate -Dexpression=project.version -q -DforceStdout`"
+          echo "version=$version"  # debug/info logging for our own purposes, before sending to Github
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      # Set version-type=snapshot for tags that contain SNAPSHOT,
+      # as well as for unicode-org-internal artifacts with a dash like `icu4j-for-cldr`.
+      - name: Assess Maven version release/snapshot
+        id: mvn-proj-version-type
+        run: |
+          if echo "${STEPS_MVN_PROJ_VERSION_OUTPUTS_VERSION}" | grep -E "\-|SNAPSHOT"
+          then echo "version-type=snapshot" >> "$GITHUB_OUTPUT"
+          else echo "version-type=release" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          STEPS_MVN_PROJ_VERSION_OUTPUTS_VERSION: ${{ steps.mvn-proj-version.outputs.version }}
+      - name: Prevent manual deployment attempts of full release
+        if: github.event_name == 'workflow_dispatch' && steps.mvn-proj-version-type.outputs.version-type == 'release'
+        run: |
+          echo "Manual deployments of publishing artifacts should only be attempted for snapshot versions"
+          exit 1;
+      - name: Build artifacts (icu4j)
+        run: |
+          cd icu4j
+          mvn ${SHARED_MVN_ARGS} clean install -DskipTests -DskipIT -P with_sources
+      # For snapshot versions, publish icu4j
+      - name: Deploy to Github (snapshot version)
+        if: steps.mvn-proj-version-type.outputs.version-type == 'snapshot'
+        run: |
+          echo Github Ref ${GITHUB_REF} @ ${GITHUB_SHA};
+          cd icu4j
+          mvn deploy ${SHARED_MVN_ARGS} \
+            -pl :icu4j,:icu4j-root \
+            -DaltDeploymentRepository=github::https://maven.pkg.github.com/${GITHUB_REPOSITORY} \
+            -P with_sources
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+# Note: can use 0.0.0-${GITHUB_SHA} as the version for hash-based.
+# i.e. build on every commit

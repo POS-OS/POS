@@ -1,0 +1,767 @@
+﻿// © 2016 and later: Unicode, Inc. and others.
+// License & terms of use: http://www.unicode.org/copyright.html
+// Generated using tools/cldr/cldr-to-icu/
+jv{
+    zoneStrings{
+        "Africa:Cairo"{
+            ec{"Kairo"}
+        }
+        "Africa:Casablanca"{
+            ec{"Kasablanka"}
+        }
+        "Africa:Conakry"{
+            ec{"Konakri"}
+        }
+        "America:Cambridge_Bay"{
+            ec{"Teluk Cambridge"}
+        }
+        "America:Cancun"{
+            ec{"Cancun"}
+        }
+        "America:Costa_Rica"{
+            ec{"Kosta Rika"}
+        }
+        "America:Dominica"{
+            ec{"Dominika"}
+        }
+        "America:Glace_Bay"{
+            ec{"Teluk Glace"}
+        }
+        "America:Halifax"{
+            ec{"Halifak"}
+        }
+        "America:Jamaica"{
+            ec{"Jamaika"}
+        }
+        "America:Mexico_City"{
+            ec{"Kutha Meksiko"}
+        }
+        "America:North_Dakota:Beulah"{
+            ec{"Beulah, Dakota Lor"}
+        }
+        "America:North_Dakota:Center"{
+            ec{"Center, Dakota Lor"}
+        }
+        "America:North_Dakota:New_Salem"{
+            ec{"New Salem, Dakota Lor"}
+        }
+        "America:Puerto_Rico"{
+            ec{"Puerto Riko"}
+        }
+        "Asia:Calcutta"{
+            ec{"Kalkuta"}
+        }
+        "Asia:Colombo"{
+            ec{"Kolombo"}
+        }
+        "Asia:Damascus"{
+            ec{"Damaskus"}
+        }
+        "Asia:Jerusalem"{
+            ec{"Yerusalem"}
+        }
+        "Asia:Macau"{
+            ec{"Macau"}
+        }
+        "Asia:Qostanay"{
+            ec{"Kostanai"}
+        }
+        "Asia:Singapore"{
+            ec{"Singapura"}
+        }
+        "Asia:Tehran"{
+            ec{"Teheran"}
+        }
+        "Atlantic:Canary"{
+            ec{"Kanaria"}
+        }
+        "Atlantic:Cape_Verde"{
+            ec{"Tanjung Verde"}
+        }
+        "Atlantic:South_Georgia"{
+            ec{"Georgia Kidul"}
+        }
+        "Atlantic:St_Helena"{
+            ec{"Santa Helena"}
+        }
+        "Etc:UTC"{
+            ls{"Wektu Universal Kakoordhinasi"}
+        }
+        "Etc:Unknown"{
+            ec{"Lokasi Ora Dikenali"}
+        }
+        "Europe:Athens"{
+            ec{"Athena"}
+        }
+        "Europe:Copenhagen"{
+            ec{"Kopenhagen"}
+        }
+        "Europe:Isle_of_Man"{
+            ec{"Pulo Man"}
+        }
+        "Europe:Kiev"{
+            ec{"Kiev"}
+        }
+        "Europe:Luxembourg"{
+            ec{"Luksemburg"}
+        }
+        "Europe:Monaco"{
+            ec{"Monako"}
+        }
+        "Europe:Prague"{
+            ec{"Praha"}
+        }
+        "Europe:Rome"{
+            ec{"Roma"}
+        }
+        "Europe:Vatican"{
+            ec{"Vatikan"}
+        }
+        "Europe:Vienna"{
+            ec{"Wina"}
+        }
+        "Europe:Warsaw"{
+            ec{"Warsawa"}
+        }
+        "Indian:Chagos"{
+            ec{"Khagos"}
+        }
+        "Indian:Christmas"{
+            ec{"Natal"}
+        }
+        "Indian:Comoro"{
+            ec{"Komoro"}
+        }
+        "Indian:Maldives"{
+            ec{"Maladewa"}
+        }
+        "Pacific:Easter"{
+            ec{"Pulo Paskah"}
+        }
+        "Pacific:Port_Moresby"{
+            ec{"Pelabuhan Moresby"}
+        }
+        "meta:Acre"{
+            ld{"Wektu Ketiga Acre"}
+            lg{"Wektu Acre"}
+            ls{"Wektu Standar Acre"}
+        }
+        "meta:Afghanistan"{
+            ls{"Wektu Afghanistan"}
+        }
+        "meta:Africa_Central"{
+            ls{"Wektu Afrika Tengah"}
+        }
+        "meta:Africa_Eastern"{
+            ls{"Wektu Afrika Wetan"}
+        }
+        "meta:Africa_Southern"{
+            ls{"Wektu Standar Afrika Kidul"}
+        }
+        "meta:Africa_Western"{
+            ls{"Wektu Afrika Kulon"}
+        }
+        "meta:Alaska"{
+            ld{"Wektu Ketiga Alaska"}
+            lg{"Wektu Alaska"}
+            ls{"Wektu Standar Alaska"}
+        }
+        "meta:Amazon"{
+            ld{"Wektu Ketiga Amazon"}
+            lg{"Wektu Amazon"}
+            ls{"Wektu Standar Amazon"}
+        }
+        "meta:America_Central"{
+            ld{"Wektu Ketiga Tengah"}
+            lg{"Wektu Tengah"}
+            ls{"Wektu Standar Tengah"}
+        }
+        "meta:America_Eastern"{
+            ld{"Wektu Ketiga sisih Wetan"}
+            lg{"Wektu sisih Wetan"}
+            ls{"Wektu Standar sisih Wetan"}
+        }
+        "meta:America_Mountain"{
+            ld{"Wektu Ketiga Pagunungan"}
+            lg{"Wektu Pagunungan"}
+            ls{"Wektu Standar Pagunungan"}
+        }
+        "meta:America_Pacific"{
+            ld{"Wektu Ketiga Pasifik"}
+            lg{"Wektu Pasifik"}
+            ls{"Wektu Standar Pasifik"}
+        }
+        "meta:Apia"{
+            ld{"Wektu Ketiga Samoa"}
+            lg{"Wektu Apia"}
+            ls{"Wektu Standar Samoa"}
+        }
+        "meta:Arabian"{
+            ld{"Wektu Ketigo Arab"}
+            lg{"Wektu Arab"}
+            ls{"Wektu Standar Arab"}
+        }
+        "meta:Argentina"{
+            ld{"Wektu Ketiga Argentina"}
+            lg{"Wektu Argentina"}
+            ls{"Wektu Standar Argentina"}
+        }
+        "meta:Argentina_Western"{
+            ld{"Wektu Ketiga Argentina sisih Kulon"}
+            lg{"Wektu Argentina sisih Kulon"}
+            ls{"Wektu Standar Argentina sisih Kulon"}
+        }
+        "meta:Armenia"{
+            ld{"Wektu Ketigo Armenia"}
+            lg{"Wektu Armenia"}
+            ls{"Wektu Standar Armenia"}
+        }
+        "meta:Atlantic"{
+            ld{"Wektu Ketiga Atlantik"}
+            lg{"Wektu Atlantik"}
+            ls{"Wektu Standar Atlantik"}
+        }
+        "meta:Australia_Central"{
+            ld{"Wektu Ketigo Australia Tengah"}
+            lg{"Wektu Australia Tengah"}
+            ls{"Wektu Standar Australia Tengah"}
+        }
+        "meta:Australia_CentralWestern"{
+            ld{"Wektu Ketigo Australia Tengah sisih Kulon"}
+            lg{"Wektu Australia Tengah sisih Kulon"}
+            ls{"Wektu Standar Australia Tengah sisih Kulon"}
+        }
+        "meta:Australia_Eastern"{
+            ld{"Wektu Ketigo Australia sisih Wetan"}
+            lg{"Wektu Australia sisih Wetan"}
+            ls{"Wektu Standar Australia sisih Wetan"}
+        }
+        "meta:Australia_Western"{
+            ld{"Wektu Ketigo Australia sisih Kulon"}
+            lg{"Wektu Australia sisih Kulon"}
+            ls{"Wektu Standar Australia sisih Kulon"}
+        }
+        "meta:Azerbaijan"{
+            ld{"Wektu Ketigo Azerbaijan"}
+            lg{"Wektu Azerbaijan"}
+            ls{"Wektu Standar Azerbaijan"}
+        }
+        "meta:Azores"{
+            ld{"Wektu Ketiga Azores"}
+            lg{"Wektu Azores"}
+            ls{"Wektu Standar Azores"}
+        }
+        "meta:Bangladesh"{
+            ld{"Wektu Ketigo Bangladesh"}
+            lg{"Wektu Bangladesh"}
+            ls{"Wektu Standar Bangladesh"}
+        }
+        "meta:Bhutan"{
+            ls{"Wektu Bhutan"}
+        }
+        "meta:Bolivia"{
+            ls{"Wektu Bolivia"}
+        }
+        "meta:Brasilia"{
+            ld{"Wektu Ketiga Brasilia"}
+            lg{"Wektu Brasilia"}
+            ls{"Wektu Standar Brasilia"}
+        }
+        "meta:British"{
+            ld{"Wektu Ketiga Inggris"}
+            lg{"Wektu Inggris"}
+        }
+        "meta:Brunei"{
+            ls{"Wektu Brunei"}
+        }
+        "meta:Cape_Verde"{
+            ld{"Wektu Ketigo Tanjung Verde"}
+            lg{"Wektu Tanjung Verde"}
+            ls{"Wektu Standar Tanjung Verde"}
+        }
+        "meta:Chamorro"{
+            ls{"Wektu Chamorro"}
+        }
+        "meta:Chatham"{
+            ld{"Wektu Ketigo Chatham"}
+            lg{"Wektu Chatham"}
+            ls{"Wektu Standar Chatham"}
+        }
+        "meta:Chile"{
+            ld{"Wektu Ketiga Chili"}
+            lg{"Wektu Chili"}
+            ls{"Wektu Standar Chili"}
+        }
+        "meta:China"{
+            ld{"Wektu Ketiga Cina"}
+            lg{"Wektu Cina"}
+            ls{"Wektu Standar Cina"}
+        }
+        "meta:Christmas"{
+            ls{"Wektu Pulo Natal"}
+        }
+        "meta:Cocos"{
+            ls{"Wektu Kepuloan Cocos"}
+        }
+        "meta:Colombia"{
+            ld{"Wektu Ketiga Kolombia"}
+            lg{"Wektu Kolombia"}
+            ls{"Wektu Standar Kolombia"}
+        }
+        "meta:Cook"{
+            ld{"Wektu Ketiga Kepuloan Cook"}
+            lg{"Wektu Kepuloan Cook"}
+            ls{"Wektu Standar Kepuloan Cook"}
+        }
+        "meta:Cuba"{
+            ld{"Wektu Ketiga Kuba"}
+            lg{"Wektu Kuba"}
+            ls{"Wektu Standar Kuba"}
+        }
+        "meta:Davis"{
+            ls{"Wektu Davis"}
+        }
+        "meta:DumontDUrville"{
+            ls{"Wektu Dumont d’Urville"}
+        }
+        "meta:East_Timor"{
+            ls{"Wektu Timor-Leste"}
+        }
+        "meta:Easter"{
+            ld{"Wektu Ketiga Pulo Paskah"}
+            lg{"Wektu Pulo Paskah"}
+            ls{"Wektu Standar Pulo Paskah"}
+        }
+        "meta:Ecuador"{
+            ls{"Wektu Ekuador"}
+        }
+        "meta:Europe_Central"{
+            ld{"Wektu Ketiga Eropa Tengah"}
+            lg{"Wektu Eropa Tengah"}
+            ls{"Wektu Standar Eropa Tengah"}
+        }
+        "meta:Europe_Eastern"{
+            ld{"Wektu Ketiga Eropa Wetan"}
+            lg{"Wektu Eropa Wetan"}
+            ls{"Wektu Standar Eropa Wetan"}
+        }
+        "meta:Europe_Further_Eastern"{
+            ls{"Wektu Eropa sisih Wetan Adoh"}
+        }
+        "meta:Europe_Western"{
+            ld{"Wektu Ketiga Eropa sisih Kulon"}
+            lg{"Wektu Eropa sisih Kulon"}
+            ls{"Wektu Standar Eropa sisih Kulon"}
+        }
+        "meta:Falkland"{
+            ld{"Wektu Ketiga Kapuloan Falkland"}
+            lg{"Wektu Kapuloan Falkland"}
+            ls{"Wektu Standar Kapuloan Falkland"}
+        }
+        "meta:Fiji"{
+            ld{"Wektu Ketigo Fiji"}
+            lg{"Wektu Fiji"}
+            ls{"Wektu Standar Fiji"}
+        }
+        "meta:French_Guiana"{
+            ls{"Wektu Guyana Prancis"}
+        }
+        "meta:French_Southern"{
+            ls{"Wektu Antartika lan Prancis sisih Kidul"}
+        }
+        "meta:GMT"{
+            ls{"Wektu Rerata Greenwich"}
+        }
+        "meta:Galapagos"{
+            ls{"Wektu Galapagos"}
+        }
+        "meta:Gambier"{
+            ls{"Wektu Gambier"}
+        }
+        "meta:Georgia"{
+            ld{"Wektu Ketigo Georgia"}
+            lg{"Wektu Georgia"}
+            ls{"Wektu Standar Georgia"}
+        }
+        "meta:Gilbert_Islands"{
+            ls{"Wektu Kepuloan Gilbert"}
+        }
+        "meta:Greenland"{
+            ld{"Wektu Ketiga Greenland"}
+            lg{"Wektu Greenland"}
+            ls{"Wektu Standar Greenland"}
+        }
+        "meta:Greenland_Eastern"{
+            ld{"Wektu Ketiga Greenland Wetan"}
+            lg{"Wektu Greenland Wetan"}
+            ls{"Wektu Standar Greenland Wetan"}
+        }
+        "meta:Greenland_Western"{
+            ld{"Wektu Ketiga Greenland Kulon"}
+            lg{"Wektu Greenland Kulon"}
+            ls{"Wektu Standar Greenland Kulon"}
+        }
+        "meta:Gulf"{
+            ls{"Wektu Standar Teluk"}
+        }
+        "meta:Guyana"{
+            ls{"Wektu Guyana"}
+        }
+        "meta:Hawaii"{
+            ls{"Wektu Standar Hawaii"}
+        }
+        "meta:Hawaii_Aleutian"{
+            ld{"Wektu Ketiga Hawaii-Aleutian"}
+            lg{"Wektu Hawaii-Aleutian"}
+            ls{"Wektu Standar Hawaii-Aleut"}
+        }
+        "meta:Hong_Kong"{
+            ld{"Wektu Ketiga Hong Kong"}
+            lg{"Wektu Hong Kong"}
+            ls{"Wektu Standar Hong Kong"}
+        }
+        "meta:Hovd"{
+            ld{"Wektu Ketiga Hovd"}
+            lg{"Wektu Hovd"}
+            ls{"Wektu Standar Hovd"}
+        }
+        "meta:India"{
+            ls{"Wektu Standar India"}
+        }
+        "meta:Indian_Ocean"{
+            ls{"Wektu Segoro Hindia"}
+        }
+        "meta:Indochina"{
+            ls{"Wektu Indocina"}
+        }
+        "meta:Indonesia_Central"{
+            ls{"Wektu Indonesia Tengah"}
+        }
+        "meta:Indonesia_Eastern"{
+            ls{"Wektu Indonesia sisih Wetan"}
+        }
+        "meta:Indonesia_Western"{
+            ls{"Wektu Indonesia sisih Kulon"}
+        }
+        "meta:Iran"{
+            ld{"Wektu Ketigo Iran"}
+            lg{"Wektu Iran"}
+            ls{"Wektu Standar Iran"}
+        }
+        "meta:Irish"{
+            ld{"Wektu Standar Irlandia"}
+            lg{"Wektu Irlandia"}
+        }
+        "meta:Irkutsk"{
+            ld{"Wektu Ketiga Irkutsk"}
+            lg{"Wektu Irkutsk"}
+            ls{"Wektu Standar Irkutsk"}
+        }
+        "meta:Israel"{
+            ld{"Wektu Ketigo Israel"}
+            lg{"Wektu Israel"}
+            ls{"Wektu Standar Israel"}
+        }
+        "meta:Japan"{
+            ld{"Wektu Ketiga Jepang"}
+            lg{"Wektu Jepang"}
+            ls{"Wektu Standar Jepang"}
+        }
+        "meta:Kamchatka"{
+            ld{"Wektu Mangsa Panas Kamchatka"}
+            lg{"Wektu Kamchatka"}
+            ls{"Wektu Standar Kamchatka"}
+        }
+        "meta:Kazakhstan"{
+            ls{"Wektu Kazakhstan"}
+        }
+        "meta:Kazakhstan_Eastern"{
+            ls{"Wektu Kazakhstan Wetan"}
+        }
+        "meta:Kazakhstan_Western"{
+            ls{"Wektu Kazakhstan Kulon"}
+        }
+        "meta:Korea"{
+            ld{"Wektu Ketiga Korea"}
+            lg{"Wektu Korea"}
+            ls{"Wektu Standar Korea"}
+        }
+        "meta:Kosrae"{
+            ls{"Wektu Kosrae"}
+        }
+        "meta:Krasnoyarsk"{
+            ld{"Wektu Ketiga Krasnoyarsk"}
+            lg{"Wektu Krasnoyarsk"}
+            ls{"Wektu Standar Krasnoyarsk"}
+        }
+        "meta:Kyrgystan"{
+            ls{"Wektu Kirgizstan"}
+        }
+        "meta:Line_Islands"{
+            ls{"Wektu Kepuloan Line"}
+        }
+        "meta:Lord_Howe"{
+            ld{"Wektu Ketigo Lord Howe"}
+            lg{"Wektu Lord Howe"}
+            ls{"Wektu Standar Lord Howe"}
+        }
+        "meta:Magadan"{
+            ld{"Wektu Ketiga Magadan"}
+            lg{"Wektu Magadan"}
+            ls{"Wektu Standar Magadan"}
+        }
+        "meta:Malaysia"{
+            ls{"Wektu Malaysia"}
+        }
+        "meta:Maldives"{
+            ls{"Wektu Maladewa"}
+        }
+        "meta:Marquesas"{
+            ls{"Wektu Marquesas"}
+        }
+        "meta:Marshall_Islands"{
+            ls{"Wektu Kepuloan Marshall"}
+        }
+        "meta:Mauritius"{
+            ld{"Wektu Ketiga Mauritius"}
+            lg{"Wektu Mauritius"}
+            ls{"Wektu Standar Mauritius"}
+        }
+        "meta:Mawson"{
+            ls{"Wektu Mawson"}
+        }
+        "meta:Mexico_Pacific"{
+            ld{"Wektu Ketiga Pasifik Meksiko"}
+            lg{"Wektu Pasifik Meksiko"}
+            ls{"Wektu Standar Pasifik Meksiko"}
+        }
+        "meta:Mongolia"{
+            ld{"Wektu Ketiga Ulaanbaatar"}
+            lg{"Wektu Ulaanbaatar"}
+            ls{"Wektu Standar Ulaanbaatar"}
+        }
+        "meta:Moscow"{
+            ld{"Wektu Ketiga Moskow"}
+            lg{"Wektu Moskow"}
+            ls{"Wektu Standar Moskow"}
+        }
+        "meta:Myanmar"{
+            ls{"Wektu Myanmar"}
+        }
+        "meta:Nauru"{
+            ls{"Wektu Nauru"}
+        }
+        "meta:Nepal"{
+            ls{"Wektu Nepal"}
+        }
+        "meta:New_Caledonia"{
+            ld{"Wektu Ketigo Kaledonia Anyar"}
+            lg{"Wektu Kaledonia Anyar"}
+            ls{"Wektu Standar Kaledonia Anyar"}
+        }
+        "meta:New_Zealand"{
+            ld{"Wektu Ketigo Selandia Anyar"}
+            lg{"Wektu Selandia Anyar"}
+            ls{"Wektu Standar Selandia Anyar"}
+        }
+        "meta:Newfoundland"{
+            ld{"Wektu Ketiga Newfoundland"}
+            lg{"Wektu Newfoundland"}
+            ls{"Wektu Standar Newfoundland"}
+        }
+        "meta:Niue"{
+            ls{"Wektu Niue"}
+        }
+        "meta:Norfolk"{
+            ld{"Wektu Ketigo Pulo Norfolk"}
+            lg{"Wektu Pulo Norfolk"}
+            ls{"Wektu Standar Pulo Norfolk"}
+        }
+        "meta:Noronha"{
+            ld{"Wektu Ketiga Fernando de Noronha"}
+            lg{"Wektu Fernando de Noronha"}
+            ls{"Wektu Standar Fernando de Noronha"}
+        }
+        "meta:Novosibirsk"{
+            ld{"Wektu Ketiga Novosibirsk"}
+            lg{"Wektu Novosibirsk"}
+            ls{"Wektu Standar Novosibirsk"}
+        }
+        "meta:Omsk"{
+            ld{"Wektu Ketiga Omsk"}
+            lg{"Wektu Omsk"}
+            ls{"Wektu Standar Omsk"}
+        }
+        "meta:Pakistan"{
+            ld{"Wektu Ketigo Pakistan"}
+            lg{"Wektu Pakistan"}
+            ls{"Wektu Standar Pakistan"}
+        }
+        "meta:Palau"{
+            ls{"Wektu Palau"}
+        }
+        "meta:Papua_New_Guinea"{
+            ls{"Wektu Papua Nugini"}
+        }
+        "meta:Paraguay"{
+            ld{"Wektu Ketiga Paraguay"}
+            lg{"Wektu Paraguay"}
+            ls{"Wektu Standar Paraguay"}
+        }
+        "meta:Peru"{
+            ld{"Wektu Ketiga Peru"}
+            lg{"Wektu Peru"}
+            ls{"Wektu Standar Peru"}
+        }
+        "meta:Philippines"{
+            ld{"Wektu Ketigo Filipina"}
+            lg{"Wektu Filipina"}
+            ls{"Wektu Standar Filipina"}
+        }
+        "meta:Phoenix_Islands"{
+            ls{"Wektu Kepuloan Phoenix"}
+        }
+        "meta:Pierre_Miquelon"{
+            ld{"Wektu Ketiga Santa Pierre lan Miquelon"}
+            lg{"Wektu Santa Pierre lan Miquelon"}
+            ls{"Wektu Standar Santa Pierre lan Miquelon"}
+        }
+        "meta:Pitcairn"{
+            ls{"Wektu Pitcairn"}
+        }
+        "meta:Ponape"{
+            ls{"Wektu Pohnpei"}
+        }
+        "meta:Pyongyang"{
+            ls{"Wektu Korea Lor"}
+        }
+        "meta:Reunion"{
+            ls{"Wektu Reunion"}
+        }
+        "meta:Rothera"{
+            ls{"Wektu Rothera"}
+        }
+        "meta:Sakhalin"{
+            ld{"Wektu Ketiga Sakhalin"}
+            lg{"Wektu Sakhalin"}
+            ls{"Wektu Standar Sakhalin"}
+        }
+        "meta:Samara"{
+            ld{"Wektu Mangsa Panas Samara"}
+            lg{"Wektu Samara"}
+            ls{"Wektu Standar Samara"}
+        }
+        "meta:Samoa"{
+            ls{"Wektu Standar Samoa Amerika"}
+        }
+        "meta:Seychelles"{
+            ls{"Wektu Seichelles"}
+        }
+        "meta:Singapore"{
+            ls{"Wektu Singapura"}
+        }
+        "meta:Solomon"{
+            ls{"Wektu Kepuloan Solomon"}
+        }
+        "meta:South_Georgia"{
+            ls{"Wektu Georgia Kidul"}
+        }
+        "meta:Suriname"{
+            ls{"Wektu Suriname"}
+        }
+        "meta:Syowa"{
+            ls{"Wektu Syowa"}
+        }
+        "meta:Tahiti"{
+            ls{"Wektu Tahiti"}
+        }
+        "meta:Taipei"{
+            ld{"Wektu Awan Taiwan"}
+            lg{"Wektu Taiwan"}
+            ls{"Wektu Standar Taiwan"}
+        }
+        "meta:Tajikistan"{
+            ls{"Wektu Tajikistan"}
+        }
+        "meta:Tokelau"{
+            ls{"Wektu Tokelau"}
+        }
+        "meta:Tonga"{
+            ld{"Wektu Ketigo Tonga"}
+            lg{"Wektu Tonga"}
+            ls{"Wektu Standar Tonga"}
+        }
+        "meta:Truk"{
+            ls{"Wektu Chuuk"}
+        }
+        "meta:Turkey"{
+            ld{"Wektu Mangsa Panas Turki"}
+            lg{"Wektu Turki"}
+            ls{"Wektu Standar Turki"}
+        }
+        "meta:Turkmenistan"{
+            ld{"Wektu Ketigo Turkmenistan"}
+            lg{"Wektu Turkmenistan"}
+            ls{"Wektu Standar Turkmenistan"}
+        }
+        "meta:Tuvalu"{
+            ls{"Wektu Tuvalu"}
+        }
+        "meta:Uruguay"{
+            ld{"Wektu Ketiga Uruguay"}
+            lg{"Wektu Uruguay"}
+            ls{"Wektu Standar Uruguay"}
+        }
+        "meta:Urumqi"{
+            ls{"Wektu Urumqi"}
+        }
+        "meta:Uzbekistan"{
+            ld{"Wektu Ketigo Usbekistan"}
+            lg{"Wektu Usbekistan"}
+            ls{"Wektu Standar Usbekistan"}
+        }
+        "meta:Vanuatu"{
+            ld{"Wektu Ketigo Vanuatu"}
+            lg{"Wektu Vanuatu"}
+            ls{"Wektu Standar Vanuatu"}
+        }
+        "meta:Venezuela"{
+            ls{"Wektu Venezuela"}
+        }
+        "meta:Vladivostok"{
+            ld{"Vote Wektu Ketiga Vladivostok"}
+            lg{"Wektu Vladivostok"}
+            ls{"Wektu Standar Vladivostok"}
+        }
+        "meta:Volgograd"{
+            ld{"Wektu Ketiga Volgograd"}
+            lg{"Wektu Volgograd"}
+            ls{"Wektu Standar Volgograd"}
+        }
+        "meta:Vostok"{
+            ls{"Wektu Vostok"}
+        }
+        "meta:Wake"{
+            ls{"Wektu Pulo Wake"}
+        }
+        "meta:Wallis"{
+            ls{"Wektu Wallis lan Futuna"}
+        }
+        "meta:Yakutsk"{
+            ld{"Wektu Ketiga Yakutsk"}
+            lg{"Wektu Yakutsk"}
+            ls{"Wektu Standar Yakutsk"}
+        }
+        "meta:Yekaterinburg"{
+            ld{"Wektu Ketiga Yekaterinburg"}
+            lg{"Wektu Yekaterinburg"}
+            ls{"Wektu Standar Yekaterinburg"}
+        }
+        "meta:Yukon"{
+            ls{"Wektu Yukon"}
+        }
+        regionFormat{"Wektu {0}"}
+        regionFormatDaylight{"Wektu Ketigo {0}"}
+        regionFormatStandard{"Wektu Standar {0}"}
+    }
+}

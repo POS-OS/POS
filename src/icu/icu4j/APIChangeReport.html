@@ -1,0 +1,176 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<!-- © 2026 and later: Unicode, Inc. and others. -->
+<!-- License & terms of use: http://www.unicode.org/copyright.html -->
+<title>ICU4J API Comparison: ICU4J 78 with ICU4J 79</title>
+</head>
+<body>
+<h1>ICU4J API Comparison: ICU4J 78 with ICU4J 79</h1>
+
+<hr/>
+<h2>Removed from ICU4J 78</h2>
+
+<h3>Package com.ibm.icu.text</h3>
+<ul>
+DecimalFormatSymbols
+<ul>
+<li><span style='color:gray'>(deprecated)</span> public java.lang.String <i>getCurrencyPattern</i>()</li>
+</ul>
+MessageFormat
+<ul>
+<li><span style='color:green'>(stable)</span> public static java.lang.String <i>format</i>(java.lang.String, java.util.Map&lt;java.lang.String, java.lang.Object&gt;)</li>
+<li><span style='color:green'>(stable)</span> public final java.lang.StringBuffer <i>format</i>(java.util.Map&lt;java.lang.String, java.lang.Object&gt;, java.lang.StringBuffer, java.text.FieldPosition)</li>
+</ul>
+</ul>
+
+
+<hr/>
+<h2>Deprecated or Obsoleted in ICU4J 79</h2>
+
+<h3>Package com.ibm.icu.util</h3>
+<ul>
+ICUUncheckedIOException
+<ul>
+<li><span style='color:gray'>(deprecated)</span> public <i>ICUUncheckedIOException</i>()</li>
+<li><span style='color:gray'>(deprecated)</span> public <i>ICUUncheckedIOException</i>(java.lang.String)</li>
+<li><span style='color:gray'>(deprecated)</span> public <i>ICUUncheckedIOException</i>(java.lang.String, java.lang.Throwable)</li>
+<li><span style='color:gray'>(deprecated)</span> public <i>ICUUncheckedIOException</i>(java.lang.Throwable)</li>
+</ul>
+</ul>
+
+
+<hr/>
+<h2>Changed in ICU4J 79 (old, new)</h2>
+
+<h3>Package com.ibm.icu.message2</h3>
+<ul>
+MessageFormatter
+<ul>
+<li>    <span style='color:orange'>(draft)</span> public java.lang.String <i>formatToString</i>(java.util.Map&lt;java.lang.String, java.lang.Object&gt;)</br>
+<span style='color:orange'>(draft)</span> public java.lang.String <i>formatToString</i>(java.util.Map&lt;java.lang.String, ?&gt;)</li>
+</ul>
+</ul>
+
+<h3>Package com.ibm.icu.util</h3>
+<ul>
+<li>    <span style='color:green'>(stable)</span> public class <i>ICUUncheckedIOException</i> extends java.lang.RuntimeException</br>
+<span style='color:gray'>(deprecated)</span> public class <i>ICUUncheckedIOException</i> extends java.io.UncheckedIOException</li>
+</ul>
+
+
+<hr/>
+<h2>Promoted to stable in ICU4J 79</h2>
+
+<h3>Package com.ibm.icu.util</h3>
+<ul>
+MeasureUnit
+<ul>
+<li><span style='color:green'>(stable)</span> public long <i>getConstantDenominator</i>()</li>
+<li><span style='color:green'>(stable)</span> public MeasureUnit <i>withConstantDenominator</i>(long)</li>
+</ul>
+</ul>
+
+
+<hr/>
+<h2>Added in ICU4J 79</h2>
+
+<h3>Package com.ibm.icu.lang</h3>
+<ul>
+UCharacter.JoiningGroup
+<ul>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_AIN</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_BEH</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_FEH</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_HAH</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_HEH</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_KAF</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_MEEM</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_SAD</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_SEEN</li>
+<li><span style='color:green'>(stable)</span> public static final int CROWN_TAH</li>
+</ul>
+UCharacter.UnicodeBlock
+<ul>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock ARCHAIC_CUNEIFORM_NUMERALS</li>
+<li><span style='color:green'>(stable)</span> public static final int ARCHAIC_CUNEIFORM_NUMERALS_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock BENGALI_SUPPLEMENT</li>
+<li><span style='color:green'>(stable)</span> public static final int BENGALI_SUPPLEMENT_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock JURCHEN</li>
+<li><span style='color:green'>(stable)</span> public static final int JURCHEN_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock JURCHEN_RADICALS</li>
+<li><span style='color:green'>(stable)</span> public static final int JURCHEN_RADICALS_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock MISCELLANEOUS_SYMBOLS_AND_ARROWS_EXTENDED</li>
+<li><span style='color:green'>(stable)</span> public static final int MISCELLANEOUS_SYMBOLS_AND_ARROWS_EXTENDED_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock MUSICAL_SYMBOLS_SUPPLEMENT</li>
+<li><span style='color:green'>(stable)</span> public static final int MUSICAL_SYMBOLS_SUPPLEMENT_ID</li>
+<li><span style='color:green'>(stable)</span> public static final int NO_BLOCK_ID</li>
+<li><span style='color:green'>(stable)</span> public static final UCharacter.UnicodeBlock SEAL</li>
+<li><span style='color:green'>(stable)</span> public static final int SEAL_ID</li>
+</ul>
+UScript
+<ul>
+<li><span style='color:green'>(stable)</span> public static final int PROTO_CUNEIFORM</li>
+<li><span style='color:green'>(stable)</span> public static final int SEAL</li>
+</ul>
+</ul>
+
+<h3>Package com.ibm.icu.text</h3>
+<ul>
+MessageFormat
+<ul>
+<li><span style='color:green'>(stable)</span> public static java.lang.String <i>format</i>(java.lang.String, java.util.Map&lt;java.lang.String, ?&gt;)</li>
+<li><span style='color:green'>(stable)</span> public final java.lang.StringBuffer <i>format</i>(java.util.Map&lt;java.lang.String, ?&gt;, java.lang.StringBuffer, java.text.FieldPosition)</li>
+</ul>
+Normalizer.QuickCheckResult
+<ul>
+<li><span style='color:green'>(stable)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+PersonNameFormatter
+<ul>
+<li><span style='color:green'>(stable)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+SimplePersonName
+<ul>
+<li><span style='color:green'>(stable)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+</ul>
+
+<h3>Package com.ibm.icu.util</h3>
+<ul>
+<li><span style='color:orange'>(draft)</span> public class <i>LinkUtilities</i></li>
+<li><span style='color:orange'>(draft)</span> public static enum <i>LinkUtilities.Extent</i></li>
+LinkUtilities.Extent
+<ul>
+<li><span style='color:orange'>(draft)</span> public static final LinkUtilities.Extent MAXIMAL</li>
+<li><span style='color:orange'>(draft)</span> public static final LinkUtilities.Extent MINIMAL</li>
+</ul>
+LocaleData.MeasurementSystem
+<ul>
+<li><span style='color:green'>(stable)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+MeasureUnit
+<ul>
+<li><span style='color:orange'>(draft)</span> public static final MeasureUnit DYNE</li>
+<li><span style='color:orange'>(draft)</span> public static final MeasureUnit MILLIINCH</li>
+<li><span style='color:orange'>(draft)</span> public static final MeasureUnit POUNDAL</li>
+</ul>
+ULocale.Type
+<ul>
+<li><span style='color:orange'>(draft)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+UResourceBundle
+<ul>
+<li><span style='color:green'>(stable)</span> public java.lang.String <i>toString</i>()</li>
+</ul>
+VersionInfo
+<ul>
+<li><span style='color:green'>(stable)</span> public static final VersionInfo UNICODE_18_0</li>
+</ul>
+</ul>
+
+<hr/>
+<p><i><font size="-1">Contents generated by ReportAPI tool on Wed Sep 09 09:48:47 PDT 2026<br/>© 2026 and later: Unicode, Inc. and others. License & terms of use: <a href="http://www.unicode.org/copyright.html">http://www.unicode.org/copyright.html</a></font></i></p>
+</body>
+</html>
