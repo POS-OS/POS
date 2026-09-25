@@ -20,8 +20,11 @@
 #define _DL_IFUNC_GENERIC_H
 
 #ifndef SHARED
-asm ("memset = __memset_generic");
+asm ("memcmp = __memcmp_generic");
 asm ("memcpy = __memcpy_generic");
+asm ("memmove = __memmove_generic");
+asm ("memset = __memset_generic");
+asm ("strlen = __strlen_generic");
 #endif
 
 #endif

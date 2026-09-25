@@ -18,7 +18,7 @@
 
 glibc {
   cpu {
-    name {
+    hwcaps {
       type: STRING
     }
     aarch64_bti {
@@ -32,6 +32,9 @@ glibc {
       minval: 0
       maxval: 3
       default: 0
+    }
+    mtemode {
+      type: STRING
     }
   }
 }

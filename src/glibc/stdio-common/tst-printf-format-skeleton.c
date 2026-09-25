@@ -38,6 +38,13 @@
 		the argument type handled; usually for floating-point
 		conversions only, but it may be required for 128-bit or
 		wider integer data types as well.
+   MINEXP	[optional] Minimum exponent integer constant.  Set to the
+		*_MIN_EXP value for the argument type handled, so that
+		subnormal values can be told apart from normal ones.
+   UNSUPPORTED_CONVS
+		[optional] String of conversions the verification cannot
+		model for the argument type handled.  Asking for one of
+		these produces no records and an unsupported status.
 
    Typedefs:
    type_t	Variadic function argument type.  Define to the promoted
@@ -64,6 +71,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <support/test-driver.h>
 
 /* Set to nonzero to select all possible tuples with repetitions of 1..n
    elements from the set of flags as defined in FLAGS array below; n is
@@ -79,12 +87,22 @@
 #ifndef PREC
 # define PREC 0
 #endif
+/* Set to the minimum exponent for the type handled; zero where there is
+   no such thing, in which case no value can be subnormal.  */
+#ifndef MINEXP
+# define MINEXP 0
+#endif
+/* Set to the conversions that cannot be verified for the type handled;
+   empty where they all can be, which is the usual case.  */
+#ifndef UNSUPPORTED_CONVS
+# define UNSUPPORTED_CONVS ""
+#endif
 
 /* The list of conversions permitted for the '#' flag, the '0' flag,
    and precision respectively.  */
-#define HASH_FORMATS "boxXaAeEfFgG"
-#define ZERO_FORMATS "bdiouxXaAeEfFgG"
-#define PREC_FORMATS "bdiouxXaAeEfFgGs"
+#define HASH_FORMATS "bBoxXaAeEfFgG"
+#define ZERO_FORMATS "bBdiouxXaAeEfFgG"
+#define PREC_FORMATS "bBdiouxXaAeEfFgGs"
 
 /* Output format conversion flags.  */
 static struct
@@ -102,6 +120,23 @@ static struct
 #define STR(v) #v
 #define WPINIT(v) {0, STR (v)}, {v, NULL}, {-v, NULL}
 
+/* HUGE_WIDTH is chosen so that nothing is truncated, which for the wider
+   floating-point types means thousands of digits in every record it takes
+   part in.  Those records dominate the run time of this whole family of
+   tests.  The digits they check are produced by the same conversion code
+   regardless of which of the printf family of functions is used; only the
+   sink the result is written to differs, and that is covered at the
+   smaller widths already.  So iterate over HUGE_WIDTH for one function
+   only, chosen as 'printf' by having tst-printf-format-p.h define
+   TST_PRINTF_HUGE, and let the remaining functions stop at MID_WIDTH.
+   Types whose full-precision output is short keep it unconditionally, as
+   it costs nothing there.  */
+#if defined TST_PRINTF_WIDE_TYPE && !defined TST_PRINTF_HUGE
+# define WPHUGE
+#else
+# define WPHUGE , WPINIT (HUGE_WIDTH)
+#endif
+
 /* Width and precision settings to iterate over; zero is initialized
    directly as it has no corresponding negated value and other values
    use the helper above.  */
@@ -113,7 +148,7 @@ static struct wp
   const char *s;
 } const wp[] =
   { {0, "0"}, {0, NULL}, WPINIT (1), WPINIT (2),
-    WPINIT (MID_WIDTH), WPINIT (HUGE_WIDTH) };
+    WPINIT (MID_WIDTH) WPHUGE };
 
 /* Produce a record according to '%' and zero or more output format flags
    already provided in FMT at indices 0..IDX-1, width W if non-NULL, '.'
@@ -277,8 +312,13 @@ do_printf_flags (char *fmt, size_t idx, const char *l, char c, type_t val)
 
    prec:<PREC>
 
-   is produced at the beginning.  Then for each VAL from VALS a block
-   of records is produced starting with:
+   is produced at the beginning, followed by this one if MINEXP is
+   nonzero:
+
+   minexp:<MINEXP>
+
+   Then for each VAL from VALS a block of records is produced starting
+   with:
 
    val:<VAL>
 
@@ -303,15 +343,24 @@ do_test (int argc, char *argv[])
       return EXIT_FAILURE;
     }
 
+  c = *argv[1];
+  if (strchr (UNSUPPORTED_CONVS, c) != NULL)
+    return EXIT_UNSUPPORTED;
+
   mtrace ();
 
-  if (PREC && printf ("prec:%i\n", PREC) < 0)
+  if (PREC != 0 && printf ("prec:%i\n", PREC) < 0)
     {
       perror ("printf");
       return EXIT_FAILURE;
     }
 
-  c = *argv[1];
+  if (MINEXP != 0 && printf ("minexp:%i\n", MINEXP) < 0)
+    {
+      perror ("printf");
+      return EXIT_FAILURE;
+    }
+
   for (v = 0; v < array_length (vals); v++)
     {
       if (printf ("val:%" REF_FMT "\n", REF_VAL (vals[v])) < 0)

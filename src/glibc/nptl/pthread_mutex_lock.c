@@ -418,9 +418,16 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 				       NULL, private);
 	    if (e == ESRCH || e == EDEADLK)
 	      {
-		assert (e != EDEADLK
-			|| (kind != PTHREAD_MUTEX_ERRORCHECK_NP
-			    && kind != PTHREAD_MUTEX_RECURSIVE_NP));
+		if (e == EDEADLK && kind == PTHREAD_MUTEX_ERRORCHECK_NP)
+		  {
+		    /* FUTEX_LOCK_PI may return EDEADLK due to cross-thread
+		       deadlock detection, beyond the same-thread recursive
+		       check above.  Pass this error through for error-checking
+		       mutexes; otherwise, intentionally deadlock for all other
+		       mutex types.  */
+		    return e;
+		  }
+
 		/* ESRCH can happen only for non-robust PI mutexes where
 		   the owner of the lock died.  */
 		assert (e != ESRCH || !robust);
@@ -534,15 +541,13 @@ __pthread_mutex_lock_full (pthread_mutex_t *mutex)
 			  >> PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
 
 	    if (__pthread_current_priority () > ceiling)
-	      {
-		if (oldprio != -1)
-		  __pthread_tpp_change_priority (oldprio, -1);
-		return EINVAL;
-	      }
+	      return __pthread_mutex_priority_error (EINVAL, oldprio);
 
 	    int retval = __pthread_tpp_change_priority (oldprio, ceiling);
-	    if (retval)
-	      return retval;
+	    if (retval != 0)
+	      /* Undo the adjustment from the previous loop iteration
+		 (if any, first iteration has -1 and skips adjustment).  */
+	      return __pthread_mutex_priority_error (retval, oldprio);
 
 	    ceilval = ceiling << PTHREAD_MUTEX_PRIO_CEILING_SHIFT;
 	    oldprio = ceiling;

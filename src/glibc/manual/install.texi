@@ -185,28 +185,9 @@ non CET enabled shared library in CET enabled application.
 
 NOTE: @option{--enable-cet} is only supported on x86_64 and x32.
 
-@item --enable-memory-tagging
-Enable memory tagging support if the architecture supports it.  When
-@theglibc{} is built with this option then the resulting library will
-be able to control the use of tagged memory when hardware support is
-present by use of the tunable @samp{glibc.mem.tagging}.  This includes
-the generation of tagged memory when using the @code{malloc} APIs.
-
-At present only AArch64 platforms with MTE provide this functionality,
-although the library will still operate (without memory tagging) on
-older versions of the architecture.
-
-The default is to disable support for memory tagging.
-
 @item --disable-profile
 Don't build libraries with profiling information.  You may want to use
 this option if you don't plan to do profiling.
-
-@item --enable-static-nss
-Compile static versions of the NSS (Name Service Switch) libraries.
-This is not recommended because it defeats the purpose of NSS; a program
-linked statically with the NSS libraries cannot be dynamically
-reconfigured to use a different name database.
 
 @item --enable-hardcoded-path-in-tests
 By default, dynamic tests are linked to run with the installed C library.
@@ -543,7 +524,7 @@ GCC 12.1 or newer
 GCC 12.1 or higher is required.  In general it is recommended to use
 the newest version of the compiler that is known to work for building
 @theglibc{}, as newer compilers usually produce better code.  As of
-release time, GCC 15.2.1 is the newest compiler verified to work to build
+release time, GCC 16.1.1 is the newest compiler verified to work to build
 @theglibc{}.
 
 For multi-arch support it is recommended to use a GCC which has been built with
@@ -564,7 +545,7 @@ GNU @code{binutils} 2.39 or later
 
 You must use GNU @code{binutils} (as and ld) to build @theglibc{}.
 No other assembler or linker has the necessary functionality at the
-moment. As of release time, GNU @code{binutils} 2.45.1 is the newest
+moment. As of release time, GNU @code{binutils} 2.46.1 is the newest
 verified to work to build @theglibc{}.
 
 @item
@@ -574,7 +555,7 @@ To correctly translate and install the Texinfo documentation you need
 this version of the @code{texinfo} package.  Earlier versions do not
 understand all the tags used in the document, and the installation
 mechanism for the info files is not present or works differently.
-As of release time, @code{texinfo} 7.2 is the newest verified to work
+As of release time, @code{texinfo} 7.3 is the newest verified to work
 to build @theglibc{}.
 
 @item
@@ -583,12 +564,8 @@ GNU @code{awk} 3.1.2, or higher
 @code{awk} is used in several places to generate files.
 Some @code{gawk} extensions are used, including the @code{asorti}
 function, which was introduced in version 3.1.2 of @code{gawk}.
-As of release time, @code{gawk} version 5.3.2 is the newest verified
+As of release time, @code{gawk} version 5.4.1 is the newest verified
 to work to build @theglibc{}.
-
-Testing the GNU C Library requires @code{gawk} to be compiled with
-support for high precision arithmetic via the @code{MPFR}
-multiple-precision floating-point computation library.
 
 @item
 GNU @code{bison} 2.7 or later
@@ -602,7 +579,7 @@ Perl 5
 
 Perl is not required, but if present it is used in some tests and the
 @code{mtrace} program, to build the @glibcadj{} manual.  As of release
-time @code{perl} version 5.42.0 is the newest verified to work to
+time @code{perl} version 5.44.0 is the newest verified to work to
 build @theglibc{}.
 
 @item
@@ -610,13 +587,13 @@ GNU @code{sed} 3.02 or newer
 
 @code{Sed} is used in several places to generate files.  Most scripts work
 with any version of @code{sed}.  As of release time, @code{sed} version
-4.9 is the newest verified to work to build @theglibc{}.
+4.10 is the newest verified to work to build @theglibc{}.
 
 @item
 Python 3.4 or later
 
 Python is required to build @theglibc{}.  As of release time, Python
-3.14.0 is the newest verified to work for building and testing
+3.14.6 is the newest verified to work for building and testing
 @theglibc{}.
 
 @item PExpect 4.0
@@ -717,7 +694,7 @@ if you configure @theglibc{} with @samp{--prefix=/usr}.  If you set some other
 prefix or allow it to default to @file{/usr/local}, then all the
 components are installed there.
 
-As of release time, Linux version 6.12 is the newest stable version verified
+As of release time, Linux version 7.1 is the newest stable version verified
 to work to build @theglibc{}.
 
 @node Reporting Bugs

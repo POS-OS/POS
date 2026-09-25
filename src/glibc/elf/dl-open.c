@@ -367,53 +367,6 @@ resize_tls_slotinfo (struct link_map *new)
   return any_tls;
 }
 
-/* Second stage of TLS update, after resize_tls_slotinfo.  This
-   function does not raise any exception.  It should only be called if
-   resize_tls_slotinfo returned true.  */
-static void
-update_tls_slotinfo (struct link_map *new)
-{
-  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
-    _dl_add_to_slotinfo (new->l_searchlist.r_list[i], true);
-
-  size_t newgen = GL(dl_tls_generation) + 1;
-  if (__glibc_unlikely (newgen == 0))
-    _dl_fatal_printf (N_("\
-TLS generation counter wrapped!  Please report this."));
-  /* Can be read concurrently.  */
-  atomic_store_release (&GL(dl_tls_generation), newgen);
-
-  /* We need a second pass for static tls data, because
-     _dl_update_slotinfo must not be run while calls to
-     _dl_add_to_slotinfo are still pending.  */
-  for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
-    {
-      struct link_map *imap = new->l_searchlist.r_list[i];
-
-      if (imap->l_need_tls_init && imap->l_tls_blocksize > 0)
-	{
-	  /* For static TLS we have to allocate the memory here and
-	     now, but we can delay updating the DTV.  */
-	  imap->l_need_tls_init = 0;
-#ifdef SHARED
-	  /* Update the slot information data for the current
-	     generation.  */
-
-	  /* FIXME: This can terminate the process on memory
-	     allocation failure.  It is not possible to raise
-	     exceptions from this context; to fix this bug,
-	     _dl_update_slotinfo would have to be split into two
-	     operations, similar to resize_scopes and update_scopes
-	     above.  This is related to bug 16134.  */
-	  _dl_update_slotinfo (imap->l_tls_modid, newgen);
-#endif
-
-	  _dl_init_static_tls (imap);
-	  assert (imap->l_need_tls_init == 0);
-	}
-    }
-}
-
 /* Mark the objects as NODELETE if required.  This is delayed until
    after dlopen failure is not possible, so that _dl_close can clean
    up objects if necessary.  */
@@ -658,6 +611,40 @@ dl_open_worker_begin (void *a)
 
   bool relocation_in_progress = false;
 
+  /* This only performs the memory allocations.  The actual update of
+     the scopes happens below, after failure is impossible.  */
+  resize_scopes (new);
+
+  /* Increase the size of the GL (dl_tls_dtv_slotinfo_list) data
+     structure.  */
+  bool any_tls = resize_tls_slotinfo (new);
+
+  /* Perform the necessary allocations for adding new global objects
+     to the global scope below.  */
+  if (mode & RTLD_GLOBAL)
+    add_to_global_resize (new);
+
+  /* Register the new modules in the DTV slotinfo and bump the TLS
+     generation counter *before* relocation, so an IFUNC resolver firing
+     during the relocation loop below can reach its DSO's __thread storage
+     via __tls_get_addr / TLSDESC.  Without this, the new module is not yet
+     in GL(dl_tls_dtv_slotinfo_list), so the resolver's dynamic-TLS lookup
+     fails to find it and faults.  The static-TLS image itself is copied
+     lazily on first access, and if relocation later fails, the subsequent
+     _dl_close_worker cleans up these slotinfo entries via remove_slotinfo.  */
+  if (any_tls)
+    {
+      for (unsigned int i = 0; i < new->l_searchlist.r_nlist; ++i)
+	_dl_add_to_slotinfo (new->l_searchlist.r_list[i], true);
+
+      size_t newgen = GL(dl_tls_generation) + 1;
+      if (__glibc_unlikely (newgen == 0))
+	_dl_fatal_printf (N_("\
+TLS generation counter wrapped!  Please report this."));
+      /* Can be read concurrently.  */
+      atomic_store_release (&GL(dl_tls_generation), newgen);
+    }
+
   /* Perform relocation.  This can trigger lazy binding in IFUNC
      resolvers.  For NODELETE mappings, these dependencies are not
      recorded because the flag has not been applied to the newly
@@ -682,19 +669,6 @@ dl_open_worker_begin (void *a)
     _dl_open_relocate_one_object (args, r, new->l_initfini[i], reloc_mode,
 				  &relocation_in_progress);
 
-  /* This only performs the memory allocations.  The actual update of
-     the scopes happens below, after failure is impossible.  */
-  resize_scopes (new);
-
-  /* Increase the size of the GL (dl_tls_dtv_slotinfo_list) data
-     structure.  */
-  bool any_tls = resize_tls_slotinfo (new);
-
-  /* Perform the necessary allocations for adding new global objects
-     to the global scope below.  */
-  if (mode & RTLD_GLOBAL)
-    add_to_global_resize (new);
-
   /* Demarcation point: After this, no recoverable errors are allowed.
      All memory allocations for new objects must have happened
      before.  */
@@ -715,19 +689,6 @@ dl_open_worker_begin (void *a)
   if (!_dl_find_object_update (new))
     _dl_signal_error (ENOMEM, new->l_libname->name, NULL,
 		      N_ ("cannot allocate address lookup data"));
-
-  /* FIXME: It is unclear whether the order here is correct.
-     Shouldn't new objects be made available for binding (and thus
-     execution) only after there TLS data has been set up fully?
-     Fixing bug 16134 will likely make this distinction less
-     important.  */
-
-  /* Second stage after resize_tls_slotinfo: Update the slotinfo data
-     structures.  */
-  if (any_tls)
-    /* FIXME: This calls _dl_update_slotinfo, which aborts the process
-       on memory allocation failure.  See bug 16134.  */
-    update_tls_slotinfo (new);
 
   /* Notify the debugger all new objects have been relocated.  */
   if (relocation_in_progress)
@@ -777,7 +738,7 @@ dl_open_worker (void *a)
 
 #ifdef SHARED
 	if (was_not_consistent)
-	  /* Avoid redudant/recursive signalling.  */
+	  /* Avoid redundant/recursive signalling.  */
 	  _dl_audit_activity_nsid (nsid, LA_ACT_CONSISTENT);
 #endif
       }
@@ -898,11 +859,6 @@ no more namespaces available for dlmopen()"));
 
   struct dl_exception exception;
   int errcode = _dl_catch_exception (&exception, dl_open_worker, &args);
-
-#if defined USE_LDCONFIG && !defined MAP_COPY
-  /* We must unmap the cache file.  */
-  _dl_unload_cache ();
-#endif
 
   /* Do this for both the error and success cases.  The old value has
      only been determined if the namespace ID was assigned (i.e., it

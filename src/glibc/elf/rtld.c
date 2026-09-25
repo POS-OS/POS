@@ -35,6 +35,7 @@
 #include <unsecvars.h>
 #include <dl-cache.h>
 #include <dl-osinfo.h>
+#include <dl-reseed-random.h>
 #include <dl-prop.h>
 #include <dl-vdso.h>
 #include <dl-vdso-setup.h>
@@ -52,6 +53,7 @@
 #include <dl-find_object.h>
 #include <dl-audit-check.h>
 #include <dl-call_tls_init_tp.h>
+#include <dl-exec-post.h>
 
 #include <assert.h>
 
@@ -166,12 +168,8 @@ rtld_hidden_data_def (_dl_argv)
 uintptr_t __stack_chk_guard attribute_relro;
 #endif
 
-/* Only exported for architectures that don't store the pointer guard
-   value in thread local area.  */
 uintptr_t __pointer_chk_guard_local attribute_relro attribute_hidden;
-#ifndef THREAD_SET_POINTER_GUARD
 strong_alias (__pointer_chk_guard_local, __pointer_chk_guard)
-#endif
 
 /* Check that AT_SECURE=0, or that the passed name does not contain
    directories and is not overly long.  Reject empty names
@@ -547,7 +545,7 @@ _dl_start (void *arg)
   /* Read our own dynamic section and fill in the info array.  */
   bootstrap_map.l_ld = (void *) bootstrap_map.l_addr + elf_machine_dynamic ();
   bootstrap_map.l_ld_readonly = DL_RO_DYN_SECTION;
-  elf_get_dynamic_info (&bootstrap_map, true, false);
+  elf_get_dynamic_info (&bootstrap_map, true);
 
 #if NO_TLS_OFFSET != 0
   bootstrap_map.l_tls_offset = NO_TLS_OFFSET;
@@ -827,15 +825,12 @@ security_init (void)
   /* Set up the pointer guard as well, if necessary.  */
   uintptr_t pointer_chk_guard
     = _dl_setup_pointer_guard (_dl_random, stack_chk_guard);
-#ifdef THREAD_SET_POINTER_GUARD
-  THREAD_SET_POINTER_GUARD (pointer_chk_guard);
-#endif
   __pointer_chk_guard_local = pointer_chk_guard;
 
-  /* We do not need the _dl_random value anymore.  The less
-     information we leave behind, the better, so clear the
-     variable.  */
-  _dl_random = NULL;
+  /* We do not need the _dl_random value anymore.  Scrub the AT_RANDOM
+     bytes and clear the pointer; on targets with an entropy source, refill
+     the bytes with fresh random data.  */
+  _dl_reseed_random (&_dl_random);
 }
 
 #include <setup-vdso.h>
@@ -1209,14 +1204,8 @@ rtld_setup_main_map (struct link_map *main_map)
 	main_map->l_relro_size = ph->p_memsz;
 	break;
       }
-  /* Process program headers again, but scan them backwards since
-     PT_GNU_PROPERTY is close to the end of program headers.   */
-  for (const ElfW(Phdr) *ph = &phdr[phnum]; ph != phdr; --ph)
-    if (ph[-1].p_type == PT_GNU_PROPERTY)
-      {
-	_dl_process_pt_gnu_property (main_map, -1, &ph[-1]);
-	break;
-      }
+
+  _dl_executable_postprocess (main_map, phdr, phnum);
 
   /* Adjust the address of the TLS initialization image in case
      the executable is actually an ET_DYN object.  */
@@ -1589,6 +1578,9 @@ dl_main (const ElfW(Phdr) *phdr,
 	{
 	  RTLD_TIMING_VAR (start);
 	  rtld_timer_start (&start);
+#ifdef HAVE_THP
+	  _dl_get_thp_config ();
+#endif
 	  _dl_map_object (NULL, rtld_progname, lt_executable, 0,
 			  __RTLD_OPENEXEC, LM_ID_BASE);
 	  rtld_timer_stop (&load_time, start);
@@ -1679,6 +1671,12 @@ dl_main (const ElfW(Phdr) *phdr,
 
   _dl_handle_execstack_tunable ();
 
+  /* Every string tunable has been consumed by now (init_cpu_features runs
+     from DL_PLATFORM_INIT, before dl_main).  It precedes any code outside
+     the dynamic loader (the audit modules and IFUNC resolvers), and
+     RELRO.  */
+  __tunable_seal_strings ();
+
   /* If the current libname is different from the SONAME, add the
      latter as well.  */
   {
@@ -1702,7 +1700,7 @@ dl_main (const ElfW(Phdr) *phdr,
   if (! rtld_is_main)
     {
       /* Extract the contents of the dynamic section for easy access.  */
-      elf_get_dynamic_info (main_map, false, false);
+      elf_get_dynamic_info (main_map, false);
 
       /* If the main map is libc.so, update the base namespace to
 	 refer to this map.  If libc.so is loaded later, this happens
@@ -2263,6 +2261,26 @@ dl_main (const ElfW(Phdr) *phdr,
       rtld_timer_accum (&relocate_time, start);
   }
 
+  /* Populate the DTV slotinfo and copy each TLS module's into thestatic TLS
+     block *before* the relocation loop.  IFUNC resolvers fired during phase 2
+     of the per-object two-phase scheme therefore observe initialised TLS.  */
+  if (__rtld_tls_init_tp_called)
+    {
+      unsigned int i = main_map->l_searchlist.r_nlist;
+      while (i-- > 0)
+	{
+	  struct link_map *l = main_map->l_initfini[i];
+	  if (l->l_tls_blocksize != 0)
+	    _dl_add_to_slotinfo (l, true);
+	}
+      /* _dl_add_to_slotinfo records gen = dl_tls_generation + 1, and
+	 _dl_allocate_tls_init asserts gen <= dl_tls_generation, so bump
+	 the generation before init.  */
+      if (GL(dl_tls_max_dtv_idx) > 0)
+	++GL(dl_tls_generation);
+      _dl_allocate_tls_init (tcbp, true);
+    }
+
   RTLD_TIMING_VAR (start);
   rtld_timer_start (&start);
   {
@@ -2286,10 +2304,6 @@ dl_main (const ElfW(Phdr) *phdr,
 
 	_dl_relocate_object (l, l->l_scope, GLRO(dl_lazy) ? RTLD_LAZY : 0,
 			     consider_profiling);
-
-	/* Add object to slot information data if necessary.  */
-	if (l->l_tls_blocksize != 0 && __rtld_tls_init_tp_called)
-	  _dl_add_to_slotinfo (l, true);
       }
   }
   rtld_timer_stop (&relocate_time, start);
@@ -2310,12 +2324,7 @@ dl_main (const ElfW(Phdr) *phdr,
       || count_modids != _dl_count_modids ())
     ++GL(dl_tls_generation);
 
-  /* Now that we have completed relocation, the initializer data
-     for the TLS blocks has its final values and we can copy them
-     into the main thread's TLS area, which we allocated above.
-     Note: thread-local variables must only be accessed after completing
-     the next step.  */
-  _dl_allocate_tls_init (tcbp, true);
+  /* TLS .tdata copy moved before the relocation loop above.  */
 
   /* And finally install it for the main thread.  */
   if (! __rtld_tls_init_tp_called)
@@ -2367,11 +2376,6 @@ dl_main (const ElfW(Phdr) *phdr,
 
   /* Auditing checkpoint: we have added all objects.  */
   _dl_audit_activity_nsid (LM_ID_BASE, LA_ACT_CONSISTENT);
-
-#if defined USE_LDCONFIG && !defined MAP_COPY
-  /* We must munmap() the cache file.  */
-  _dl_unload_cache ();
-#endif
 
   /* Once we return, _dl_sysdep_start will invoke
      the DT_INIT functions and then *USER_ENTRY.  */

@@ -40,7 +40,6 @@ glibc.malloc.perturb: 0 (min: 0, max: 255)
 glibc.cpu.x86_shared_cache_size: 0x100000 (min: 0x0, max: 0xffffffffffffffff)
 glibc.pthread.rseq: 1 (min: 0, max: 1)
 glibc.cpu.prefer_map_32bit_exec: 0 (min: 0, max: 1)
-glibc.mem.tagging: 0 (min: 0, max: 255)
 glibc.malloc.hugetlb: 0x0 (min: 0x0, max: 0xffffffffffffffff)
 glibc.cpu.x86_rep_movsb_threshold: 0x2000 (min: 0x100, max: 0xffffffffffffffff)
 glibc.malloc.mxfast: 0x0 (min: 0x0, max: 0xffffffffffffffff)
@@ -68,6 +67,7 @@ glibc.elf.thp: 0 (min: 0, max: 1)
 @end example
 
 @menu
+* System-wide Tunables:: Tunables that affect every process
 * Tunable names::  The structure of a tunable name
 * Memory Allocation Tunables::  Tunables in the memory allocation subsystem
 * Dynamic Linking Tunables:: Tunables in the dynamic linking subsystem
@@ -82,6 +82,121 @@ glibc.elf.thp: 0 (min: 0, max: 1)
                   aware alignment of ELF loadable segments
 
 @end menu
+
+@node System-wide Tunables
+@section System-wide Tunables
+@cindex System-wide Tunables
+@cindex /etc/tunables.conf
+
+In addition to setting the @code{GLIBC_TUNABLES} environment variable,
+tunables may be provided globally via the file
+@file{/etc/tunables.conf}, which gets stored in glibc's dynamic
+library cache @file{/etc/ld.so.cache} and read by every program at
+startup.
+
+@strong{Portability Note:} Specific tunable settings and the
+@file{/etc/tunables.conf} file format and path are not part of the
+stable library interfaces and may change between releases.
+
+The file @file{/etc/tunables.conf} contains one tunable per line:
+
+@example
+glibc.malloc.trim_threshold=128
+glibc.malloc.check=3
+@end example
+
+@file{ldconfig} (with whatever options you normally use) will read the
+tunables in @file{/etc/tunables.conf} and save them as an extension
+in @file{/etc/ld.so.cache}.  Tunables in the cache are applied to
+every program at startup, programs which are already running are not
+affected.
+
+@file{/etc/tunables.conf} supports the same ``include @var{file}''
+syntax as @file{ld.so.conf}.
+
+Tunables in @file{/etc/tunables.conf} serve as defaults.  They
+override the built-in defaults in each program, but may be overridden
+by the @code{GLIBC_TUNABLES} environment variable.  Each tunable may
+have one or more prefixes which modifies the behavior of the tunable.
+
+@table @code
+
+@item overridable
+@item +
+@item nonoverridable
+@item -
+Prefixing the tunable name with @code{nonoverridable} or @code{-}
+blocks changes from the environment variable, giving the global
+setting precedence.  Prefixing with @code{overridable} or @code{+}
+(the default) reverts this behavior, which is only useful with the
+filters (below).
+
+@item onlysecure
+@item @@
+Tunables prefixed with @code{onlysecure} or @code{@@} will apply only
+to processes that are AT_SECURE (i.e. setuid or setgid binaries, or
+elevated capabilities).
+
+@item nonsecure
+@item $
+Tunables prefixed with @code{nonsecure} or @code{$} will apply only to
+processes that aren't AT_SECURE.
+
+@item anysecure
+@item *
+Tunables prefixed with @code{anysecure} or @code{*} will apply to all
+processes.
+
+@end table
+
+When none of the @code{onlysecure}, @code{nonsecure} or @code{anysecure}
+prefixes is given, a tunable behaves as if @code{nonsecure} had been
+specified: it applies only to processes that are not AT_SECURE.  Use
+@code{anysecure} or @code{onlysecure} to affect AT_SECURE (setuid,
+setgid, or capability-elevated) processes.
+
+The @code{GLIBC_TUNABLES} environment variable is ignored entirely for
+AT_SECURE processes, so the system-wide file is the only way to set a
+tunable for such a process.  A tunable applied this way is not subject to
+any per-tunable security screening, so @code{onlysecure} and
+@code{anysecure} must be used deliberately: they can enable
+security-sensitive tunables (for example @code{glibc.malloc.check}) in
+every setuid or setgid program.  The config file is therefore trusted to
+the same degree as @file{/etc/ld.so.cache} and must only be writable by
+the system administrator.
+
+Filters make the system-wide tunables only affect certain programs.
+This allows having a non-overridable default for most of the system
+but a different, overridable, value for certain programs that might
+not work at all with the default setting.  The syntax for filters is
+to have each filter on its own line, followed by tunables that are
+applied when the filter matches, with this format:
+
+@example
+[ @var{filtername} : @var{pattern} ]
+@end example
+
+Existing filters are:
+
+@table @code
+@item proc
+Matches the process name.  The pattern is either a fully qualified
+path, or the basename of such a path.  The process name is read from
+@file{/proc/self/exe} (if available) or @file{argv[0]} (unless
+AT_SECURE is in effect).  Example:
+
+@example
+-glibc.cpu.x86_shstk=on
+[proc:/usr/bin/program_that_crashes_with_shstk]
++glibc.cpu.x86_shstk=off
+@end example
+
+@end table
+
+Note that the effects of a filter only last until the next filter, or
+a line with @code{[]} on it (``no filter''), or the end of the file
+(if the filter appears in an included file, at the end of the included
+file).
 
 @node Tunable names
 @section Tunable names
@@ -221,10 +336,8 @@ identical in features.
 This tunable sets the number of arenas to use in a process regardless of the
 number of cores in the system.
 
-The default value of this tunable is @code{0}, meaning that the limit on the
-number of arenas is determined by the number of CPU cores online.  For 32-bit
-systems the limit is twice the number of cores online and on 64-bit systems, it
-is 8 times the number of cores online.
+The default value of this tunable is @code{0}, meaning that the limit is the
+number of CPU cores online reported by get_nprocs().
 @end deftp
 
 @deftp Tunable glibc.malloc.tcache_max
@@ -240,31 +353,27 @@ disabled.
 
 The approximate maximum overhead of the per-thread cache is thus equal
 to the number of bins times the chunk count in each bin times the size
-of each chunk.  With defaults, the approximate maximum overhead of the
-per-thread cache is approximately 236 KB on 64-bit systems and 118 KB
-on 32-bit systems.
+of each chunk.
 @end deftp
 
 @deftp Tunable glibc.malloc.mxfast
-One of the optimizations @code{malloc} uses is to maintain a series of ``fast
-bins'' that hold chunks up to a specific size.  The default and
-maximum size which may be held this way is 80 bytes on 32-bit systems
-or 160 bytes on 64-bit systems.  Applications which value size over
-speed may choose to reduce the size of requests which are serviced
-from fast bins with this tunable.  Note that the value specified
-includes @code{malloc}'s internal overhead, which is normally the size of one
-pointer, so add 4 on 32-bit systems or 8 on 64-bit systems to the size
-passed to @code{malloc} for the largest bin size to enable.
+This tunable has no effect since the ``fastbins'' have been removed.
 @end deftp
 
 @deftp Tunable glibc.malloc.hugetlb
 This tunable controls the usage of Huge Pages on @code{malloc} calls.  The
-default value is @code{0}, which disables any additional support on
-@code{malloc}.
+default value is @code{0} on most targets.  Using @code{0} disables support
+that improves use of huge pages in @code{malloc}.  However huge pages may
+still be created depending on the OS settings.
 
 Setting its value to @code{1} enables the use of @code{madvise} with
 @code{MADV_HUGEPAGE} after memory allocation with @code{mmap}.  It is enabled
 only if the system supports Transparent Huge Page (currently only on Linux).
+This is the default used for AArch64.
+
+When @code{glibc.elf.thp} set to 1, malloc uses the actual kernel THP mode
+instead of defaulting to madvise mode and madvise_thp will stop issuing
+MADV_HUGEPAGE if kernel THP mode is always.
 
 Setting its value to @code{2} enables the use of Huge Page directly with
 @code{mmap} with the use of @code{MAP_HUGETLB} flag.  The huge page size
@@ -463,7 +572,11 @@ On powerpc, the supported HWCAP and HWCAP2 features can be found in
 On loongarch, the supported HWCAP features can be found in
 @code{sysdeps/loongarch/cpu-tunables.c}.
 
-This tunable is specific to i386, x86-64, s390x, powerpc and loongarch.
+On AArch64, the supported HWCAP features can be found in
+@code{sysdeps/unix/sysv/linux/aarch64/cpu-features.c}.
+
+This tunable is specific to i386, x86-64, s390x, powerpc, loongarch and
+aarch64.
 @end deftp
 
 @deftp Tunable glibc.cpu.cached_memopt
@@ -474,16 +587,6 @@ of cacheable (non-device) memory only.  The default, @code{0},
 indicates that the process may use device memory.
 
 This tunable is specific to powerpc, powerpc64 and powerpc64le.
-@end deftp
-
-@deftp Tunable glibc.cpu.name
-The @code{glibc.cpu.name=xxx} tunable allows the user to tell @theglibc{} to
-assume that the CPU is @code{xxx} where xxx may have one of these values:
-@code{generic}, @code{thunderxt88}, @code{thunderx2t99},
-@code{thunderx2t99p1}, @code{ares}, @code{emag}, @code{kunpeng},
-@code{a64fx}.
-
-This tunable is specific to aarch64.
 @end deftp
 
 @deftp Tunable glibc.cpu.x86_data_cache_size
@@ -657,6 +760,33 @@ locked.  GCS markings will not be checked for any binaries.
 
 @end deftp
 
+@deftp Tunable glibc.cpu.mtemode
+On AArch64 Linux systems that support Memory Tagging Extension (MTE) this
+tunable allows to select the fault mode for memory tag checking (MTE mode).
+
+Supported values are:
+
+@itemize @bullet
+@item @code{disabled}: (the default), memory tagging is not enabled and the
+CPU and the kernel ignore tag checking faults.
+@item @code{enabled}: Use system-preferred tag checking mode. This value is
+intended for general purpose use cases.
+@item @code{sync}: Select synchronous tag checking fault mode: when tag check
+fault occurs, a @code{SIGSEGV} is raised synchronously and memory access is not
+performed. This value is useful for debugging.
+@item @code{async}: Use asynchronous tag checking fault mode: a @code{SIGSEGV}
+is raised asynchronously following one or multiple tag check faults.
+@end itemize
+
+Any incorrect value or an empty value of this tunable will result in
+the @code{enabled} value being used. When tunable is not provided, the
+default value @code{disabled} is used.
+
+The system-preferred MTE mode can be configured via sysfs as described in
+@url{https://www.kernel.org/doc/html/latest/arch/arm64/memory-tagging-extension.html}.
+
+@end deftp
+
 @node Memory Related Tunables
 @section Memory Related Tunables
 @cindex memory related tunables
@@ -664,34 +794,6 @@ locked.  GCS markings will not be checked for any binaries.
 @deftp {Tunable namespace} glibc.mem
 This tunable namespace supports operations that affect the way @theglibc{}
 and the process manage memory.
-@end deftp
-
-@deftp Tunable glibc.mem.tagging
-If the hardware supports memory tagging, this tunable can be used to
-control the way @theglibc{} uses this feature.  At present this is only
-supported on AArch64 systems with the MTE extension; it is ignored for
-all other systems.
-
-This tunable takes a value between 0 and 255 and acts as a bitmask
-that enables various capabilities.
-
-Bit 0 (the least significant bit) causes the @code{malloc}
-subsystem to allocate
-tagged memory, with each allocation being assigned a random tag.
-
-Bit 1 enables precise faulting mode for tag violations on systems that
-support deferred tag violation reporting.  This may cause programs
-to run more slowly.
-
-Bit 2 enables either precise or deferred faulting mode for tag violations
-whichever is preferred by the system.
-
-Other bits are currently reserved.
-
-@Theglibc{} startup code will automatically enable memory tagging
-support in the kernel if this tunable has any non-zero value.
-
-The default value is @samp{0}, which disables all memory tagging.
 @end deftp
 
 @deftp Tunable glibc.mem.decorate_maps

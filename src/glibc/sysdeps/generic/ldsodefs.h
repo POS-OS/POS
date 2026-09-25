@@ -39,6 +39,7 @@
 #include <libc-lock.h>
 #include <hp-timing.h>
 #include <list_t.h>
+#include <hugepages.h>
 
 __BEGIN_DECLS
 
@@ -476,6 +477,14 @@ struct rtld_global
   /* Array of __pthread structures and its lock.  */
   EXTERN struct __pthread **_dl_pthread_threads;
   __mach_rwlock_define (EXTERN, _dl_pthread_threads_lock)
+#endif
+#ifdef HAVE_THP
+  /* The THP segment load control.  */
+  EXTERN enum dl_elf_thp_control_t _dl_elf_thp_control;
+  /* The kernel THP mode.  */
+  EXTERN enum thp_mode_t _dl_thp_mode;
+  /* Page size used for THP segment load.  */
+  EXTERN size_t _dl_elf_thp_pagesize;
 #endif
 #ifdef SHARED
 };
@@ -1142,12 +1151,6 @@ const struct r_strlenpair *_dl_important_hwcaps (const char *prepend,
    or null if none is found.  Caller must free returned string.  */
 extern char *_dl_load_cache_lookup (const char *name) attribute_hidden;
 
-/* If the system does not support MAP_COPY we cannot leave the file open
-   all the time since this would create problems when the file is replaced.
-   Therefore we provide this function to close the file and open it again
-   once needed.  */
-extern void _dl_unload_cache (void) attribute_hidden;
-
 /* System-dependent function to read a file's whole contents in the
    most convenient manner available.  *SIZEP gets the size of the
    file.  On error MAP_FAILED is returned.  */
@@ -1197,10 +1200,15 @@ void __tls_init_tp (void) attribute_hidden;
 void __libc_setup_tls (void);
 
 # if ENABLE_STATIC_PIE
-/* Relocate static executable with PIE.  */
+/* _dl_relocate_static_pie runs every relocation except IRELATIVE.  The
+   second entry point _dl_relocate_static_pie_ifunc must be invoked
+   afterwards -- but only once the TCB and the stack-protector canary
+   are usable -- to fire the IFUNC resolvers.  */
 extern void _dl_relocate_static_pie (void) attribute_hidden;
+extern void _dl_relocate_static_pie_ifunc (void) attribute_hidden;
 # else
 #  define _dl_relocate_static_pie()
+#  define _dl_relocate_static_pie_ifunc()
 # endif
 #endif
 
@@ -1223,7 +1231,9 @@ rtld_hidden_proto (_dl_allocate_tls)
 /* Get size and alignment requirements of the static TLS block.  */
 extern void _dl_get_tls_static_info (size_t *sizep, size_t *alignp);
 
-extern void _dl_allocate_static_tls (struct link_map *map) attribute_hidden;
+extern void _dl_allocate_static_tls (struct link_map *map,
+				     struct link_map *sym_map,
+				     const ElfW(Sym) *sym) attribute_hidden;
 
 extern void *_dl_allocate_tls_storage (void) attribute_hidden;
 extern void *_dl_allocate_tls_init (void *result, bool main_thread);

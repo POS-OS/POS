@@ -179,6 +179,9 @@ tests := \
   tst-mbsrtowcs \
   tst-mbstowcs \
   tst-wchar-h \
+  tst-wchar-posix2024 \
+  tst-wchar-posix2024-fortify \
+  tst-wchar-xopen2024 \
   tst-wcpncpy \
   tst-wcrtomb \
   tst-wcslcat \
@@ -210,6 +213,8 @@ tests := \
 # This test runs for a long time.
 xtests += test-wcsncmp-nonarray
 
+tests-internal += \
+  tst-wcsmbs-clone-overflow
 
 include ../Rules
 
@@ -227,6 +232,7 @@ LOCALES := \
   zh_TW.EUC-TW \
   # LOCALES
 include ../gen-locales.mk
+include ../gen-gconv-modules.mk
 
 $(objpfx)tst-btowc.out: $(gen-locales)
 $(objpfx)tst-c16c32-1.out: $(gen-locales)
@@ -241,6 +247,7 @@ $(objpfx)tst-c32-state.out: $(gen-locales)
 $(objpfx)test-c8rtomb.out: $(gen-locales)
 $(objpfx)test-mbrtoc8.out: $(gen-locales)
 $(objpfx)tst-wscanf-to_inpunct.out: $(gen-locales)
+$(objpfx)tst-wcsmbs-clone-overflow.out: $(gen-locales) $(gen-gconv-modules)
 endif
 
 $(objpfx)tst-wcstod-round: $(libm)
@@ -266,6 +273,8 @@ CFLAGS-wcstold_l.c += $(strtox-CFLAGS)
 CFLAGS-wcstof128_l.c += $(strtox-CFLAGS)
 CFLAGS-wcstof_l.c += $(strtox-CFLAGS)
 CPPFLAGS-tst-wchar-h.c += $(no-fortify-source) -D_FORTIFY_SOURCE=2
+CPPFLAGS-tst-wchar-posix2024-fortify.c += \
+  $(no-fortify-source) -D_FORTIFY_SOURCE=2
 
 CFLAGS-isoc99_wscanf.c += -fexceptions
 CFLAGS-isoc99_fwscanf.c += -fexceptions

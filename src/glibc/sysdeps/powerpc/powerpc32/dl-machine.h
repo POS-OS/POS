@@ -146,6 +146,7 @@ __elf_preferred_address(struct link_map *loader, size_t maplength,
 
 /* A reloc type used for ld.so cmdline arg lookups to reject PLT entries.  */
 #define ELF_MACHINE_JMP_SLOT	R_PPC_JMP_SLOT
+#define ELF_MACHINE_IRELATIVE	R_PPC_IRELATIVE
 
 /* We define an initialization function to initialize HWCAP/HWCAP2 and
    platform data so it can be copied into the TCB later.  This is called
@@ -361,7 +362,7 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
 	  else if (sym_map != NULL)
 	    {
 #ifndef SHARED
-	      CHECK_STATIC_TLS (map, sym_map);
+	      CHECK_STATIC_TLS (map, sym_map, sym);
 #else
 	      if (TRY_STATIC_TLS (map, sym_map))
 #endif
@@ -414,7 +415,7 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
       if (!NOT_BOOTSTRAP || sym_map != NULL)
 	{
 	  if (NOT_BOOTSTRAP)
-	    CHECK_STATIC_TLS (map, sym_map);
+	    CHECK_STATIC_TLS (map, sym_map, sym);
 	  *reloc_addr = TLS_TPREL_VALUE (sym_map, sym, reloc);
 	}
       break;

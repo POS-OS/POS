@@ -31,9 +31,9 @@ struct servent_data {};
 #define ISSLASH(c) ((c) == '/')
 LINE_PARSER
 ("#",
- STRING_FIELD (result->s_name, isspace, 1);
- INT_FIELD (result->s_port, ISSLASH, 10, 0, htons);
- STRING_FIELD (result->s_proto, isspace, 1);
+ STRING_FIELD (result->s_name, isspace, true);
+ INT_FIELD (result->s_port, ISSLASH, false, 10, htons);
+ STRING_FIELD (result->s_proto, isspace, true);
  )
 
 #include GENERIC

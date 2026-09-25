@@ -203,6 +203,9 @@ tests := \
   tst-memmove-overflow \
   tst-strerror-fail \
   tst-strfry \
+  tst-string-posix2024 \
+  tst-string-posix2024-fortify \
+  tst-string-xopen2024 \
   tst-strlcat \
   tst-strlcat2 \
   tst-strlcpy \
@@ -217,6 +220,9 @@ tests := \
   tst-xbzero-opt \
   tst-xmemset-opt \
 # tests
+
+CPPFLAGS-tst-string-posix2024-fortify.c += \
+  $(no-fortify-source) -D_FORTIFY_SOURCE=2
 
 tests-static-internal := \
   test-memswap \
@@ -280,13 +286,21 @@ CFLAGS-test-endian-sign-conversion.c += -Werror -Wsign-conversion
 LDFLAGS-tst-xbzero-opt = -z now
 LDFLAGS-tst-xmemset-opt = -z now
 
-# Called during TLS initialization.
-CFLAGS-memcpy.c += $(no-stack-protector)
-CFLAGS-wordcopy.c += $(no-stack-protector)
-# Called during static initialization
-CFLAGS-strncmp.c += $(no-stack-protector)
-CFLAGS-memset.c += $(no-stack-protector)
-CFLAGS-strlen.c += $(no-stack-protector)
+# Called during TLS initialization, and during static library initialization.
+CFLAGS-memcpy.o = $(no-stack-protector)
+CFLAGS-memcpy.op = $(no-stack-protector)
+CFLAGS-wordcopy.o = $(no-stack-protector)
+CFLAGS-wordcopy.op = $(no-stack-protector)
+CFLAGS-strncmp.o = $(no-stack-protector)
+CFLAGS-strncmp.op = $(no-stack-protector)
+CFLAGS-memset.o = $(no-stack-protector)
+CFLAGS-memset.op = $(no-stack-protector)
+CFLAGS-strlen.o = $(no-stack-protector)
+CFLAGS-strlen.op = $(no-stack-protector)
+CFLAGS-strchrnul.o = $(no-stack-protector)
+CFLAGS-strchrnul.op = $(no-stack-protector)
+CFLAGS-mempcpy.o = $(no-stack-protector)
+CFLAGS-mempcpy.op = $(no-stack-protector)
 
 ifeq ($(run-built-tests),yes)
 $(objpfx)tst-svc-cmp.out: tst-svc.expect $(objpfx)tst-svc.out

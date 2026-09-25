@@ -42,6 +42,7 @@
 #endif
 
 #define ELF_MACHINE_JMP_SLOT R_RISCV_JUMP_SLOT
+#define ELF_MACHINE_IRELATIVE R_RISCV_IRELATIVE
 
 #define elf_machine_type_class(type)				\
   ((ELF_RTYPE_CLASS_PLT * ((type) == ELF_MACHINE_JMP_SLOT	\
@@ -214,7 +215,7 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
     case __WORDSIZE == 64 ? R_RISCV_TLS_TPREL64 : R_RISCV_TLS_TPREL32:
       if (sym != NULL)
 	{
-	  CHECK_STATIC_TLS (map, sym_map);
+	  CHECK_STATIC_TLS (map, sym_map, sym);
 	  *addr_field = TLS_TPREL_VALUE (sym_map, sym) + reloc->r_addend;
 	}
       break;

@@ -339,7 +339,7 @@ _dl_determine_tlsoffset (void)
   /* Extra TLS block for internal usage to append at the end of the TLS blocks
      (in allocation order).  The address at which the block is allocated must
      be aligned to 'extra_tls_align'.  The size of the block as returned by
-     '_dl_extra_tls_get_size ()' is always a multiple of the aligment.
+     '_dl_extra_tls_get_size ()' is always a multiple of the alignment.
 
      On Linux systems this is where the rseq area will be allocated.  On other
      systems it is currently unused and both values will be '0'.  */
@@ -419,7 +419,7 @@ _dl_determine_tlsoffset (void)
   /* Extra TLS block for internal usage to append at the end of the TLS blocks
      (in allocation order).  The address at which the block is allocated must
      be aligned to 'extra_tls_align'.  The size of the block as returned by
-     '_dl_extra_tls_get_size ()' is always a multiple of the aligment.
+     '_dl_extra_tls_get_size ()' is always a multiple of the alignment.
 
      On Linux systems this is where the rseq area will be allocated.  On other
      systems it is currently unused and both values will be '0'.  */
@@ -697,17 +697,14 @@ _dl_allocate_tls_init (void *result, bool main_thread)
 	     For audit modules or dependencies with initial-exec TLS,
 	     we can not set the initial TLS image on default loader
 	     initialization because it would already be set by the
-	     audit setup, which uses the dlopen code and already
-	     clears l_need_tls_init.  Calls with !main_thread from
-	     pthread_create need to initialze TLS for the current
-	     thread regardless of namespace.  */
+	     audit setup, which uses the dlopen code.  Calls with
+	     !main_thread from pthread_create need to initialize TLS
+	     for the current thread regardless of namespace.  */
 	  if (map->l_ns != LM_ID_BASE && main_thread)
 	    continue;
 	  memset (__mempcpy (dest, map->l_tls_initimage,
 			     map->l_tls_initimage_size), '\0',
 		  map->l_tls_blocksize - map->l_tls_initimage_size);
-	  if (main_thread)
-	    map->l_need_tls_init = 0;
 	}
 
       total += cnt;

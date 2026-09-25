@@ -259,7 +259,17 @@ endif  # gen-py-const-headers
 ifdef gen-as-const-headers
 # Generating headers for assembly constants.
 # We need this defined early to get into before-compile before
-# it's used in sysd-rules, below.
+# it's used in sysd-rules, below.  The gen-as-const-headers is evaluated
+# per subdirectory, so the before-compile dependency below only orders
+# the generated header before the compiles of the subdirectory whose
+# Makefile adds the .sym directive.
+# The parallel subdirectory recursion does not order sibling subdirectories,
+# so a .sym must be added in the subdirectory that compiles its consumers,
+# or in csu (which runs before the parallel) when it has consumers in
+# several subdirectories.
+# It must not add the same .sym in several subdirectories though: their
+# concurrent sub-makes would race generating the header through the fixed
+# temporary files below.
 # Define GEN_AS_CONST_HEADERS to avoid circular dependency [BZ #22792].
 # NB: <tcb-offsets.h> is generated from tcb-offsets.sym to define
 # offsets and sizes of types in <tls.h> and maybe <pthread.h> which
@@ -302,7 +312,12 @@ lib-names-h-abi = gnu/lib-names-$(default-abi).h
 lib-names-stmp-abi = gnu/lib-names-$(default-abi).stmp
 before-compile += $(common-objpfx)$(lib-names-h-abi)
 common-generated += gnu/lib-names.h
+# The $(inst_includedir)/%.h install rules are defined only where $(headers)
+# is non-empty, and with parallel subdir recursion a subdir without headers
+# (e.g. csu) may run before the top level has installed the header.
+ifndef subdir
 install-others-nosubdir: $(inst_includedir)/$(lib-names-h-abi)
+endif
 $(common-objpfx)gnu/lib-names.h:
 	$(make-target-directory)
 	{ \
@@ -743,10 +758,20 @@ all-dt-files := $(foreach o,$(object-suffixes-for-libc),$(+depfiles:.d=$o.dt))
 	     $(wildcard $(all-dt-files:.dt=.d))
 
 # This is a funny rule in that it removes its input file.
+#
+# More than one make can convert the .dt files of a single object
+# directory: the elf rtld-Rules recursion runs a sub-make over every
+# $(rtld-subdirs) directory, concurrently with that directory's own
+# sub-make under the parallel subdir recursion.  Add the PID of the
+# shell to the temporary name and claim the input with a rename: only
+# the run that wins converts and installs the target.
 %.d: %.dt
-	@sed $(sed-remove-objpfx) $< > $(@:.d=.T) && \
-	 mv -f $(@:.d=.T) $@ && \
-	 rm -f $<
+	@dt=$(@:.d=.T)$$$$; \
+	 if mv -f $< $$dt 2>/dev/null; then \
+	   sed $(sed-remove-objpfx) $$dt > $$dt.new && \
+	   mv -f $$dt.new $@ && \
+	   rm -f $$dt; \
+	 fi
 
 # Avoid the .h.d files for any .sym files whose .h files don't exist yet.
 # They will be generated when they're needed, and trying too early won't work.
@@ -1024,7 +1049,7 @@ $(inst_libdir)/libc.so: $(common-objpfx)format.lds \
 	 cat $<; \
 	 echo 'GROUP ( $(slibdir)/libc.so$(libc.so-version)' \
 	      '$(libdir)/$(patsubst %,$(libtype.oS),$(libprefix)$(libc-name))'\
-	      ' AS_NEEDED (' $(rtlddir)/$(rtld-installed-name) ') )' \
+	      ' AS_NEEDED (' $(rtlddir-build)/$(rtld-installed-name) ') )' \
 	) > $@.new
 	mv -f $@.new $@
 
@@ -1184,12 +1209,55 @@ ALL_BUILD_CFLAGS = $(BUILD_CFLAGS) $(BUILD_CPPFLAGS) -D_GNU_SOURCE \
 		   -DIS_IN_build -include $(common-objpfx)config.h
 
 # Support the GNU standard name for this target.
-.PHONY: check
+# Special target xcheck runs tests which cannot be run unconditionally;
+# maintainers should use this target.
+.PHONY: check xcheck
+
+# Building and running a subdirectory's tests are fused in its sub-make,
+# and run-built-tests is fixed for a make instance, so the only way to
+# build every test program with the recursion fully parallel while the
+# run still honors the per-subdirectory .NOTPARALLEL (nptl/htl/rt) and the
+# run-time ordering is to use two passes.  At the top level, 'make check'
+# therefore builds the test programs (run-built-tests=no, recursion fully
+# parallel) and then runs them (run-built-tests=yes).  'make tests' and a
+# subdirectory's own 'check' stay single-pass.
+# The first pass still runs the static checks ($(tests-special): abi,
+# conformtest, installed headers, ...), so tests-summary=no makes it skip
+# the results merge and summary: an unexpected FAIL there would otherwise
+# abort 'check' before the second pass runs any built test, and even a
+# clean run would print a misleading partial summary.  The .test-result
+# files persist, so the second pass folds those results into the one
+# complete summary at the end.
+check-twopass :=
+ifndef subdir
+ifeq (yes,$(run-built-tests))
+check-twopass := yes
+endif
+endif
+ifeq (yes,$(check-twopass))
+check:
+	$(MAKE) run-built-tests=no  tests-summary=no tests
+	$(MAKE) run-built-tests=yes tests
+xcheck:
+	$(MAKE) run-built-tests=no  tests-summary=no xtests
+	$(MAKE) run-built-tests=yes xtests
+else
 check: tests
-# Special target to run tests which cannot be run unconditionally.
-# Maintainers should use this target.
-.PHONY: xcheck
 xcheck: xtests
+endif
+
+# 'make check-parallel' runs the whole suite with maximum concurrency:
+# serialize-tests=no drops the per-subdirectory .NOTPARALLEL and the run-time
+# ordering, so every test builds and runs in parallel.  A single pass suffices
+# (there is no .NOTPARALLEL to work around, so the test programs already build
+# concurrently).
+# This is faster on an idle machine, at the cost of possible flakiness in the
+# timing-sensitive tests under the heavier load.
+.PHONY: check-parallel xcheck-parallel
+check-parallel:
+	$(MAKE) serialize-tests=no tests
+xcheck-parallel:
+	$(MAKE) serialize-tests=no xtests
 
 # Also handle test inputs in sysdeps.
 vpath %.input $(sysdirs)
@@ -1199,7 +1267,7 @@ vpath %.input $(sysdirs)
 include $(o-iterator)
 define o-iterator-doit
 $(foreach f,$(tests-time64) $(xtests-time64),\
-	    $(objpfx)$(f)$(o)): CFLAGS += -D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64
+	    $(objpfx)$(f)$(o)): CFLAGS += $(+time64-flags) -D_FILE_OFFSET_BITS=64
 endef
 object-suffixes-left := $(all-object-suffixes)
 include $(o-iterator)
@@ -1375,7 +1443,7 @@ endef
 # Also remove the dependencies and generated source files.
 common-clean: common-mostlyclean
 	-rm -f $(addprefix $(objpfx),$(generated))
-	-rm -f $(objpfx)*.d $(objpfx)*.dt
+	-rm -f $(objpfx)*.d $(objpfx)*.dt $(objpfx)*.T[0-9]*
 	-rm -fr $(addprefix $(objpfx),$(generated-dirs))
 	-rm -f $(addprefix $(common-objpfx),$(common-generated))
 	-rm -f $(gen-as-const-headers:%.sym=$(common-objpfx)%.h)

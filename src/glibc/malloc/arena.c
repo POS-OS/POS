@@ -252,20 +252,6 @@ __ptmalloc_init (void)
   tcache_key_initialize ();
 #endif
 
-#ifdef USE_MTAG
-  if ((TUNABLE_GET_FULL (glibc, mem, tagging, int32_t, NULL) & 1) != 0)
-    {
-      /* If the tunable says that we should be using tagged memory
-	 and that morecore does not support tagged regions, then
-	 disable it.  */
-      if (__MTAG_SBRK_UNTAGGED)
-	__always_fail_morecore = true;
-
-      mtag_enabled = true;
-      mtag_mmap_flags = __MTAG_MMAP_FLAGS;
-    }
-#endif
-
 #if defined SHARED && IS_IN (libc)
   /* In case this libc copy is in a non-default namespace, never use
      brk.  Likewise if dlopened from statically linked program.  The
@@ -417,7 +403,7 @@ alloc_new_heap  (size_t size, size_t top_pad, size_t pagesize,
             }
         }
     }
-  if (__mprotect (p2, size, mtag_mmap_flags | PROT_READ | PROT_WRITE) != 0)
+  if (__mprotect (p2, size, extra_mmap_prot | PROT_READ | PROT_WRITE) != 0)
     {
       __munmap (p2, max_size);
       return NULL;
@@ -471,7 +457,7 @@ grow_heap (heap_info *h, long diff)
     {
       if (__mprotect ((char *) h + h->mprotect_size,
                       (unsigned long) new_size - h->mprotect_size,
-                      mtag_mmap_flags | PROT_READ | PROT_WRITE) != 0)
+                      extra_mmap_prot | PROT_READ | PROT_WRITE) != 0)
         return -2;
 
       h->mprotect_size = new_size;
@@ -813,16 +799,11 @@ arena_get2 (size_t size, mstate avoid_arena)
         {
           if (mp_.arena_max != 0)
             narenas_limit = mp_.arena_max;
-          else if (narenas > mp_.arena_test)
+          else if (narenas >= mp_.arena_test)
             {
-              int n = __get_nprocs ();
-
-              if (n >= 1)
-                narenas_limit = NARENAS_FROM_NCORES (n);
-              else
-                /* We have no information about the system.  Assume two
-                   cores.  */
-                narenas_limit = NARENAS_FROM_NCORES (2);
+	      narenas_limit = __get_nprocs ();
+	      if (narenas_limit < mp_.arena_test)
+		narenas_limit = mp_.arena_test;
             }
         }
     repeat:;

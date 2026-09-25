@@ -4,6 +4,7 @@ ifeq ($(subdir),elf)
 sysdep-dl-routines += \
   dl-bti \
   dl-gcs \
+  dl-mte \
   # sysdep-dl-routines
 
 tests += \
@@ -31,11 +32,17 @@ tst-audit27-ENV = LD_AUDIT=$(objpfx)tst-auditmod27.so
 endif
 
 ifeq ($(subdir),elf)
-sysdep-rtld-routines += dl-start
-sysdep-dl-routines += tlsdesc dl-tlsdesc
+sysdep-rtld-routines += \
+  dl-start \
+  # sysdep-rtld-routines
+sysdep-dl-routines += \
+  dl-tlsdesc \
+  tlsdesc \
+  # sysdep-dl-routines
 gen-as-const-headers += \
   dl-link.sym \
-  rtld-global-offsets.sym
+  rtld-global-offsets.sym \
+  # gen-as-const-headers
 
 tests-internal += \
   tst-ifunc-arg-1 \
@@ -44,16 +51,24 @@ tests-internal += \
   tst-ifunc-arg-4 \
   # tests-internal
 
-tests += tst-vpcs
-modules-names += tst-vpcs-mod
+CFLAGS-tst-tunables-seal.c += -DTST_SEAL_TUNABLE_NAME=hwcaps
+tst-tunables-seal-TUNABLES += glibc.cpu.hwcaps=-midr
+
+tests += \
+  tst-vpcs \
+  # tests
+modules-names += \
+  tst-vpcs-mod \
+  # modules-names
 LDFLAGS-tst-vpcs-mod.so = -Wl,-z,lazy
 $(objpfx)tst-vpcs: $(objpfx)tst-vpcs-mod.so
 endif
 
 ifeq ($(subdir),csu)
 gen-as-const-headers += \
+  rtld-global-offsets.sym \
   tlsdesc.sym \
-  rtld-global-offsets.sym
+  # gen-as-const-headers
 endif
 
 ifeq ($(subdir),gmon)
@@ -65,12 +80,15 @@ CPPFLAGS += -I../soft-fp
 endif
 
 ifeq ($(subdir),misc)
-sysdep_headers += sys/ifunc.h
+sysdep_headers += \
+  sys/ifunc.h \
+  # sysdep_headers
 sysdep_routines += \
-  __mtag_tag_zero_region \
-  __mtag_tag_region \
+  __alloc_gcs \
   __arm_za_disable \
-  __alloc_gcs
+  __mte_tag_region \
+  __mte_tag_region_zero \
+  # sysdep_routines
 
 tests += \
   tst-sme-jmp \
@@ -82,11 +100,20 @@ tests-internal += \
   tst-sme-clone3 \
   tst-sme-fork \
   tst-sme-vfork \
+  tst-sme-za-disable-fail \
   # tests-internal
 
 $(objpfx)tst-sme-clone3: $(objpfx)clone3.o $(objpfx)__arm_za_disable.o
+$(objpfx)tst-sme-za-disable-fail: $(objpfx)__arm_za_disable.o
 endif
 
 ifeq ($(subdir),malloc)
-sysdep_malloc_debug_routines = __mtag_tag_zero_region __mtag_tag_region
+
 endif # malloc directory
+
+ifeq ($(subdir),support)
+libsupport-sysdep_routines += \
+  support-address-diff \
+  support-use-after-free \
+  # libsupport-sysdep_routines
+endif

@@ -165,6 +165,15 @@ rtlddir = $(slibdir)
 endif
 inst_rtlddir = $(install_root)$(rtlddir)
 
+# Directory referenced by the libc.so linker script (AS_NEEDED entry) for
+# the dynamic linker at build time.  This points at the location where the
+# loader is actually installed so the linker can resolve it while building
+# against libc.  It defaults to rtlddir (where it differs, the loader is
+# installed in rtlddir-build but identified/loaded at runtime via rtlddir).
+ifndef rtlddir-build
+rtlddir-build = $(rtlddir)
+endif
+
 # Prefix to put on files installed in $(libdir).  For libraries `libNAME.a',
 # the prefix is spliced between `lib' and the name, so the linker switch
 # `-l$(libprefix)NAME' finds the library; for other files the prefix is
@@ -782,6 +791,14 @@ run-built-tests = yes
 endif
 endif
 
+# Whether the timing-sensitive test runs are serialized: each is run with
+# .NOTPARALLEL and, at the top level, ordered after the rest of the test run.
+# This is the default; 'make check-parallel' clears it to run every test
+# concurrently.
+ifndef serialize-tests
+serialize-tests = yes
+endif
+
 # Whether to build the static math tests
 ifndef build-math-static-tests
 build-math-static-tests = no
@@ -815,8 +832,15 @@ $(subst $(empty) ,:,$(strip $(patsubst -Wl$(comma)-rpath-link=%, %,\
 run-via-rtld-prefix =							      \
   $(if $(strip $(filter $(notdir $(built-program-file)),		      \
 			$(tests-static) $(xtests-static))),, $(rtld-prefix))
+# $(container-via-rtld-prefix) is like $(run-via-rtld-prefix), but for the
+# support/test-container helper, which is always dynamically linked even
+# when the test it launches is static.  It must therefore always run
+# through the newly built loader, unlike $(run-via-rtld-prefix) which is
+# empty for tests listed in tests-static or xtests-static.
+container-via-rtld-prefix = $(rtld-prefix)
 else
 run-via-rtld-prefix =
+container-via-rtld-prefix =
 endif
 # $(run-program-env) is the default environment variable settings to
 # use when running a program built with the newly built library.
@@ -883,6 +907,7 @@ endif
 
 ifeq (yes,$(build-hardcoded-path-in-tests))
 test-via-rtld-prefix =
+test-container-via-rtld-prefix =
 test-program-prefix-before-env = $(test-wrapper-env)
 test-program-prefix-after-env =
 test-program-prefix = $(test-program-prefix-before-env) $(run-program-env) \
@@ -894,6 +919,7 @@ test-program-cmd = $(test-program-cmd-before-env) $(run-program-env) \
 host-test-program-cmd = $(built-program-file)
 else
 test-via-rtld-prefix = $(run-via-rtld-prefix)
+test-container-via-rtld-prefix = $(container-via-rtld-prefix)
 test-program-prefix-before-env = $(run-program-prefix-before-env)
 test-program-prefix-after-env = $(run-program-prefix-after-env)
 test-program-prefix = $(run-program-prefix)
@@ -933,8 +959,9 @@ endif
 installed-modules = nonlib nscd ldconfig locale_programs \
 		    iconvprogs libnss_files libnss_compat libnss_db libnss_hesiod \
 		    libutil libpcprofile libnsl
++time64-flags = -D_TIME_BITS=64
 +extra-time-flags = $(if $(filter $(installed-modules),\
-                           $(in-module)),-D_TIME_BITS=64 -D_FILE_OFFSET_BITS=64)
+                           $(in-module)),$(+time64-flags) -D_FILE_OFFSET_BITS=64)
 
 # We might want to compile with some stack-protection flag.
 ifneq ($(stack-protector),)

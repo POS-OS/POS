@@ -95,8 +95,8 @@ enum __socket_type
 #define	PF_LAT		14	/* DEC Local Area Transport protocol.  */
 #define	PF_HYLINK	15	/* NSC Hyperchannel protocol.  */
 #define	PF_APPLETALK	16	/* Don't use this.  */
-#define	PF_ROUTE	17	/* Internal Routing Protocol.  */
-#define	PF_LINK		18	/* Link layer interface.  */
+/* #define	PF_ROUTE	17	Internal Routing Protocol.  */
+/* #define	PF_LINK		18	Link layer interface.  */
 #define	PF_XTP		19	/* eXpress Transfer Protocol (no AF).  */
 #define	PF_COIP		20	/* Connection-oriented IP, aka ST II.  */
 #define	PF_CNT		21	/* Computer Network Technology.  */
@@ -128,8 +128,8 @@ enum __socket_type
 #define	AF_LAT		PF_LAT
 #define	AF_HYLINK	PF_HYLINK
 #define	AF_APPLETALK	PF_APPLETALK
-#define	AF_ROUTE	PF_ROUTE
-#define	AF_LINK		PF_LINK
+/* #define	AF_ROUTE	PF_ROUTE */
+/* #define	AF_LINK		PF_LINK */
 #ifdef __USE_MISC
 # define	pseudo_AF_XTP	PF_XTP
 #endif
@@ -364,6 +364,8 @@ enum
 #define SO_OOBINLINE SO_OOBINLINE
     SO_REUSEPORT = 0x0200,	/* Allow local address and port reuse.  */
 #define SO_REUSEPORT SO_REUSEPORT
+    SO_TIMESTAMP = 0x0400,	/* Timestamp received dgram traffic */
+#define SO_TIMESTAMP SO_TIMESTAMP
     SO_SNDBUF = 0x1001,		/* Send buffer size.  */
 #define SO_SNDBUF SO_SNDBUF
     SO_RCVBUF = 0x1002,		/* Receive buffer.  */

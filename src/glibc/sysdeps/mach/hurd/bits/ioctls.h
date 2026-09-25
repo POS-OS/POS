@@ -306,7 +306,7 @@ enum __ioctl_datum { IOC_8, IOC_16, IOC_32, IOC_64 };
 #define	SIOCGIFMETRIC	_IOWR('i',23, struct ifreq_int)	/* get IF metric */
 #define	SIOCSIFMETRIC	_IOW('i',24, struct ifreq_int)	/* set IF metric */
 #define	SIOCDIFADDR	_IOW('i',25, struct ifreq)	/* delete IF addr */
-#define	SIOCAIFADDR	_IOW('i',26, struct ifaliasreq)	/* add/chg IF alias */
+/* #define	SIOCAIFADDR	_IOW('i',26, struct ifaliasreq)	 add/chg IF alias */
 
 #define	SIOCSARP	_IOW('i', 30, struct arpreq)	/* set arp entry */
 #define	OSIOCGARP	_IOWR('i',31, struct arpreq)	/* get arp entry */

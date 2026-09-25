@@ -700,7 +700,9 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
 
 #if !defined RTLD_BOOTSTRAP
     case R_PARISC_TLS_DTPMOD32:
-      value = sym_map->l_tls_modid;
+      /* The sym_map may be NULL in trace mode (LD_TRACE_LOADED_OBJECTS).  */
+      if (sym_map != NULL)
+	value = sym_map->l_tls_modid;
       break;
 
     case R_PARISC_TLS_DTPOFF32:
@@ -714,7 +716,7 @@ elf_machine_rela (struct link_map *map, struct r_scope_elem *scope[],
       /* The offset is negative, forward from the thread pointer */
       if (sym != NULL)
 	{
-	  CHECK_STATIC_TLS (map, sym_map);
+	  CHECK_STATIC_TLS (map, sym_map, sym);
 	  value = sym_map->l_tls_offset + sym->st_value + reloc->r_addend;
 	}
       break;

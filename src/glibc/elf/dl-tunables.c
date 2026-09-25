@@ -37,6 +37,7 @@
 
 #define TUNABLES_INTERNAL 1
 #include "dl-tunables.h"
+#include "tunconf.h"
 
 static char **
 get_next_env (char **envp, char **name, char **val, char ***prev_envp)
@@ -64,6 +65,17 @@ get_next_env (char **envp, char **name, char **val, char ***prev_envp)
   return NULL;
 }
 
+/* Set by __tunable_seal_strings once the values of the string tunables are
+   no longer valid.  */
+static bool tunables_strings_sealed attribute_relro;
+
+static void __attribute__ ((noreturn))
+tunable_sealed_error (const tunable_t *cur, const char *action)
+{
+  _dl_fatal_printf ("Fatal glibc error: %s: string tunable %s after "
+		    "process initialization\n", cur->name, action);
+}
+
 static void
 do_tunable_update_val (tunable_t *cur, const tunable_val_t *valp,
 		       const tunable_num_t *minp,
@@ -71,9 +83,14 @@ do_tunable_update_val (tunable_t *cur, const tunable_val_t *valp,
 {
   tunable_num_t val, min, max;
 
+  if (cur->locked)
+    return;
+
   switch (cur->type.type_code)
     {
     case TUNABLE_TYPE_STRING:
+      if (__glibc_unlikely (tunables_strings_sealed))
+	tunable_sealed_error (cur, "set");
       cur->val.strval = valp->strval;
       cur->initialized = true;
       return;
@@ -174,6 +191,14 @@ struct tunable_toset_t
 };
 
 enum { tunables_list_size = array_length (tunable_list) };
+
+/* Records tunables that were set from GLIBC_TUNABLES during this call, so
+   that a legacy environment-variable alias does not override them (the
+   canonical GLIBC_TUNABLES form takes precedence over the aliases).
+   A tunable that was set only from the system-wide cache is deliberately not
+   recorded here, so an alias may still override an overridable cache default;
+   a nonoverridable one remains protected by tunable_t::locked.  */
+static bool tunable_set_by_env[tunables_list_size];
 
 /* Parse the tunable string VALSTRING and set TUNABLES with the found tunables
    and their respective values.  The VALSTRING is parsed in place, with the
@@ -284,6 +309,10 @@ parse_tunables (const char *valstring)
       if (!tunable_initialize (tunables[i].t, tunables[i].value,
 			       tunables[i].len))
 	parse_tunable_print_error (&tunables[i]);
+      else
+	/* GLIBC_TUNABLES set this tunable; a legacy alias must not
+	   override it.  */
+	tunable_set_by_env[i] = true;
     }
 }
 
@@ -291,7 +320,7 @@ parse_tunables (const char *valstring)
    ENV_ALIAS to find values.  Later we will also use the tunable names to find
    values.  */
 void
-__tunables_init (char **envp)
+__tunables_init (char **envp, char **argv)
 {
   char *envname = NULL;
   char *envval = NULL;
@@ -301,6 +330,155 @@ __tunables_init (char **envp)
      is non-zero.  */
   if (MALLOC_DEFAULT_THP_PAGESIZE > 0)
     TUNABLE_SET (glibc, malloc, hugetlb, 1);
+
+#if defined(SHARED) && defined (USE_LDCONFIG)
+  const char *prog_name = (argv && argv[0]) ? argv[0] : "";
+  int prog_name_len = -1;
+  const char *base_name = NULL;
+#ifdef PATH_MAX
+  char exebuf[PATH_MAX];
+#else
+  char exebuf[256];
+#endif
+  const struct tunable_header_cached *thc;
+  const char *td;
+
+  thc = _dl_load_cache_tunables (&td);
+  if (thc != NULL)
+    {
+      for (int t = 0; t < thc->num_tunables; ++ t)
+	{
+	  const struct tunable_entry_cached *tec = &( thc->tunables[t] );
+	  int tid = tec->tunable_id;
+	  const char *name = td + tec->name_offset;
+	  const char *value = td + tec->value_offset;
+
+	  /* Check that we have the correct tunable, and search by
+	     name if needed.  We rely on order of operations here to
+	     avoid mis-indexing tunables[].  */
+	  if (tid < 0 || tid >= tunables_list_size
+	      || strcmp (name, tunable_list[tid].name) != 0)
+	    {
+	      /* It does not, search by name instead.  */
+	      tid = -1;
+	      for (int i = 0; i < tunables_list_size; i++)
+		{
+		  if (strcmp (name, tunable_list[i].name) == 0)
+		    {
+		      tid = i;
+		      break;
+		    }
+		}
+	      if (tid == -1)
+		continue;
+	    }
+	  /* At this point, TID is valid for the tunable we want.  */
+
+	  if (tec->flags & TUNCONF_EXCLUDE_SECURE && __libc_enable_secure)
+	    goto skip_due_to_filter;
+	  if (tec->flags & TUNCONF_EXCLUDE_UNSECURE && !__libc_enable_secure)
+	    goto skip_due_to_filter;
+
+	  /* Apply selected filter, if any.  */
+	  switch (tec->flags & TUNCONF_FLAG_FILTER) {
+	  case TUNCONF_FILTER_NONE:
+	    break;
+	  case TUNCONF_FILTER_PERPROC:
+	    /* Perform one-time calculations that aren't needed if we
+	       don't use this filter.  */
+	    if (prog_name_len == -1)
+	      {
+		ssize_t n = readlink ("/proc/self/exe",
+				      exebuf, sizeof (exebuf) - 1);
+		if (n > 0 && n < sizeof(exebuf)-1)
+		  {
+		    /* If /proc/self/exe exists and we can read it,
+		       it's more reliable than argv[] so use it.  */
+		    exebuf[n] = '\0';
+		    prog_name = exebuf;
+		  }
+		else if (__libc_enable_secure)
+		  prog_name = NULL;
+		if (prog_name != NULL)
+		  {
+		    const char *slash = NULL, *cp;
+		    for (cp = prog_name; *cp; ++ cp)
+		      if (*cp == '/')
+			slash = cp;
+		    if (slash)
+		      base_name = slash + 1;
+		    else
+		      base_name = prog_name;
+		    prog_name_len = strlen (prog_name);
+		  }
+	      }
+	    /* prog_name and the cached string are both NUL terminated.  */
+	    if (prog_name)
+	      {
+		if (((const char *)(td + tec->flag_offset))[0] == '/')
+		  {
+		    if (strcmp (prog_name, td + tec->flag_offset) != 0)
+		      goto skip_due_to_filter;
+		  }
+		else
+		  {
+		    if (strcmp (base_name, td + tec->flag_offset) != 0)
+		      goto skip_due_to_filter;
+		  }
+	      }
+	    else
+	      /* Program is AT_SECURE but the only source of program
+		 name is argv[0], which is not secure, so we do not
+		 match any name-based filter.  */
+	      goto skip_due_to_filter;
+	    break;
+	  default:
+	    /* Unknown filter.  */
+	    goto skip_due_to_filter;
+	  }
+
+	  /* If the tunable is set here, any previously set
+	     overridability flag is discarded.  We need to reset the
+	     overridability flag here so we can change the tunable,
+	     and may set it later if this tunable also locks it.  */
+	  tunable_list[tid].locked = false;
+
+	  /* See if the parsed type matches the desired type.  */
+	  if (tunable_list[tid].type.type_code == TUNABLE_TYPE_STRING)
+	    {
+	      /* This is a memory leak but there's no easy way around
+		 it, as the mapping will go away if the disk file is
+		 updated and the cache is reloaded.  */
+	      tunable_list[tid].val.strval.str = __strdup (value);
+	      tunable_list[tid].val.strval.len = strlen (value);
+	      tunable_list[tid].initialized = true;
+	    }
+	  else
+	    {
+	      tunable_val_t tval;
+	      if (tec->flags & TUNCONF_FLAG_PARSED)
+		{
+		  tval.numval = tec->parsed_value;
+		  do_tunable_update_val (& tunable_list[tid],
+					 &tval, NULL, NULL);
+		}
+	      else
+		{
+		  tunable_initialize (& tunable_list[tid],
+				      value, strlen (value));
+		}
+	    }
+
+	  /* The overriability flag only applies to tunables
+	     which aren't filtered out.  */
+	  if ((tec->flags & TUNCONF_FLAG_OVERRIDABLE)
+	      == TUNCONF_OVERRIDE_DENY)
+	    tunable_list[tid].locked = true;
+
+	skip_due_to_filter:;
+	}
+    }
+#endif /* defined(SHARED) && defined (USE_LDCONFIG) */
 
   /* Ignore tunables for AT_SECURE programs.  */
   if (__libc_enable_secure)
@@ -345,9 +523,13 @@ __tunables_init (char **envp)
 
   for (int i = 0; i < tunable_num_env_alias; i++)
     {
-      /* Skip over tunables that have either been set or already initialized.  */
+      /* Skip aliases whose tunable was already set through GLIBC_TUNABLES,
+	 which takes precedence over the alias.  A value coming only from the
+	 system-wide cache does not block the alias here: an overridable cache
+	 default may still be overridden, while a nonoverridable one is
+	 protected by tunable_t::locked.  */
       if (tunables_env_alias[i].t == NULL
-	  || tunables_env_alias[i].t->initialized)
+	  || tunable_set_by_env[tunable_env_alias_list[i]])
 	continue;
 
       if (!tunable_initialize (tunables_env_alias[i].t,
@@ -460,6 +642,10 @@ __tunable_get_val (tunable_id_t id, void *valp, tunable_callback_t callback)
 	}
     case TUNABLE_TYPE_STRING:
 	{
+	  /* String tunable values are only valid during early startup; once
+	     sealed they must not be read.  */
+	  if (__glibc_unlikely (tunables_strings_sealed))
+	    tunable_sealed_error (cur, "read");
 	  *((const struct tunable_str_t **) valp) = &cur->val.strval;
 	  break;
 	}
@@ -472,3 +658,29 @@ __tunable_get_val (tunable_id_t id, void *valp, tunable_callback_t callback)
 }
 
 rtld_hidden_def (__tunable_get_val)
+
+/* A string tunable value usually references the GLIBC_TUNABLES (or alias)
+   environment string, which lives in the environment block the kernel places
+   on the initial stack.  That memory is owned by the application, which may
+   overwrite it (e.g. setproctitle), so the reference is only safe while no
+   application code has run.
+   A value coming from the system-wide cache is a private copy instead, but
+   it is sealed as well so that the lifetime rule does not depend on where
+   the value came from.
+   Drop the references so that a later access triggers a fatal error.  */
+void
+__tunable_seal_strings (void)
+{
+  for (int i = 0; i < tunables_list_size; i++)
+    {
+      tunable_t *cur = &tunable_list[i];
+
+      if (cur->type.type_code != TUNABLE_TYPE_STRING)
+	continue;
+
+      cur->val.strval = (struct tunable_str_t) { NULL, 0 };
+    }
+
+  tunables_strings_sealed = true;
+}
+rtld_hidden_def (__tunable_seal_strings)

@@ -44,10 +44,6 @@ typedef struct
   void *__private_ss;
 } tcbhead_t;
 
-# ifndef __s390x__
-#  define TLS_MULTIPLE_THREADS_IN_TCB 1
-# endif
-
 #else /* __ASSEMBLER__ */
 # include <tcb-offsets.h>
 #endif
@@ -135,20 +131,13 @@ typedef struct
 #define THREAD_SET_STACK_GUARD(value) \
   do									      \
    {									      \
-     __asm__ __volatile__ ("" : : : "a0", "a1");			      \
+     __asm__ __volatile__ ("" : : : "a0", "a1", "memory");		      \
      THREAD_SETMEM (THREAD_SELF, header.stack_guard, value);		      \
    }									      \
   while (0)
 #define THREAD_COPY_STACK_GUARD(descr) \
   ((descr)->header.stack_guard						      \
    = THREAD_GETMEM (THREAD_SELF, header.stack_guard))
-
-/* s390 doesn't have HP_TIMING_*, so for the time being
-   use stack_guard as pointer_guard.  */
-#define THREAD_GET_POINTER_GUARD() \
-  THREAD_GETMEM (THREAD_SELF, header.stack_guard)
-#define THREAD_SET_POINTER_GUARD(value)	((void) (value))
-#define THREAD_COPY_POINTER_GUARD(descr)
 
 /* Get and set the global scope generation counter in struct pthread.  */
 #define THREAD_GSCOPE_FLAG_UNUSED 0

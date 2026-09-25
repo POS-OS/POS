@@ -43,15 +43,6 @@ do_test (void)
   struct support_blob_repeat repeat
     = support_blob_repeat_allocate ("a", 1, path_len);
   char *path = repeat.start;
-  if (path == NULL)
-    {
-      printf ("Repeated allocation (%zu bytes): %m\n", path_len);
-      /* On 31-bit s390 the malloc will always fail as we do not have
-	 so much memory, and we want to mark the test unsupported.
-	 Likewise on systems with little physical memory the test will
-	 fail and should be unsupported.  */
-      return EXIT_UNSUPPORTED;
-    }
 
   TEST_VERIFY_EXIT (symlink (".", lnk) == 0);
 

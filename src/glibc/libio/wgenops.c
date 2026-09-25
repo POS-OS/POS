@@ -110,8 +110,8 @@ _IO_wdefault_pbackfail (FILE *fp, wint_t c)
 {
   if (fp->_wide_data->_IO_read_ptr > fp->_wide_data->_IO_read_base
       && !_IO_in_backup (fp)
-      && (wint_t) fp->_IO_read_ptr[-1] == c)
-    --fp->_IO_read_ptr;
+      && (wint_t) fp->_wide_data->_IO_read_ptr[-1] == c)
+    --fp->_wide_data->_IO_read_ptr;
   else
     {
       /* Need to handle a filebuf in write mode (switch to read mode). FIXME!*/
@@ -270,7 +270,7 @@ __wunderflow (FILE *fp)
       if (save_for_wbackup (fp, fp->_wide_data->_IO_read_end))
 	return WEOF;
     }
-  else if (_IO_have_backup (fp))
+  else if (_IO_have_wbackup (fp))
     _IO_free_wbackup_area (fp);
   return _IO_UNDERFLOW (fp);
 }
@@ -603,6 +603,6 @@ _IO_unsave_wmarkers (FILE *fp)
       fp->_markers = NULL;
     }
 
-  if (_IO_have_backup (fp))
+  if (_IO_have_wbackup (fp))
     _IO_free_wbackup_area (fp);
 }

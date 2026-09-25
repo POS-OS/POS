@@ -96,7 +96,8 @@ _IO_fwide (FILE *fp, int mode)
       }
 
       /* From now on use the wide character callback functions.  */
-      _IO_JUMPS_FILE_plus (fp) = fp->_wide_data->_wide_vtable;
+      _IO_JUMPS_FILE_plus (fp)
+	= IO_wide_validate_index (fp->_wide_data->_wide_vtable_index);
     }
 
   /* Set the mode now.  */
@@ -250,4 +251,19 @@ __libio_codecvt_length (struct _IO_codecvt *codecvt, __mbstate_t *statep,
   result = cp - (const unsigned char *) from_start;
 
   return result;
+}
+
+void
+_IO_wstrfile_fclose_stack (FILE *fp)
+{
+  _IO_FINISH (fp);
+  if (fp->_mode > 0)
+    {
+      struct _IO_codecvt *cc = fp->_codecvt;
+
+      __libc_lock_lock (__gconv_lock);
+      __gconv_release_step (cc->__cd_in.step);
+      __gconv_release_step (cc->__cd_out.step);
+      __libc_lock_unlock (__gconv_lock);
+    }
 }

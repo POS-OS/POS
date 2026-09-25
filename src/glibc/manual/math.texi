@@ -70,7 +70,7 @@ provided for @code{_Float32}, @code{_Float64} and @code{_Float32x} on
 all platforms.
 It is also provided for @code{_Float128} and @code{_Float64x} on
 powerpc64le (PowerPC 64-bits little-endian), x86_64, x86,
-aarch64, alpha, loongarch, mips64, riscv, s390 and sparc.
+aarch64, alpha, loongarch, mips64, riscv, s390x and sparc.
 
 @menu
 * Mathematical Constants::      Precise numeric values for often-used
@@ -669,7 +669,8 @@ due to intermediate rounding.
 If @var{x} is de-normalized, @code{logb} returns the exponent @var{x}
 would have if it were normalized.  If @var{x} is infinity (positive or
 negative), @code{logb} returns @math{@infinity{}}.  If @var{x} is zero,
-@code{logb} returns @math{@infinity{}}.  It does not signal.
+a pole error occurs: @code{logb} raises the divide-by-zero exception,
+sets @code{errno} to @code{ERANGE} and returns @math{-@infinity{}}.
 @end deftypefun
 
 @deftypefun int ilogb (double @var{x})

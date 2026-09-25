@@ -21,6 +21,7 @@
 
 #include <string-misc.h>
 #include <string-optype.h>
+#include <arm_acle.h>
 
 /* The functions return a byte mask.  */
 typedef op_t find_t;
@@ -32,10 +33,7 @@ find_zero_all (op_t x)
 {
   /* Use unsigned saturated subtraction from 1 in each byte.
      That leaves 1 for every byte that was zero.  */
-  op_t ones = repeat_bytes (0x01);
-  op_t ret;
-  asm ("uqsub8 %0,%1,%2" : "=r"(ret) : "r"(ones), "r"(x));
-  return ret;
+  return __uqsub8 (repeat_bytes (0x01), x);
 }
 
 /* Identify bytes that are equal between X1 and X2.  */
@@ -56,9 +54,17 @@ find_zero_eq_all (op_t x1, op_t x2)
 static __always_inline find_t
 find_zero_ne_all (op_t x1, op_t x2)
 {
-  /* Make use of the fact that we'll already have ONES in a register.  */
-  op_t ones = repeat_bytes (0x01);
-  return find_zero_all (x1) | (find_zero_all (x1 ^ x2) ^ ones);
+  /* As in find_ne_all; find_zero_all () sets only 0x01 in a byte that was
+     zero, so each term of the or marks only its own bytes.  */
+  return (x1 ^ x2) | find_zero_all (x1);
+}
+
+/* Identify bytes that are not equal between X1 and X2.  */
+static __always_inline find_t
+find_ne_all (op_t x1, op_t x2)
+{
+  /* The difference need not be reduced; see the generic string-fza.h.  */
+  return x1 ^ x2;
 }
 
 /* Define the "inexact" versions in terms of the exact versions.  */

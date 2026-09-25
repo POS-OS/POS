@@ -1,5 +1,9 @@
 ifeq ($(subdir),string)
 sysdep_routines += \
+  memchr_generic \
+  memchr_sve2 \
+  memcmp_generic \
+  memcmp_kunpeng950 \
   memcpy_a64fx \
   memcpy_generic \
   memcpy_kunpeng950 \
@@ -16,5 +20,11 @@ sysdep_routines += \
   memset_zva64 \
   strlen_asimd \
   strlen_generic \
-# sysdep_routines
-endif
+  # sysdep_routines
+endif # ifeq ($(subdir),string)
+
+ifeq ($(subdir),malloc)
+sysdep_routines += \
+  malloc-ifuncs \
+  # sysdep_routines
+endif # ifeq ($(subdir),malloc)

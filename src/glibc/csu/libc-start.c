@@ -44,21 +44,20 @@ extern void __libc_init_first (int argc, char **argv, char **envp);
 #include <tls.h>
 #ifndef SHARED
 # include <dl-osinfo.h>
+# include <dl-reseed-random.h>
+# include <dl-symbol-redir-ifunc.h>
 # ifndef THREAD_SET_STACK_GUARD
 /* Only exported for architectures that don't store the stack guard canary
    in thread local area.  */
 uintptr_t __stack_chk_guard attribute_relro;
 # endif
-# ifndef  THREAD_SET_POINTER_GUARD
-/* Only exported for architectures that don't store the pointer guard
-   value in thread local area.  */
 uintptr_t __pointer_chk_guard_local attribute_relro attribute_hidden;
-# endif
 #endif
 
 #ifndef SHARED
 # include <link.h>
 # include <dl-irel.h>
+# include <dl-symbol-redir-ifunc.h>
 
 # ifdef ELF_MACHINE_IRELA
 #  define IREL_T	ElfW(Rela)
@@ -205,6 +204,7 @@ call_fini (void *unused)
 #endif /* !SHARED */
 
 #include <libc-start.h>
+#include <dl-exec-post.h>
 
 STATIC int LIBC_START_MAIN (int (*main) (int, char **, char **
 					 MAIN_AUXVEC_DECL),
@@ -264,27 +264,30 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   _dl_aux_init (auxvec);
 # endif
 
-  __tunables_init (__environ);
+  __tunables_init (__environ, argv);
 
   ARCH_INIT_CPU_FEATURES ();
 
-  /* Do static pie self relocation after tunables and cpu features
-     are setup for ifunc resolvers. Before this point relocations
-     must be avoided.  */
+  /* Every string tunable has been consumed by ARCH_INIT_CPU_FEATURES, before
+     any code outside of libc startup runs.  */
+  __tunable_seal_strings ();
+
+  /* Do static-pie self relocation for the non-IRELATIVE part after tunables
+     and cpu features are set up.  IFUNC entries are deferred until after the
+     TCB and the stack-protector canary are usable, so that an instrumented
+     resolver does not fault.  Before this point relocations must be
+     avoided.  */
   _dl_relocate_static_pie ();
 
-  /* Perform IREL{,A} relocations.  */
-  ARCH_SETUP_IREL ();
-
-  /* The stack guard goes into the TCB, so initialize it early.  */
+  /* Set up the TCB so that the IFUNC pass below can fire resolvers
+     compiled with stack protection, and so that resolvers reading TLS
+     (errno, __thread variables, powerpc's hwcap / at_platform in the
+     TCB) observe an initialised slot.  */
   ARCH_SETUP_TLS ();
 
-  /* In some architectures, IREL{,A} relocations happen after TLS setup in
-     order to let IFUNC resolvers benefit from TCB information, e.g. powerpc's
-     hwcap and platform fields available in the TCB.  */
-  ARCH_APPLY_IREL ();
-
-  /* Set up the stack checker's canary.  */
+  /* Set up the stack checker's canary.  Must happen before any IFUNC resolver
+     runs so a resolver compiled with stack protection loads a defined
+     canary.  */
   uintptr_t stack_chk_guard = _dl_setup_stack_chk_guard (_dl_random);
 # ifdef THREAD_SET_STACK_GUARD
   THREAD_SET_STACK_GUARD (stack_chk_guard);
@@ -292,18 +295,31 @@ LIBC_START_MAIN (int (*main) (int, char **, char ** MAIN_AUXVEC_DECL),
   __stack_chk_guard = stack_chk_guard;
 # endif
 
-  /* Initialize libpthread if linked in.  */
-  if (__pthread_initialize_minimal != NULL)
-    __pthread_initialize_minimal ();
-
   /* Set up the pointer guard value.  */
   uintptr_t pointer_chk_guard = _dl_setup_pointer_guard (_dl_random,
 							 stack_chk_guard);
-# ifdef THREAD_SET_POINTER_GUARD
-  THREAD_SET_POINTER_GUARD (pointer_chk_guard);
-# else
   __pointer_chk_guard_local = pointer_chk_guard;
-# endif
+
+  /* We do not need the _dl_random value anymore.  Scrub the AT_RANDOM
+     bytes and clear the pointer; on targets with an entropy source, refill
+     the bytes with fresh random data.  */
+  _dl_reseed_random (&_dl_random);
+
+  /* Now that the TCB, canary, and pointer guard are in place, run the
+     deferred IFUNC relocations.  For non-PIE static binaries this is
+     ARCH_SETUP_IREL (apply_irel); for static-pie it is the IRELATIVE
+     phase of _dl_relocate_static_pie above.  */
+  _dl_relocate_static_pie_ifunc ();
+  ARCH_SETUP_IREL ();
+
+  /* This must run after the IFUNC relocations: _dl_executable_postprocess
+     may call IFUNC-resolved routines.  */
+  struct link_map *main_map = _dl_get_dl_main_map ();
+  _dl_executable_postprocess (main_map, GL(dl_phdr), GL(dl_phnum));
+
+  /* Initialize libpthread if linked in.  */
+  if (__pthread_initialize_minimal != NULL)
+    __pthread_initialize_minimal ();
 
 #endif /* !SHARED  */
 

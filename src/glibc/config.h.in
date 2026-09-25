@@ -32,9 +32,6 @@
 /* Define if _Unwind_Find_FDE should be exported from glibc.  */
 #undef  EXPORT_UNWIND_FIND_FDE
 
-/* Define if static NSS modules are wanted.  */
-#undef	DO_STATIC_NSS
-
 /* Assume that the compiler supports __builtin_expect.
    This macro is necessary for proper compilation of code
    shared between GNU libc and GNU gettext projects.  */
@@ -170,6 +167,9 @@
 /* Mach specific: define if the `vm_set_size_limit' RPC is available.  */
 #undef  HAVE_MACH_VM_SET_SIZE_LIMIT
 
+/* Mach specific: define if the `task_max_priority' RPC is available.  */
+#undef  HAVE_MACH_TASK_MAX_PRIORITY
+
 /* Mach/i386 specific: define if the `i386_io_perm_*' RPCs are available.  */
 #undef	HAVE_I386_IO_PERM_MODIFY
 
@@ -181,9 +181,6 @@
 
 /* Define if inlined system calls are available.  */
 #undef HAVE_INLINED_SYSCALLS
-
-/* Define if memory tagging support should be enabled.  */
-#undef USE_MTAG
 
 /* Package description.  */
 #undef PKGVERSION

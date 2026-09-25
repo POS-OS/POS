@@ -36,6 +36,9 @@
 #  define GCS_POLICY_OPTIONAL 2
 # endif
 
+void __mte_init (void);
+rtld_hidden_proto (__mte_init)
+
 /* Must be on a top-level stack frame that does not return.  */
 static inline void __attribute__((always_inline))
 aarch64_libc_setup_tls (void)
@@ -72,11 +75,13 @@ aarch64_libc_setup_tls (void)
 	    _dl_fatal_printf ("failed to lock GCS: %d\n", -ret);
 	}
     }
+
+  __mte_init ();
+
 }
 
 # define ARCH_SETUP_IREL() apply_irel ()
 # define ARCH_SETUP_TLS() aarch64_libc_setup_tls ()
-# define ARCH_APPLY_IREL()
 #endif /* ! SHARED  */
 
 #endif /* _LIBC_START_H  */

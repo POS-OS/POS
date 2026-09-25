@@ -28,7 +28,7 @@ __setpriority (enum __priority_which which, id_t who, int prio)
   error_t pidloser, priloser;
   unsigned int npids, ntasks, nwin, nperm, nacces;
 
-  prio = MAX (0, MIN (2 * NZERO - 1, prio));
+  prio = MAX ((-NZERO), MIN ((NZERO - 1), prio));
 
   error_t setonepriority (pid_t pid, struct procinfo *pi)
     {
@@ -57,11 +57,25 @@ __setpriority (enum __priority_which which, id_t who, int prio)
 				    0, 1);
 	  }
 #else
-	  prierr = __task_priority (task, NICE_TO_MACH_PRIORITY (prio), 1);
+	  do {
+#ifdef HAVE_MACH_TASK_MAX_PRIORITY
+	    mach_port_t host = MACH_PORT_NULL;
+	    error_t priverr = __get_privileged_ports (&host, NULL);
+	    if (!priverr)
+	      {
+		prierr = __task_max_priority (host, task, NICE_TO_MACH_PRIORITY (prio), 1, 1);
+		__mach_port_deallocate (__mach_task_self (), host);
+		if (prierr != MIG_BAD_ID)
+		  break;
+	      }
+#endif
+	    prierr = __task_priority (task, NICE_TO_MACH_PRIORITY (prio), 1);
+	  } while (0);
 #endif
 	  __mach_port_deallocate (__mach_task_self (), task);
 	  switch (prierr)
 	    {
+	    case KERN_NO_ACCESS:
 	    case KERN_FAILURE:
 	      ++nacces;
 	      break;

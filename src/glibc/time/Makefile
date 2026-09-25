@@ -75,6 +75,7 @@ tests := \
   tst-strftime2 \
   tst-strftime3 \
   tst-strftime4 \
+  tst-strftime5 \
   tst-strptime \
   tst-strptime-whitespace \
   tst-strptime2 \
@@ -152,4 +153,4 @@ CPPFLAGS-tst-tzname.c += -DTZDEFRULES='"$(posixrules-file)"'
 
 bug-getdate1-ARGS = ${objpfx}bug-getdate1-fmt
 
-tst-tzfile-fault-ENV = GLIBC_TUNABLES=glibc.rtld.enable_secure=1
+tst-tzfile-fault-TUNABLES += glibc.rtld.enable_secure=1

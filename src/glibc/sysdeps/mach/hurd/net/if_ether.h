@@ -24,18 +24,19 @@
  */
 
 #define ETH_ALEN	6		/* Octets in one ethernet addr	 */
+#define ETH_TLEN	2		/* Octets in ethernet type field */
 #define ETH_HLEN	14		/* Total octets in header.	 */
 #define ETH_ZLEN	60		/* Min. octets in frame sans FCS */
 #define ETH_DATA_LEN	1500		/* Max. octets in payload	 */
 #define ETH_FRAME_LEN	1514		/* Max. octets in frame sans FCS */
+#define ETH_FCS_LEN	4		/* Octets in the FCS		 */
 
 /*
  *	These are the defined Ethernet Protocol ID's.
  */
 
 #define ETH_P_LOOP	0x0060		/* Ethernet Loopback packet	*/
-#define ETH_P_ECHO	0x0200		/* Ethernet Echo packet		*/
-#define ETH_P_PUP	0x0400		/* Xerox PUP packet		*/
+#define ETH_P_PUP	0x0200		/* Xerox PUP packet		*/
 #define ETH_P_IP	0x0800		/* Internet Protocol packet	*/
 #define ETH_P_X25	0x0805		/* CCITT X.25			*/
 #define ETH_P_ARP	0x0806		/* Address Resolution packet	*/

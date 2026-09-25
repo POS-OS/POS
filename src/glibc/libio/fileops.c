@@ -111,8 +111,8 @@ _IO_new_file_init_internal (struct _IO_FILE_plus *fp)
   fp->file._offset = _IO_pos_BAD;
   fp->file._flags |= CLOSED_FILEBUF_FLAGS;
 
-  _IO_link_in (fp);
   fp->file._fileno = -1;
+  _IO_link_in (fp);
 }
 
 /* External version of _IO_new_file_init_internal which switches off
@@ -355,12 +355,14 @@ _IO_new_file_fopen (FILE *fp, const char *filename, const char *mode,
 	  *((char *) __mempcpy (ccs, cs + 5, endp - (cs + 5))) = '\0';
 	  strip (ccs, ccs);
 
-	  if (__wcsmbs_named_conv (&fcts, ccs[2] == '\0'
-				   ? upstr (ccs, cs + 5) : ccs) != 0)
+	  /* After stripping, ccs[2] == '\0' means the charset name is empty.
+	     This is not a valid charset and would cause problems downstream.
+	     Reject it with EINVAL (BZ #34574, CVE-2026-18374).  */
+	  if (ccs[2] == '\0' || __wcsmbs_named_conv (&fcts, ccs) != 0)
 	    {
-	      /* Something went wrong, we cannot load the conversion modules.
-		 This means we cannot proceed since the user explicitly asked
-		 for these.  */
+	      /* Either the charset name is empty after strip(), or conversion
+		 modules cannot be loaded.  This means we cannot proceed since
+		 the user explicitly asked for character conversion.  */
 	      (void) _IO_file_close_it (fp);
 	      free (ccs);
 	      __set_errno (EINVAL);
@@ -396,7 +398,8 @@ _IO_new_file_fopen (FILE *fp, const char *filename, const char *mode,
 	  cc->__cd_out.step_data.__statep = &result->_wide_data->_IO_state;
 
 	  /* From now on use the wide character callback functions.  */
-	  _IO_JUMPS_FILE_plus (fp) = fp->_wide_data->_wide_vtable;
+	  _IO_JUMPS_FILE_plus (fp)
+	    = IO_wide_validate_index (fp->_wide_data->_wide_vtable_index);
 
 	  /* Set the mode now.  */
 	  result->_mode = 1;
@@ -449,7 +452,7 @@ _IO_file_setbuf_mmap (FILE *fp, char *p, ssize_t len)
 
   /* Change the function table.  */
   _IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps;
-  fp->_wide_data->_wide_vtable = &_IO_wfile_jumps;
+  _IO_WIDE_JUMPS_FUNC_UPDATE (fp, &_IO_wfile_jumps);
 
   /* And perform the normal operation.  */
   result = _IO_new_file_setbuf (fp, p, len);
@@ -458,7 +461,7 @@ _IO_file_setbuf_mmap (FILE *fp, char *p, ssize_t len)
   if (result == NULL)
     {
       _IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps_mmap;
-      fp->_wide_data->_wide_vtable = &_IO_wfile_jumps_mmap;
+      _IO_WIDE_JUMPS_FUNC_UPDATE (fp, &_IO_wfile_jumps_mmap);
     }
 
   return result;
@@ -681,7 +684,7 @@ mmap_remap_check (FILE *fp)
 	_IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps;
       else
 	_IO_JUMPS_FILE_plus (fp) = &_IO_wfile_jumps;
-      fp->_wide_data->_wide_vtable = &_IO_wfile_jumps;
+      _IO_WIDE_JUMPS_FUNC_UPDATE (fp, &_IO_wfile_jumps);
 
       return 1;
     }
@@ -751,7 +754,7 @@ decide_maybe_mmap (FILE *fp)
 		_IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps_mmap;
 	      else
 		_IO_JUMPS_FILE_plus (fp) = &_IO_wfile_jumps_mmap;
-	      fp->_wide_data->_wide_vtable = &_IO_wfile_jumps_mmap;
+	      _IO_WIDE_JUMPS_FUNC_UPDATE (fp, &_IO_wfile_jumps_mmap);
 
 	      return;
 	    }
@@ -764,7 +767,7 @@ decide_maybe_mmap (FILE *fp)
     _IO_JUMPS_FILE_plus (fp) = &_IO_file_jumps;
   else
     _IO_JUMPS_FILE_plus (fp) = &_IO_wfile_jumps;
-  fp->_wide_data->_wide_vtable = &_IO_wfile_jumps;
+  _IO_WIDE_JUMPS_FUNC_UPDATE (fp, &_IO_wfile_jumps);
 }
 
 int

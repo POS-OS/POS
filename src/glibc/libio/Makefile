@@ -70,6 +70,7 @@ routines_no_fortify += \
   # routines_no_fortify
 
 tests = \
+  bug-fmemopen \
   bug-fopena+ \
   bug-fseek \
   bug-ftell \
@@ -84,6 +85,7 @@ tests = \
   bug-ungetwc1 \
   bug-ungetwc2 \
   bug-wfflush \
+  bug-wgenops-bz33998 \
   bug-wmemstream1 \
   bug-wsetpos \
   test-fmemopen \
@@ -107,6 +109,8 @@ tests = \
   tst-fgetc-after-eof \
   tst-fgetwc \
   tst-fgetws \
+  tst-file-init-race \
+  tst-fopen-ccs-empty \
   tst-fopenloc2 \
   tst-fputws \
   tst-freopen \
@@ -116,6 +120,8 @@ tests = \
   tst-ftell-partial-wide \
   tst-fwrite-error \
   tst-getdelim \
+  tst-memstream-setbuf \
+  tst-memstream-setvbuf-doallocate \
   tst-memstream1 \
   tst-memstream2 \
   tst-memstream3 \
@@ -139,6 +145,8 @@ tests = \
   tst-wfile-sync \
   tst-wfiledoallocate-static \
   tst-widetext \
+  tst-wmemstream-setbuf \
+  tst-wmemstream-setvbuf-doallocate \
   tst-wmemstream1 \
   tst-wmemstream2 \
   tst-wmemstream3 \
@@ -160,7 +168,9 @@ tests-static += \
 
 $(objpfx)tst-popen-fork: $(shared-thread-library)
 
-tests-internal = tst-vtables tst-vtables-interposed
+$(objpfx)tst-file-init-race: $(shared-thread-library)
+
+tests-internal = tst-vtables tst-vtables-interposed tst-wide-vtable-check
 
 ifeq (yes,$(build-shared))
 # Add test-fopenloc only if shared library is enabled since it depends on
@@ -185,6 +195,11 @@ routines += clearerr_u feof_u ferror_u fputc_u getc_u getchar_u		      \
 endif
 
 CPPFLAGS += $(libio-mtsafe)
+
+# Called during static library initialization, so turn stack-protection
+# off for non-shared builds.
+CFLAGS-libc_fatal.o = $(no-stack-protector)
+CFLAGS-libc_fatal.op = $(no-stack-protector)
 
 # Support for exception handling.
 CFLAGS-fileops.c += -fexceptions

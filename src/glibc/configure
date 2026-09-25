@@ -616,7 +616,6 @@ RELEASE
 VERSION
 mach_interface_list
 DEFINES
-static_nss
 profile
 libc_cv_multidir
 test_enable_cet
@@ -703,7 +702,6 @@ INSTALL_PROGRAM
 base_machine
 build_pt_chown
 build_nscd
-memory_tagging
 enable_werror
 force_install
 bindnow
@@ -805,13 +803,11 @@ enable_hardcoded_path_in_tests
 enable_hidden_plt
 enable_bind_now
 enable_stack_protector
-enable_static_nss
 enable_force_install
 enable_maintainer_mode
 enable_kernel
 enable_werror
 enable_multi_arch
-enable_memory_tagging
 enable_systemtap
 enable_build_nscd
 enable_nscd
@@ -1479,7 +1475,6 @@ Optional Features:
   --enable-stack-protector=[yes|no|all|strong]
                           Use -fstack-protector[-all|-strong] to detect glibc
                           buffer overflows
-  --enable-static-nss     build static NSS modules [default=no]
   --disable-force-install don't force installation of files from this package,
                           even if they are older than the installed files
   --enable-maintainer-mode
@@ -1490,8 +1485,6 @@ Optional Features:
   --disable-werror        do not build with -Werror
   --enable-multi-arch     enable single DSO with optimizations for multiple
                           architectures
-  --enable-memory-tagging enable memory tagging if supported by the
-                          architecture [default=no]
   --enable-systemtap      enable systemtap static probe points [default=no]
   --disable-build-nscd    disable building and installing the nscd daemon
   --disable-nscd          library functions will not contact the nscd daemon
@@ -4618,21 +4611,6 @@ all|yes|no|strong) ;;
 *) as_fn_error $? "Not a valid argument for --enable-stack-protector: \"$enable_stack_protector\"" "$LINENO" 5;;
 esac
 
-# Check whether --enable-static-nss was given.
-if test ${enable_static_nss+y}
-then :
-  enableval=$enable_static_nss; static_nss=$enableval
-else case e in #(
-  e) static_nss=no ;;
-esac
-fi
-
-if test x"$static_nss" = xyes || test x"$shared" = xno; then
-  static_nss=yes
-  printf "%s\n" "#define DO_STATIC_NSS 1" >>confdefs.h
-
-fi
-
 # Check whether --enable-force-install was given.
 if test ${enable_force_install+y}
 then :
@@ -4687,26 +4665,6 @@ then :
 else case e in #(
   e) multi_arch=default ;;
 esac
-fi
-
-
-# Check whether --enable-memory-tagging was given.
-if test ${enable_memory_tagging+y}
-then :
-  enableval=$enable_memory_tagging; memory_tagging=$enableval
-else case e in #(
-  e) memory_tagging=no ;;
-esac
-fi
-
-if test "$memory_tagging" = yes; then
-  # Only enable this on architectures that support it.
-  case $host_cpu in
-    aarch64)
-      printf "%s\n" "#define USE_MTAG 1" >>confdefs.h
-
-      ;;
-  esac
 fi
 
 
@@ -7437,47 +7395,6 @@ printf "%s\n" "$libc_cv_fpie" >&6; }
 
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for -Wno-discarded-qualifiers" >&5
-printf %s "checking for -Wno-discarded-qualifiers... " >&6; }
-if test ${libc_cv_cflags_wno_discarded_qualifiers+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) if { ac_try='${CC-cc} -Werror -Wno-discarded-qualifiers -xc /dev/null -S -o /dev/null'
-  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; }
-then :
-  libc_cv_cflags_wno_discarded_qualifiers=-Wno-discarded-qualifiers
-else case e in #(
-  e) libc_cv_cflags_wno_discarded_qualifiers= ;;
-esac
-fi
-if test -z "$libc_cv_cflags_wno_discarded_qualifiers"; then
-  if { ac_try='${CC-cc} -Werror -Wno-incompatible-pointer-types-discards-qualifiers -xc /dev/null -S -o /dev/null'
-  { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
-  (eval $ac_try) 2>&5
-  ac_status=$?
-  printf "%s\n" "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; }
-then :
-  libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers=-Wno-incompatible-pointer-types-discards-qualifiers
-else case e in #(
-  e) libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers= ;;
-esac
-fi
-  libc_cv_cflags_wno_discarded_qualifiers=$libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers
-fi
- ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $libc_cv_cflags_wno_discarded_qualifiers" >&5
-printf "%s\n" "$libc_cv_cflags_wno_discarded_qualifiers" >&6; }
-config_vars="$config_vars
-config-cflags-wno-discarded-qualifiers = $libc_cv_cflags_wno_discarded_qualifiers"
-
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for GLOB_DAT reloc" >&5
 printf %s "checking for GLOB_DAT reloc... " >&6; }
 if test ${libc_cv_has_glob_dat+y}
@@ -9652,7 +9569,6 @@ enable-gsframe = $enable_gsframe"
 # Set the `multidir' variable by grabbing the variable from the compiler.
 # We do it once and save the result in a generated makefile.
 libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
-
 
 
 

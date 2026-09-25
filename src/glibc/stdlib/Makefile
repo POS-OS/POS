@@ -347,6 +347,7 @@ tests := \
   tst-stdc_leading_zeros \
   tst-stdc_trailing_ones \
   tst-stdc_trailing_zeros \
+  tst-strfmon-bug34510 \
   tst-strfmon_l \
   tst-strfrom \
   tst-strfrom-locale \
@@ -388,6 +389,7 @@ endif
 
 tests-internal := \
   tst-qsort4 \
+  tst-stdc_rotate_left \
   tst-stdc_rotate_right \
   tst-strtod1i \
   tst-strtod3 \
@@ -528,6 +530,11 @@ generated += \
   isomac.out \
   tst-putenvmod.so \
   # generated
+
+# Called during static library initialization, so turn stack-protection
+# off for non-shared builds.
+CFLAGS-abort.o = $(no-stack-protector)
+CFLAGS-abort.op = $(no-stack-protector)
 
 CFLAGS-bsearch.c += $(uses-callbacks)
 CFLAGS-qsort.c += $(uses-callbacks)

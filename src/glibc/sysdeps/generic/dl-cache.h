@@ -220,6 +220,12 @@ enum cache_extension_tag
       size must be a multiple of 4.  */
    cache_extension_tag_glibc_hwcaps,
 
+   /* Array of system-wide tunable information.
+
+      For this section, 8-byte alignment is required, and the section
+      size must be a multiple of 8.  */
+   cache_extension_tag_tunables,
+
    /* Total number of known cache extension tags.  */
    cache_extension_count
   };
@@ -293,6 +299,20 @@ cache_extension_verify (struct cache_extension_all_loaded *loaded)
 	hwcaps->flags = 0;
       }
   }
+  {
+    /* Section must not be empty, it must be aligned at 8 bytes, and
+       the size must be a multiple of 8.  */
+    struct cache_extension_loaded *tun
+      = &loaded->sections[cache_extension_tag_tunables];
+    if (tun->size == 0
+	|| ((uintptr_t) tun->base % 8) != 0
+	|| (tun->size % 8) != 0)
+      {
+	tun->base = NULL;
+	tun->size = 0;
+	tun->flags = 0;
+      }
+  }
 }
 
 static bool __attribute__ ((unused))
@@ -301,6 +321,9 @@ cache_extension_load (const struct cache_file_new *cache,
 		      struct cache_extension_all_loaded *loaded)
 {
   memset (loaded, 0, sizeof (*loaded));
+  if (cache == NULL)
+    /* Old-format cache without a new-format header, so no extensions.  */
+    return true;
   if (cache->extension_offset == 0)
     /* No extensions present.  This is not a format error.  */
     return true;

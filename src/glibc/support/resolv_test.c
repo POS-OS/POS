@@ -429,11 +429,26 @@ resolv_response_length (const struct resolv_response_builder *b)
 }
 
 unsigned char *
-resolv_response_buffer (const struct resolv_response_builder *b)
+resolv_response_buffer (struct resolv_response_builder *b)
 {
-  unsigned char *result = xmalloc (b->offset);
-  memcpy (result, b->buffer, b->offset);
-  return result;
+  return b->buffer;
+}
+
+void
+resolv_response_set_buffer (struct resolv_response_builder *b,
+                            const unsigned char *data, size_t length)
+{
+  if (length > max_response_length)
+    FAIL_EXIT1 ("resolv_response_set_buffer: length %zu exceeds maximum %d",
+                length, max_response_length);
+  if (b->current_rdata_offset != 0)
+    FAIL_EXIT1 ("resolv_response_set_buffer: called with pending RDATA");
+  memmove (b->buffer, data, length);
+  b->offset = length;
+
+  /* The cached compression offsets are likely invalid now.  */
+  tdestroy (b->compression_offsets, free);
+  b->compression_offsets = NULL;
 }
 
 struct resolv_response_builder *
@@ -1183,7 +1198,6 @@ resolv_test_start (struct resolv_redirect_config config)
   /* Disable IPv6 name server addresses.  The code below only
      overrides the IPv4 addresses.  */
   __res_iclose (&_res, true);
-  _res._u._ext.nscount = 0;
 
   /* Redirect queries to the server socket.  */
   if (test_verbose)

@@ -47,19 +47,21 @@ typedef void (*tunable_callback_t) (tunable_val_t *);
 
 #include "dl-tunable-list.h"
 
-extern void __tunables_init (char **);
+extern void __tunables_init (char **, char **);
 extern void __tunables_print (void);
 extern bool __tunable_is_initialized (tunable_id_t);
 extern void __tunable_get_val (tunable_id_t, void *, tunable_callback_t);
 extern void __tunable_set_val (tunable_id_t, tunable_val_t *, tunable_num_t *,
 			       tunable_num_t *);
 extern void __tunable_get_default (tunable_id_t id, void *valp);
+extern void __tunable_seal_strings (void);
 rtld_hidden_proto (__tunables_init)
 rtld_hidden_proto (__tunables_print)
 rtld_hidden_proto (__tunable_is_initialized)
 rtld_hidden_proto (__tunable_get_val)
 rtld_hidden_proto (__tunable_set_val)
 rtld_hidden_proto (__tunable_get_default)
+rtld_hidden_proto (__tunable_seal_strings)
 
 /* Define TUNABLE_GET and TUNABLE_SET in short form if TOP_NAMESPACE and
    TUNABLE_NAMESPACE are defined.  This is useful shorthand to get and set

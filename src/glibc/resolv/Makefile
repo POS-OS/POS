@@ -108,6 +108,7 @@ tests += \
   tst-ns_name \
   tst-ns_name_compress \
   tst-ns_name_pton \
+  tst-ns_sprintrr \
   tst-res_hconf_reorder \
   tst-res_hnok \
   tst-resolv-aliases \
@@ -122,6 +123,8 @@ tests += \
   tst-resolv-noaaaa \
   tst-resolv-noaaaa-vc \
   tst-resolv-nondecimal \
+  tst-resolv-querymatch-short \
+  tst-resolv-res_init-failure \
   tst-resolv-res_init-multi \
   tst-resolv-search \
   tst-resolv-semi-failure \
@@ -156,6 +159,7 @@ tests += \
   tst-resolv-ai_idn-nolibidn2 \
   tst-resolv-canonname \
   tst-resolv-getaddrinfo-fqdn \
+  tst-resolv-gethostbyname_r-unaligned \
   tst-resolv-trustad \
 
 # Needs resolv_context.
@@ -305,8 +309,12 @@ $(objpfx)tst-resolv-byaddr: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-dns-section: $(objpfx)libresolv.so \
   $(shared-thread-library)
 $(objpfx)tst-resolv-edns: $(objpfx)libresolv.so $(shared-thread-library)
+$(objpfx)tst-resolv-gethostbyname_r-unaligned: \
+  $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-network: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-res_init: $(objpfx)libresolv.so
+$(objpfx)tst-resolv-res_init-failure: $(objpfx)libresolv.so \
+  $(shared-thread-library)
 $(objpfx)tst-resolv-res_init-multi: $(objpfx)libresolv.so \
   $(shared-thread-library)
 $(objpfx)tst-resolv-res_init-thread: $(objpfx)libresolv.so \
@@ -319,6 +327,8 @@ $(objpfx)tst-resolv-no-search: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-noaaaa: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-noaaaa-vc: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-nondecimal: $(objpfx)libresolv.so $(shared-thread-library)
+$(objpfx)tst-resolv-querymatch-short: $(objpfx)libresolv.so \
+  $(shared-thread-library)
 $(objpfx)tst-resolv-qtypes: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-rotate: $(objpfx)libresolv.so $(shared-thread-library)
 $(objpfx)tst-resolv-search: $(objpfx)libresolv.so $(shared-thread-library)
@@ -338,5 +348,6 @@ $(objpfx)tst-ns_name: $(objpfx)libresolv.so
 $(objpfx)tst-ns_name.out: tst-ns_name.data
 $(objpfx)tst-ns_name_compress: $(objpfx)libresolv.so
 $(objpfx)tst-ns_name_pton: $(objpfx)libresolv.so
+$(objpfx)tst-ns_sprintrr: $(objpfx)libresolv.so
 $(objpfx)tst-res_hnok: $(objpfx)libresolv.so
 $(objpfx)tst-p_secstodate: $(objpfx)libresolv.so

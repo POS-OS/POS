@@ -351,6 +351,19 @@ $(objpfx)%-threaded-worker.o: CPPFLAGS += -DTEST_IN_THREAD=TEST_THREAD_WORKER
 $(objpfx)%-threaded-worker.o: %.c $(before-compile)
 	$(compile-command.c)
 
+# Compile the hugetlb={1,2} test variants from their base sources with
+# -DTEST_HUGETLB so support/test-driver.c gates them on kernel support.
+$(foreach t,$(tests-malloc-hugetlb1),\
+  $(eval libof-$(t)-malloc-hugetlb1 := testsuite))
+$(foreach t,$(tests-malloc-hugetlb2),\
+  $(eval libof-$(t)-malloc-hugetlb2 := testsuite))
+$(objpfx)%-malloc-hugetlb1.o: CPPFLAGS += -DTEST_HUGETLB
+$(objpfx)%-malloc-hugetlb1.o: %.c $(before-compile)
+	$(compile-command.c)
+$(objpfx)%-malloc-hugetlb2.o: CPPFLAGS += -DTEST_HUGETLB
+$(objpfx)%-malloc-hugetlb2.o: %.c $(before-compile)
+	$(compile-command.c)
+
 # Include the cleanup handler.
 aux := set-freeres thread-freeres
 
@@ -438,17 +451,19 @@ malloc-check-env = \
   MALLOC_CHECK_=3 \
   LD_PRELOAD=$(objpfx)/libc_malloc_debug.so
 
-malloc-check-tunables-env = \
-  GLIBC_TUNABLES=glibc.malloc.check=3 \
-  LD_PRELOAD=$(objpfx)/libc_malloc_debug.so
-
 tst-malloc-check-ENV = $(malloc-check-env)
 tst-malloc-usable-ENV = $(malloc-check-env)
 tst-malloc-usable-threaded-main-ENV = $(malloc-check-env)
 tst-malloc-usable-threaded-worker-ENV = $(malloc-check-env)
+
+malloc-check-tunables-env = LD_PRELOAD=$(objpfx)/libc_malloc_debug.so
+malloc-check-tunables-tun = glibc.malloc.check=3
 tst-malloc-usable-tunables-ENV = $(malloc-check-tunables-env)
+tst-malloc-usable-tunables-TUNABLES += $(malloc-check-tunables-tun)
 tst-malloc-usable-tunables-threaded-main-ENV = $(malloc-check-tunables-env)
+tst-malloc-usable-tunables-threaded-main-TUNABLES += $(malloc-check-tunables-tun)
 tst-malloc-usable-tunables-threaded-worker-ENV = $(malloc-check-tunables-env)
+tst-malloc-usable-tunables-threaded-worker-TUNABLES += $(malloc-check-tunables-tun)
 
 CPPFLAGS-malloc-debug.c += -DUSE_TCACHE=0
 CPPFLAGS-malloc.c += -DUSE_TCACHE=1

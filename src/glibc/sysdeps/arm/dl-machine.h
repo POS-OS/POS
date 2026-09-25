@@ -190,6 +190,7 @@ _dl_start_user:\n\
 
 /* A reloc type used for ld.so cmdline arg lookups to reject PLT entries.  */
 #define ELF_MACHINE_JMP_SLOT	R_ARM_JUMP_SLOT
+#define ELF_MACHINE_IRELATIVE	R_ARM_IRELATIVE
 
 /* We define an initialization functions.  This is called very early in
    _dl_sysdep_start.  */
@@ -382,7 +383,7 @@ elf_machine_rel (struct link_map *map, struct r_scope_elem *scope[],
 
 # ifndef RTLD_BOOTSTRAP
 #  ifndef SHARED
-		CHECK_STATIC_TLS (map, sym_map);
+		CHECK_STATIC_TLS (map, sym_map, sym);
 #  else
 		if (!TRY_STATIC_TLS (map, sym_map))
 		  {
@@ -423,7 +424,7 @@ elf_machine_rel (struct link_map *map, struct r_scope_elem *scope[],
 	case R_ARM_TLS_TPOFF32:
 	  if (sym != NULL)
 	    {
-	      CHECK_STATIC_TLS (map, sym_map);
+	      CHECK_STATIC_TLS (map, sym_map, sym);
 	      *reloc_addr += sym->st_value + sym_map->l_tls_offset;
 	    }
 	  break;

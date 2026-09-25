@@ -1,5 +1,12 @@
 ifeq ($(subdir),csu)
-gen-as-const-headers += cpu-features-offsets.sym features-offsets.sym
+# <jmp_buf-ssp.h> is used by the setjmp/longjmp implementations in the
+# setjmp subdirectory and also by ____longjmp_chk.S in the debug
+# subdirectory.
+gen-as-const-headers += \
+  cpu-features-offsets.sym \
+  features-offsets.sym \
+  jmp_buf-ssp.sym \
+  # gen-as-const-headers
 endif
 
 ifeq ($(subdir),elf)
@@ -50,8 +57,10 @@ tests += \
 tests-static += \
   tst-ifunc-isa-1-static \
 # tests-static
-test-xfail-tst-ifunc-isa-1 = $(with-lld)
-test-xfail-tst-ifunc-isa-1-static = $(with-lld)
+ifneq (no, $(with-lld))
+test-xfail-tst-ifunc-isa-1 = yes
+test-xfail-tst-ifunc-isa-1-static = yes
+endif
 tests += \
   tst-ifunc-isa-2 \
   tst-ifunc-isa-2-static \
@@ -59,8 +68,10 @@ tests += \
 tests-static += \
   tst-ifunc-isa-2-static \
 # tests-static
-test-xfail-tst-ifunc-isa-2 = $(with-lld)
-test-xfail-tst-ifunc-isa-2-static = $(with-lld)
+ifneq (no, $(with-lld))
+test-xfail-tst-ifunc-isa-2 = yes
+test-xfail-tst-ifunc-isa-2-static = yes
+endif
 endif
 endif
 ifeq (yes,$(enable-x86-isa-level))
@@ -99,6 +110,9 @@ endif
 tst-ifunc-isa-2-ENV = GLIBC_TUNABLES=glibc.cpu.hwcaps=-SSE4_2,-AVX,-AVX2,-AVX512F
 tst-ifunc-isa-2-static-ENV = $(tst-ifunc-isa-2-ENV)
 tst-hwcap-tunables-ARGS = -- $(host-test-program-cmd)
+
+CFLAGS-tst-tunables-seal.c += -DTST_SEAL_TUNABLE_NAME=hwcaps
+tst-tunables-seal-TUNABLES += glibc.cpu.hwcaps=-AVX2
 
 CFLAGS-tst-gnu2-tls2.c += -msse2
 CFLAGS-tst-gnu2-tls2mod0.c += -msse2 -mtune=haswell
@@ -167,7 +181,6 @@ tests += \
 endif # $(subdir) == math
 
 ifeq ($(subdir),setjmp)
-gen-as-const-headers += jmp_buf-ssp.sym
 sysdep_routines += __longjmp_cancel
 endif
 

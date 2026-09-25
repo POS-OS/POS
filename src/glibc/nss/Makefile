@@ -322,6 +322,7 @@ tests := \
   tst-getaddrinfo \
   tst-getaddrinfo2 \
   tst-getaddrinfo3 \
+  tst-getaddrinfo4 \
   tst-gethnm \
   tst-getpw \
   tst-gshadow \
@@ -343,7 +344,6 @@ tests := \
 
 xtests := \
   bug-erange \
-  tst-getaddrinfo4 \
   tst-getaddrinfo5 \
   # xtests
 
@@ -427,12 +427,9 @@ libnss_compat-routines	:= $(addprefix compat-,grp pwd spwd initgroups) \
 
 install-others		+= $(inst_vardbdir)/Makefile
 
-# Build static module into libc if requested
 libnss_db-inhibit-o	= $(filter-out .os,$(object-suffixes))
 libnss_compat-inhibit-o	= $(filter-out .os,$(object-suffixes))
-ifeq ($(build-static-nss),yes)
 tests-static		+= tst-nss-static
-endif
 extra-test-objs		+= nss_test1.os nss_test2.os nss_test_errno.os \
 			   nss_test_gai_hv2_canonname.os
 
@@ -515,6 +512,9 @@ endif
 
 $(objpfx)tst-nss-files-alias-leak.out: $(objpfx)libnss_files.so
 $(objpfx)tst-nss-files-alias-truncated.out: $(objpfx)libnss_files.so
+
+$(objpfx)tst-getaddrinfo4: \
+  $(common-objpfx)resolv/libresolv.so $(shared-thread-library)
 
 $(objpfx)tst-default-domain: $(objpfx)nisdomain.os
 

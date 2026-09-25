@@ -272,19 +272,6 @@ all|yes|no|strong) ;;
 *) AC_MSG_ERROR([Not a valid argument for --enable-stack-protector: "$enable_stack_protector"]);;
 esac
 
-dnl On some platforms we cannot use dynamic loading.  We must provide
-dnl static NSS modules.
-AC_ARG_ENABLE([static-nss],
-	      AS_HELP_STRING([--enable-static-nss],
-			     [build static NSS modules @<:@default=no@:>@]),
-	      [static_nss=$enableval],
-	      [static_nss=no])
-dnl Enable static NSS also if we build no shared objects.
-if test x"$static_nss" = xyes || test x"$shared" = xno; then
-  static_nss=yes
-  AC_DEFINE(DO_STATIC_NSS)
-fi
-
 AC_ARG_ENABLE([force-install],
 	      AS_HELP_STRING([--disable-force-install],
 			     [don't force installation of files from this package, even if they are older than the installed files]),
@@ -327,21 +314,6 @@ AC_ARG_ENABLE([multi-arch],
 			     [enable single DSO with optimizations for multiple architectures]),
 	      [multi_arch=$enableval],
 	      [multi_arch=default])
-
-AC_ARG_ENABLE([memory-tagging],
-	      AS_HELP_STRING([--enable-memory-tagging],
-			     [enable memory tagging if supported by the architecture @<:@default=no@:>@]),
-	      [memory_tagging=$enableval],
-	      [memory_tagging=no])
-if test "$memory_tagging" = yes; then
-  # Only enable this on architectures that support it.
-  case $host_cpu in
-    aarch64)
-      AC_DEFINE(USE_MTAG)
-      ;;
-  esac
-fi
-AC_SUBST(memory_tagging)
 
 AC_ARG_ENABLE([systemtap],
               [AS_HELP_STRING([--enable-systemtap],
@@ -1371,22 +1343,6 @@ LIBC_TRY_CC_OPTION([-fpie], [libc_cv_fpie=yes], [libc_cv_fpie=no])
 
 AC_SUBST(libc_cv_fpie)
 
-dnl Check how to suppress C23-qualifier-generic const warnings.  GCC has
-dnl -Wno-discarded-qualifiers, while clang -Wno-incompatible-pointer-types-discards-qualifiers
-AC_CACHE_CHECK(for -Wno-discarded-qualifiers, libc_cv_cflags_wno_discarded_qualifiers, [dnl
-LIBC_TRY_CC_OPTION([-Werror -Wno-discarded-qualifiers],
-		   [libc_cv_cflags_wno_discarded_qualifiers=-Wno-discarded-qualifiers],
-		   [libc_cv_cflags_wno_discarded_qualifiers=])
-if test -z "$libc_cv_cflags_wno_discarded_qualifiers"; then
-  LIBC_TRY_CC_OPTION([-Werror -Wno-incompatible-pointer-types-discards-qualifiers],
-		     [libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers=-Wno-incompatible-pointer-types-discards-qualifiers],
-		     [libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers=])
-  libc_cv_cflags_wno_discarded_qualifiers=$libc_cv_cflags_wno_incompatible_pointer_type_discards_qualifiers
-fi
-])
-LIBC_CONFIG_VAR([config-cflags-wno-discarded-qualifiers],
-		[$libc_cv_cflags_wno_discarded_qualifiers])
-
 AC_CACHE_CHECK(for GLOB_DAT reloc,
 	       libc_cv_has_glob_dat, [dnl
 cat > conftest.c <<EOF
@@ -2231,7 +2187,6 @@ libc_cv_multidir=`${CC-cc} $CFLAGS $CPPFLAGS -print-multi-directory`
 AC_SUBST(libc_cv_multidir)
 
 AC_SUBST(profile)
-AC_SUBST(static_nss)
 
 AC_SUBST(DEFINES)
 

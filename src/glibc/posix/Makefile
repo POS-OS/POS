@@ -242,6 +242,7 @@ tests := \
   bug-regex36 \
   bug-regex37 \
   bug-regex38 \
+  bug-regex39 \
   regexbug1 \
   runptests \
   runtests \
@@ -290,6 +291,7 @@ tests := \
   tst-gai_strerror \
   tst-getopt_long1 \
   tst-glob-bz30635 \
+  tst-glob-bz34453 \
   tst-glob-tilde \
   tst-glob_symlinks \
   tst-gnuglob \
@@ -329,6 +331,7 @@ tests := \
   tst-wait3 \
   tst-wait4 \
   tst-waitid \
+  tst-wordexp-append \
   tst-wordexp-nocmd \
   tst-wordexp-reuse \
   tstgetopt \
@@ -359,6 +362,7 @@ tests-internal := \
 tests-container := \
   bug-ga2 \
   tst-vfork3 \
+  tst-wordexp-tilde \
   # tests-container
 
 tests-time64 := \

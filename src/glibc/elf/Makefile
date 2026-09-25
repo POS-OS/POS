@@ -78,6 +78,7 @@ dl-routines = \
   dl-reloc \
   dl-runtime \
   dl-scope \
+  dl-scratch-buffer \
   dl-setup_hash \
   dl-sort-maps \
   dl-thread_gscope_wait \
@@ -224,6 +225,7 @@ ldconfig-modules := \
   readlib \
   static-stubs \
   stringtable \
+  tunconf \
   xmalloc \
   xstrdup \
   # ldconfig-modules
@@ -269,6 +271,7 @@ tests-static-normal := \
   tst-env-setuid-static \
   tst-getauxval-static \
   tst-linkall-static \
+  tst-ptrguard-static-dlopen \
   tst-single_threaded-pthread-static \
   tst-single_threaded-static \
   tst-tls-allocation-failure-static \
@@ -277,6 +280,8 @@ tests-static-normal := \
   # tests-static-normal
 
 tests-static-internal := \
+  tst-assert-startup-static \
+  tst-atrandom-scrub-static \
   tst-dl-printf-static \
   tst-dl_find_object-static \
   tst-env-setuid-tunables \
@@ -286,12 +291,24 @@ tests-static-internal := \
   tst-tls1-static-non-pie \
   tst-tunables \
   tst-tunables-enable_secure \
+  tst-tunables-seal-static \
   # tests-static-internal
+
+ifeq (yesyes,$(have-gcc-ifunc)$(have-ssp))
+tests-static-internal += \
+  tst-ifunc-resolver-protector-static \
+  tst-ifunc-resolver-protector-static-non-pie \
+  # tests-static-internal
+endif
 
 CRT-tst-tls1-static-non-pie := $(csu-objpfx)crt1.o
 tst-tls1-static-non-pie-no-pie = yes
+CRT-tst-ifunc-resolver-protector-static-non-pie := $(csu-objpfx)crt1.o
+tst-ifunc-resolver-protector-static-non-pie-no-pie = yes
 
 tests-container := \
+  tst-dl-cache-long-path \
+  tst-dl-cache-old-format \
   tst-ldconfig-bad-aux-cache \
   tst-ldconfig-ld_so_conf-update \
   # tests-container
@@ -322,6 +339,7 @@ tests-internal := \
   $(tests-static-internal) \
   tst-tls1 \
   tst-tls_tp_offset \
+  tst-tunconf1 \
   # tests-internal
 
 tests-static := $(tests-static-normal) $(tests-static-internal)
@@ -331,6 +349,17 @@ tests-static += \
   tst-single_threaded-static-dlopen \
   tst-tls9-static \
   # tests-static
+
+tst-tunconf1-TUNABLES-only = \
+  glibc.malloc.tcache_count=5 \
+  glibc.malloc.perturb=41 \
+  glibc.malloc.mmap_threshold=10002 \
+  glibc.malloc.trim_threshold=10002 \
+  glibc.malloc.arena_max=300
+tst-tunconf1-ENV = \
+  MALLOC_MMAP_MAX_=200 \
+  MALLOC_TOP_PAD_=200 \
+  MALLOC_ARENA_MAX=400
 
 static-dlopen-environment = \
   LD_LIBRARY_PATH=$(ld-library-path):$(common-objpfx)dlfcn
@@ -404,9 +433,13 @@ tests += \
   tst-auxobj \
   tst-auxobj-dlopen \
   tst-big-note \
+  tst-bz26577 \
+  tst-bz26577-minstack \
   tst-debug1 \
   tst-deep1 \
   tst-dl-is_dso \
+  tst-dl-llp-stack \
+  tst-dl-path-buf \
   tst-dlclose-lazy \
   tst-dlmodcount \
   tst-dlmopen-dlerror \
@@ -429,6 +462,7 @@ tests += \
   tst-dlopenfail-2 \
   tst-dlopenrpath \
   tst-dlsym-error \
+  tst-dst-needed-minstack \
   tst-filterobj \
   tst-filterobj-dlopen \
   tst-glibc-hwcaps \
@@ -498,6 +532,7 @@ tests += \
   tst-tlsalign \
   tst-tlsalign-extern \
   tst-tlsgap \
+  tst-trace-tls \
   tst-unique1 \
   tst-unique2 \
   tst-unwind-ctor \
@@ -531,9 +566,11 @@ tests-internal += \
   neededtest2 \
   neededtest3 \
   neededtest4 \
+  tst-atrandom-scrub \
   tst-audit19a \
   tst-create_format1 \
   tst-dl-hwcaps_split \
+  tst-dl-path-normalize \
   tst-dl_find_object \
   tst-dl_find_object-threads \
   tst-dlmopen2 \
@@ -547,6 +584,7 @@ tests-internal += \
   tst-tls6 \
   tst-tls7 \
   tst-tls8 \
+  tst-tunables-seal \
   unload \
   unload2 \
   # tests-internal
@@ -558,12 +596,17 @@ endif
 tests-container += \
   tst-dlopen-self-container \
   tst-dlopen-tlsmodid-container \
+  tst-ldconfig-cache \
+  tst-origin-secure \
   tst-pldd \
   tst-preload-pthread-libc \
+  tst-ptrguard-static-dlopen \
   tst-rootdir \
+  tst-tunconf1 \
   # tests-container
 
 test-srcs = \
+  tst-origin-secure-victim \
   tst-pathopt \
   tst-sprof-basic \
   # tests-srcs
@@ -692,6 +735,7 @@ tests-special += $(tests-execstack-special-$(have-z-execstack))
 ifeq ($(run-built-tests),yes)
 tests-special += \
   $(objpfx)tst-ldconfig-X.out \
+  $(objpfx)tst-ldconfig-install.out \
   $(objpfx)tst-ldconfig-p.out \
   $(objpfx)tst-ldconfig-soname.out \
   $(objpfx)tst-rtld-help.out \
@@ -700,6 +744,7 @@ ifeq (yes,$(build-shared))
 ifneq ($(PERL),no)
 tests-special += \
   $(objpfx)noload-mem.out \
+  $(objpfx)tst-dl-path-buf-mem.out \
   $(objpfx)tst-leaks1-mem.out \
   # tests-special
 endif
@@ -713,6 +758,9 @@ one-hundred = $(foreach x,0 1 2 3 4 5 6 7 8 9, \
   0$x 1$x 2$x 3$x 4$x 5$x 6$x 7$x 8$x 9$x)
 tst-tls-many-dynamic-modules := \
   $(foreach n,$(one-hundred),tst-tls-manydynamic$(n)mod)
+tst-ldconfig-cache-modules := \
+  $(foreach n,01 02 03 04 05,tst-tls-manydynamic$(n)mod)
+$(objpfx)tst-ldconfig-cache.out: $(tst-ldconfig-cache-modules:%=$(objpfx)%.so)
 tst-tls-many-dynamic-modules-dep-suffixes = 0 1 2 3 4 5 6 7 8 9 10 11 12 13 \
 					    14 15 16 17 18 19
 tst-tls-many-dynamic-modules-dep = \
@@ -736,6 +784,19 @@ test-extras += \
   tst-tlsmod17a \
   tst-tlsmod18a \
   # test-extras
+
+ifeq (yesyes,$(have-gcc-ifunc)$(have-ssp))
+# The resolver helper needs <tls.h> for the TCB-canary STACK_CHK_GUARD
+# macro, so it must be compiled with MODULE_NAME=testsuite_internal.
+extra-test-objs += \
+  tst-ifunc-resolver-protector-static-mod.o \
+  tst-ifunc-resolver-protector-static-non-pie-mod.o \
+  # extra-test-objs
+test-internal-extras += \
+  tst-ifunc-resolver-protector-static-mod \
+  tst-ifunc-resolver-protector-static-non-pie-mod \
+  # test-internal-extras
+endif
 modules-names += \
   circlemod1 \
   circlemod1a \
@@ -786,6 +847,7 @@ modules-names += \
   libtracemod3-1 \
   libtracemod4-1 \
   libtracemod5-1 \
+  libtst-origin-secure-mod \
   ltglobmod1 \
   ltglobmod2 \
   neededobj1 \
@@ -909,6 +971,7 @@ modules-names += \
   tst-deep1mod1 \
   tst-deep1mod2 \
   tst-deep1mod3 \
+  tst-dl-path-buf-mod \
   tst-dl_find_object-mod1 \
   tst-dl_find_object-mod2 \
   tst-dl_find_object-mod3 \
@@ -939,6 +1002,8 @@ modules-names += \
   tst-dlopenfailmod3 \
   tst-dlopenfailnodelmod \
   tst-dlopenrpathmod \
+  tst-dst-needed-leaf-mod \
+  tst-dst-needed-wrap-mod \
   tst-filterobj-aux \
   tst-filterobj-filtee \
   tst-filterobj-flt \
@@ -978,8 +1043,10 @@ modules-names += \
   tst-nodeps2-mod \
   tst-non-directory-mod \
   tst-null-argv-lib \
+  tst-origin-secure-evilmod \
   tst-p_alignmod-base \
   tst-p_alignmod3 \
+  tst-ptrguard-static-dlopen-mod \
   tst-recursive-tlsmallocmod \
   tst-recursive-tlsmod0 \
   tst-recursive-tlsmod1 \
@@ -1051,6 +1118,7 @@ modules-names += \
   tst-tlsmod7 \
   tst-tlsmod8 \
   tst-tlsmod9 \
+  tst-trace-tls-mod \
   tst-unique1mod1 \
   tst-unique1mod2 \
   tst-unique2mod1 \
@@ -1205,6 +1273,17 @@ LDFLAGS-tst-pie-address-static += \
   $(load-address-ldflag)=$(pde-load-address)
 endif
 endif
+ifeq (yes,$(enable-static-pie))
+tests-static += \
+  tst-pie-rpath-static \
+  # tests-static
+tests-container += \
+  tst-pie-rpath-static \
+  # tests-container
+modules-names += \
+  tst-pie-rpath-mod \
+  # modules-names
+endif
 ifeq (yes,$(have-protected-data))
 tests += vismain
 tests-pie += vismain
@@ -1223,6 +1302,7 @@ modules-names-nobuild += \
   tst-audit24bmod1 \
   tst-audit24bmod2 \
   tst-big-note-lib \
+  tst-bz26577-mod \
   tst-nodeps1-mod \
   tst-nodeps2-mod \
   tst-ro-dynamic-mod \
@@ -1244,7 +1324,11 @@ tests-ifuncstatic := \
   ifuncmain7static \
   # tests-ifuncstatic
 ifeq (yes,$(have-gcc-ifunc))
-tests-ifuncstatic += ifuncmain9static ifuncmain9picstatic
+tests-ifuncstatic += \
+  ifuncmain9picstatic \
+  ifuncmain9static \
+  tst-ifunc-bz28817 \
+  # tests-ifuncstatic
 endif
 tests-static += $(tests-ifuncstatic)
 tests-internal += $(tests-ifuncstatic)
@@ -1252,6 +1336,14 @@ ifeq (yes,$(build-shared))
 tests += \
   tst-ifunc-fault-bindnow \
   tst-ifunc-fault-lazy \
+  tst-ifunc-plt \
+  tst-ifunc-plt-bindnow \
+  tst-ifunc-plt-dlopen \
+  tst-ifunc-plt-dlopen-bindnow \
+  tst-ifunc-tls-init \
+  tst-ifunc-tls-init-gd-ld \
+  tst-ifunc-tls-write \
+  tst-tls-tdata-reloc \
   # tests
 # Note: sysdeps/x86_64/ifuncmain8.c uses ifuncmain8.
 tests-internal += \
@@ -1314,9 +1406,35 @@ modules-names += \
   ifuncmod1 \
   ifuncmod3 \
   ifuncmod6 \
+  tst-ifunc-plt-dep \
+  tst-ifunc-plt-lib \
+  tst-ifunc-tls-init-gd-global-lib \
+  tst-ifunc-tls-init-gd-lib \
+  tst-ifunc-tls-init-ld-lib \
+  tst-ifunc-tls-init-lib1 \
+  tst-ifunc-tls-init-lib2 \
+  tst-ifunc-tls-write-lib \
+  tst-tls-tdata-reloc-lib \
   # modules-names
+ifeq (yes,$(have-gcc-ifunc))
+tests += \
+  tst-ifunc-fault-dep-bindnow \
+  tst-ifunc-fault-dep-lazy \
+  # tests
+modules-names += tst-ifunc-fault-mod
+endif
+ifneq (no,$(have-test-mtls-descriptor))
+tests += tst-ifunc-tls-init-tlsdesc
+modules-names += tst-ifunc-tls-init-tlsdesc-lib
+CFLAGS-tst-ifunc-tls-init-tlsdesc-lib.c += \
+  -mtls-dialect=$(have-test-mtls-descriptor)
+endif
 ifeq (no,$(with-lld))
 modules-names += ifuncmod5
+endif
+ifeq ($(have-ssp),yes)
+tests += tst-ifunc-resolver-protector
+modules-names += tst-ifunc-resolver-protector-mod
 endif
 endif
 endif
@@ -1338,6 +1456,7 @@ tests-special += \
   $(objpfx)check-execstack.out \
   $(objpfx)check-initfini.out \
   $(objpfx)check-localplt.out \
+  $(objpfx)check-symbol-version.out \
   $(objpfx)check-textrel.out \
   $(objpfx)check-wx-segment.out \
   # tests-special
@@ -1373,6 +1492,7 @@ ifndef avoid-generated
 # Makefile fragment to be included.
 define include_dsosort_tests
 $(objpfx)$(1).generated-makefile: $(1)
+	$$(make-target-directory)
 	$(PYTHON) $(..)scripts/dso-ordering-test.py \
 	--description-file $$< --objpfx $(objpfx) --output-makefile $$@T
 	mv $$@T $$@
@@ -1381,6 +1501,7 @@ endef
 # Likewise, where the .def file itself is generated.
 define include_dsosort_tests_objpfx
 $(objpfx)$(1).generated-makefile: $(objpfx)$(1)
+	$$(make-target-directory)
 	$(PYTHON) $(..)scripts/dso-ordering-test.py \
 	--description-file $$< --objpfx $(objpfx) --output-makefile $$@T
 	mv $$@T $$@
@@ -1399,12 +1520,15 @@ $(eval $(call include_dsosort_tests,dso-sort-tests-1.def))
 $(eval $(call include_dsosort_tests,dso-sort-tests-2.def))
 
 $(objpfx)dso-sort-tests-all2.def: dso-sort-tests-all.py
+	$(make-target-directory)
 	$(PYTHON) $< 2 > $@
 
 $(objpfx)dso-sort-tests-all3.def: dso-sort-tests-all.py
+	$(make-target-directory)
 	$(PYTHON) $< 3 > $@
 
 $(objpfx)dso-sort-tests-all4.def: dso-sort-tests-all.py
+	$(make-target-directory)
 	$(PYTHON) $< 4 > $@
 
 $(eval $(call include_dsosort_tests_objpfx,dso-sort-tests-all2.def))
@@ -1482,7 +1606,9 @@ $(objpfx)dl-allobjs.os: $(all-rtld-routines:%=$(objpfx)%.os)
 # when compiled for libc.
 rtld-stubbed-symbols = \
   __libc_assert_fail \
-  __syscall_cancel \
+  __libc_single_threaded_internal \
+  __syscall_cancel_arch \
+  __syscall_do_cancel \
   calloc \
   free \
   malloc \
@@ -1499,6 +1625,7 @@ endif
 # These symbols might be emitted by the compiler when fortify is enabled
 # (through builtins).
 rtld-stubbed-symbols += \
+  __GI___chk_fail \
   __GI___vfprintf_chk \
   __GI___vsprintf_chk \
   __GI___vsyslog_chk \
@@ -1721,6 +1848,19 @@ $(objpfx)tst-nodelete-opened.out: $(objpfx)tst-nodelete-opened-lib.so
 $(objpfx)tst-tlsalign-extern: $(objpfx)tst-tlsalign-vars.o
 $(objpfx)tst-tlsalign-extern-static: $(objpfx)tst-tlsalign-vars.o
 
+# The resolver translation unit must always be compiled with
+# -fstack-protector-all so the canary code is emitted regardless of the
+# default.
+CFLAGS-tst-ifunc-resolver-protector-static-mod.c = -fstack-protector-all
+CFLAGS-tst-ifunc-resolver-protector-static-non-pie-mod.c = -fstack-protector-all
+CFLAGS-tst-ifunc-resolver-protector-mod.c = -fstack-protector-all
+$(objpfx)tst-ifunc-resolver-protector-static: \
+  $(objpfx)tst-ifunc-resolver-protector-static-mod.o
+$(objpfx)tst-ifunc-resolver-protector-static-non-pie: \
+  $(objpfx)tst-ifunc-resolver-protector-static-non-pie-mod.o
+$(objpfx)tst-ifunc-resolver-protector: \
+  $(objpfx)tst-ifunc-resolver-protector-mod.so
+
 tst-null-argv-ENV = LD_DEBUG=all LD_DEBUG_OUTPUT=$(objpfx)tst-null-argv.debug.out
 LDFLAGS-nodel2mod3.so = -Wl,--no-as-needed
 LDFLAGS-reldepmod5.so = -Wl,--no-as-needed
@@ -1793,6 +1933,7 @@ unload4mod1.so-no-z-defs = yes
 ifuncmod1.so-no-z-defs = yes
 ifuncmod5.so-no-z-defs = yes
 ifuncmod6.so-no-z-defs = yes
+tst-ifunc-plt-lib.so-no-z-defs = yes
 tst-auditmod9a.so-no-z-defs = yes
 tst-auditmod9b.so-no-z-defs = yes
 tst-nodelete-uniquemod.so-no-z-defs = yes
@@ -2065,10 +2206,10 @@ CFLAGS-tst-execstack-mod.c += -Wno-trampolines
 # It expects loading a module with executable stack to work.
 CFLAGS-tst-execstack-tunable.c += -DUSE_PTHREADS=0 -DDEFAULT_RWX_STACK=1
 $(objpfx)tst-execstack-tunable.out: $(objpfx)tst-execstack-mod.so
-tst-execstack-tunable-ENV = GLIBC_TUNABLES=glibc.rtld.execstack=2
+tst-execstack-tunable-TUNABLES += glibc.rtld.execstack=2
 
 LDFLAGS-tst-execstack-prog-static-tunable = -Wl,-z,noexecstack
-tst-execstack-prog-static-tunable-ENV = GLIBC_TUNABLES=glibc.rtld.execstack=2
+tst-execstack-prog-static-tunable-TUNABLES += glibc.rtld.execstack=2
 
 LDFLAGS-tst-execstack-prog-static = -Wl,-z,execstack
 ifeq ($(have-no-error-execstack),yes)
@@ -2262,10 +2403,26 @@ $(objpfx)check-initfini.out: $(..)scripts/check-initfini.awk \
 	$(evaluate-test)
 generated += check-initfini.out
 
+$(objpfx)check-symbol-version.out: $(..)scripts/check-symbol-version.awk \
+			    $(all-built-dso:=.dynsym)
+	LC_ALL=C $(AWK) -f $^ > $@; \
+	$(evaluate-test)
+generated += check-symbol-version.out
+
 $(objpfx)tst-dlopenrpath: $(objpfx)tst-dlopenrpathmod.so
 CFLAGS-tst-dlopenrpath.c += -DPFX=\"$(objpfx)\"
 LDFLAGS-tst-dlopenrpathmod.so += -Wl,-rpath,\$$ORIGIN/test-subdir
 $(objpfx)tst-dlopenrpath.out: $(objpfx)firstobj.so
+
+$(objpfx)tst-dl-path-buf: $(objpfx)tst-dl-path-buf-mod.so $(shared-thread-library)
+LDFLAGS-tst-dl-path-buf += -Wl,-rpath,\$$ORIGIN/tst-dl-path-buf-subdir
+tst-dl-path-buf-TUNABLES = glibc.mem.decorate_maps=1
+tst-dl-path-buf-ENV = MALLOC_TRACE=$(objpfx)tst-dl-path-buf.mtrace \
+		      LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
+
+$(objpfx)tst-dl-path-buf-mem.out: $(objpfx)tst-dl-path-buf.out
+	$(common-objpfx)malloc/mtrace $(objpfx)tst-dl-path-buf.mtrace > $@; \
+	$(evaluate-test)
 
 $(objpfx)tst-deep1mod2.so: $(objpfx)tst-deep1mod3.so
 $(objpfx)tst-deep1: $(objpfx)tst-deep1mod1.so
@@ -2329,6 +2486,9 @@ tst-ptrguard1-ARGS = --command "$(host-test-program-cmd) --child"
 # __pointer_chk_guard_local.
 CFLAGS-tst-ptrguard1-static.c += -DPTRGUARD_LOCAL
 tst-ptrguard1-static-ARGS = --command "$(objpfx)tst-ptrguard1-static --child"
+
+# Likewise, the static pointer guard lives in __pointer_chk_guard_local.
+CFLAGS-tst-atrandom-scrub-static.c += -DPTRGUARD_LOCAL
 
 $(objpfx)tst-leaks1-mem.out: $(objpfx)tst-leaks1.out
 	$(common-objpfx)malloc/mtrace $(objpfx)tst-leaks1.mtrace > $@; \
@@ -2425,6 +2585,60 @@ $(objpfx)tst-ifunc-fault-lazy.out: $(objpfx)tst-ifunc-fault-lazy $(objpfx)ld.so
 $(objpfx)tst-ifunc-fault-bindnow.out: $(objpfx)tst-ifunc-fault-bindnow \
    $(objpfx)ld.so
 	$(tst-ifunc-fault-script)
+
+LDFLAGS-tst-ifunc-fault-dep-lazy = -Wl,-z,lazy
+LDFLAGS-tst-ifunc-fault-dep-bindnow = -Wl,-z,now
+define tst-ifunc-fault-dep-script
+( $(test-wrapper) $(rtld-prefix) --verify $< \
+  && $(test-wrapper-env) LD_TRACE_LOADED_OBJECTS=1 $(rtld-prefix) $< \
+  && $(test-wrapper-env) LD_TRACE_LOADED_OBJECTS=1 LD_DEBUG=unused \
+			 $(rtld-prefix) $< \
+  && $(test-wrapper-env) LD_TRACE_LOADED_OBJECTS=1 LD_WARN=yes LD_BIND_NOW=1 \
+			 $(rtld-prefix) $< \
+) > $@; $(evaluate-test)
+endef
+$(objpfx)tst-ifunc-fault-dep-lazy: $(objpfx)tst-ifunc-fault-mod.so
+$(objpfx)tst-ifunc-fault-dep-bindnow: $(objpfx)tst-ifunc-fault-mod.so
+$(objpfx)tst-ifunc-fault-dep-lazy.out: $(objpfx)tst-ifunc-fault-dep-lazy \
+   $(objpfx)tst-ifunc-fault-mod.so $(objpfx)ld.so
+	$(tst-ifunc-fault-dep-script)
+$(objpfx)tst-ifunc-fault-dep-bindnow.out: \
+   $(objpfx)tst-ifunc-fault-dep-bindnow \
+   $(objpfx)tst-ifunc-fault-mod.so $(objpfx)ld.so
+	$(tst-ifunc-fault-dep-script)
+
+LDFLAGS-tst-ifunc-plt-lib.so = -Wl,-z,lazy
+
+tst-ifunc-plt-bindnow-ENV = LD_BIND_NOW=1
+tst-ifunc-plt-dlopen-bindnow-ENV = LD_BIND_NOW=1
+
+$(objpfx)tst-ifunc-plt-lib.so: $(objpfx)tst-ifunc-plt-dep.so
+$(objpfx)tst-ifunc-plt: $(objpfx)tst-ifunc-plt-lib.so
+$(objpfx)tst-ifunc-plt-bindnow: $(objpfx)tst-ifunc-plt-lib.so
+$(objpfx)tst-ifunc-plt-dlopen.out: \
+  $(objpfx)tst-ifunc-plt-lib.so $(objpfx)tst-ifunc-plt-dep.so
+$(objpfx)tst-ifunc-plt-dlopen-bindnow.out: \
+  $(objpfx)tst-ifunc-plt-lib.so $(objpfx)tst-ifunc-plt-dep.so
+
+$(objpfx)tst-ifunc-tls-init: $(objpfx)tst-ifunc-tls-init-lib1.so
+$(objpfx)tst-ifunc-tls-init.out: \
+  $(objpfx)tst-ifunc-tls-init-lib2.so
+$(objpfx)tst-ifunc-tls-write: $(objpfx)tst-ifunc-tls-write-lib.so
+$(objpfx)tst-tls-tdata-reloc: $(objpfx)tst-tls-tdata-reloc-lib.so
+
+$(objpfx)tst-ifunc-tls-init-gd-ld: $(shared-thread-library)
+$(objpfx)tst-ifunc-tls-init-gd-ld.out: \
+  $(objpfx)tst-ifunc-tls-init-gd-lib.so \
+  $(objpfx)tst-ifunc-tls-init-gd-global-lib.so \
+  $(objpfx)tst-ifunc-tls-init-ld-lib.so
+tst-ifunc-tls-init-gd-ld-TUNABLES = glibc.rtld.optional_static_tls=0
+
+ifneq (no,$(have-test-mtls-descriptor))
+$(objpfx)tst-ifunc-tls-init-tlsdesc: $(shared-thread-library)
+$(objpfx)tst-ifunc-tls-init-tlsdesc.out: \
+  $(objpfx)tst-ifunc-tls-init-tlsdesc-lib.so
+tst-ifunc-tls-init-tlsdesc-TUNABLES = glibc.rtld.optional_static_tls=0
+endif # $(have-test-mtls-descriptor)
 
 $(objpfx)tst-unique1.out: $(objpfx)tst-unique1mod1.so \
 			  $(objpfx)tst-unique1mod2.so
@@ -2696,6 +2910,11 @@ $(objpfx)tst-ldconfig-X.out : tst-ldconfig-X.sh $(objpfx)ldconfig
 		 '$(run-program-env)' > $@; \
 	$(evaluate-test)
 
+$(objpfx)tst-ldconfig-install.out : tst-ldconfig-install.sh $(objpfx)ldconfig
+	$(SHELL) $< '$(common-objpfx)' '$(test-wrapper-env)' \
+		'$(run-program-env)' > $@; \
+	$(evaluate-test)
+
 $(objpfx)tst-ldconfig-p.out : tst-ldconfig-p.sh $(objpfx)ldconfig
 	$(SHELL) $< '$(common-objpfx)' '$(sysconfdir)' '$(test-wrapper-env)' \
 		 '$(run-program-env)' > $@; \
@@ -2714,7 +2933,7 @@ $(objpfx)tst-ldconfig-soname.out : tst-ldconfig-soname.sh \
 
 # Test static linking of all the libraries we can possibly link
 # together.  Note that in some configurations this may be less than the
-# complete list of libraries we build but we try to maxmimize this list.
+# complete list of libraries we build but we try to maximize this list.
 $(objpfx)tst-linkall-static: \
   $(common-objpfx)math/libm.a \
   $(common-objpfx)resolv/libresolv.a \
@@ -2757,6 +2976,16 @@ $(objpfx)tst-big-note: $(objpfx)tst-big-note-lib.so
 # test.
 $(objpfx)tst-big-note-lib.so: $(objpfx)tst-big-note-lib.o
 	$(LINK.o) -shared -o $@ $(LDFLAGS.so) $(dt-relr-ldflag) $<
+
+tst-bz26577-ARGS = -- $(host-test-program-cmd)
+$(objpfx)tst-bz26577.out: $(objpfx)tst-bz26577-mod.so
+$(objpfx)tst-bz26577-mod.so: gen-tst-bz26577-mod.py $(..)/scripts/glibcelf.py \
+			      $(objpfx)ld.so
+	PYTHONPATH=$(..)scripts $(PYTHON) $< $@ $(objpfx)ld.so
+generated += tst-bz26577-mod.so
+
+$(objpfx)tst-bz26577-minstack: $(shared-thread-library)
+$(objpfx)tst-bz26577-minstack.out: $(objpfx)tst-bz26577-mod.so
 
 $(objpfx)tst-unwind-ctor: $(objpfx)tst-unwind-ctor-lib.so
 LDLIBS-tst-unwind-ctor += $(libunwind)
@@ -2838,6 +3067,17 @@ $(objpfx)tst-dlopen-nodelete-reloc-mod17.so: \
 LDFLAGS-tst-dlopen-nodelete-reloc-mod17.so = -Wl,--no-as-needed
 
 $(objpfx)tst-ldconfig-ld_so_conf-update.out: $(objpfx)tst-ldconfig-ld-mod.so
+
+$(objpfx)tst-dl-cache-long-path: $(shared-thread-library)
+# Both cache tests reuse the trivial module already built for tst-dl-path-buf.
+$(objpfx)tst-dl-cache-long-path.out: $(objpfx)tst-dl-path-buf-mod.so
+$(objpfx)tst-dl-cache-old-format.out: $(objpfx)tst-dl-path-buf-mod.so
+
+LDFLAGS-tst-dst-needed-leaf-mod.so = \
+  -Wl,-soname,\$$ORIGIN/\$$ORIGIN/\$$ORIGIN/\$$ORIGIN/\$$ORIGIN/leaf.so
+$(objpfx)tst-dst-needed-wrap-mod.so: $(objpfx)tst-dst-needed-leaf-mod.so
+$(objpfx)tst-dst-needed-minstack: $(shared-thread-library)
+$(objpfx)tst-dst-needed-minstack.out: $(objpfx)tst-dst-needed-wrap-mod.so
 
 LDFLAGS-tst-filterobj-flt.so = -Wl,--filter=$(objpfx)tst-filterobj-filtee.so
 $(objpfx)tst-filterobj: $(objpfx)tst-filterobj-flt.so
@@ -2967,6 +3207,9 @@ $(objpfx)tst-glibc-hwcaps-cache.out: $(objpfx)tst-glibc-hwcaps
 tst-tunables-ARGS = -- $(host-test-program-cmd)
 tst-tunables-enable_secure-ARGS = -- $(host-test-program-cmd)
 
+CFLAGS-tst-tunables-seal-static.c += $(CFLAGS-tst-tunables-seal.c)
+tst-tunables-seal-static-TUNABLES += $(tst-tunables-seal-TUNABLES)
+
 $(objpfx)list-tunables.out: tst-rtld-list-tunables.sh $(objpfx)ld.so
 	$(SHELL) $< $(objpfx)ld.so '$(test-wrapper-env)' \
 	    '$(run_program_env)' > $(objpfx)/tst-rtld-list-tunables.out
@@ -3060,6 +3303,9 @@ $(objpfx)tst-tls21mod.so: $(tst-tls-many-dynamic-modules:%=$(objpfx)%.so)
 
 $(objpfx)tst-getauxval-static.out: $(objpfx)tst-auxvalmod.so
 tst-getauxval-static-ENV = LD_LIBRARY_PATH=$(objpfx):$(common-objpfx)
+
+$(objpfx)tst-ptrguard-static-dlopen.out: \
+  $(objpfx)tst-ptrguard-static-dlopen-mod.so
 
 $(objpfx)tst-dlmopen-gethostbyname.out: $(objpfx)tst-dlmopen-gethostbyname-mod.so
 
@@ -3295,8 +3541,8 @@ $(objpfx)tst-dlclose-lazy.out: \
 
 $(objpfx)tst-decorate-maps: $(shared-thread-library)
 
-tst-decorate-maps-ENV = \
-  GLIBC_TUNABLES=glibc.malloc.arena_max=8:glibc.malloc.mmap_threshold=1024:glibc.mem.decorate_maps=1
+tst-decorate-maps-TUNABLES += \
+  glibc.malloc.arena_max=8:glibc.malloc.mmap_threshold=1024:glibc.mem.decorate_maps=1
 tst-decorate-maps-ARGS = 8
 
 LDFLAGS-tst-non-directory-mod.so = -Wl,-soname,tst-non-directory-mod.so
@@ -3331,6 +3577,9 @@ $(objpfx)tst-nodeps2-mod.so: $(common-objpfx)libc.so \
 	$(link-test-modules-rpath-link)
 $(objpfx)tst-nodeps2.out: \
   $(objpfx)tst-nodeps1-mod.so $(objpfx)tst-nodeps2-mod.so
+
+$(objpfx)tst-trace-tls.out: $(objpfx)tst-trace-tls-mod.so $(objpfx)ld.so
+tst-trace-tls-mod.so-no-z-defs = yes
 
 $(objpfx)tst-tlsgap: $(shared-thread-library)
 $(objpfx)tst-tlsgap.out: \
@@ -3554,3 +3803,30 @@ $(objpfx)tst-dl-debug-exclude.out: tst-dl-debug-exclude.sh \
 		 $(objpfx)tst-recursive-tls > $@; \
 	$(evaluate-test)
 endif
+
+CFLAGS-tst-assert-startup-static.c += $(no-stack-protector)
+LDFLAGS-tst-assert-startup-static += -Wl,-z,muldefs
+
+$(objpfx)tst-assert-startup-static.out: $(objpfx)tst-assert-startup-static
+	$(test-program-cmd-before-env) \
+		$(run-program-env) \
+		$< > $@ 2>&1; echo "status: $$?" >> $@; \
+	grep -q 'Fatal glibc error: tst-assert-startup-static' $@ \
+	  && grep -q '^status: 134$$' $@; \
+	  $(evaluate-test)
+
+LDFLAGS-tst-pie-rpath-static += -Wl,-rpath,\$$ORIGIN/tst-pie-rpath-static-subdir
+$(objpfx)tst-pie-rpath-static.out: $(objpfx)tst-pie-rpath-mod.so
+
+LDFLAGS-libtst-origin-secure-mod.so += -Wl,-soname,libtst-origin-secure-mod.so
+LDFLAGS-tst-origin-secure-evilmod.so += -Wl,-soname,libtst-origin-secure-mod.so
+$(objpfx)tst-origin-secure-victim: $(objpfx)libtst-origin-secure-mod.so
+# The number of "../" here must match the layout invariants described in
+# tst-origin-secure.c.
+LDFLAGS-tst-origin-secure-victim += \
+  -Wl,--no-as-needed \
+  -Wl,-rpath,\$$ORIGIN/sub/../../../../..$(slibdir)/tst-origin-secure \
+  -Wl,--disable-new-dtags
+$(objpfx)tst-origin-secure.out: $(objpfx)tst-origin-secure-victim \
+			       $(objpfx)libtst-origin-secure-mod.so \
+			       $(objpfx)tst-origin-secure-evilmod.so

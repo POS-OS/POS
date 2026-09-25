@@ -67,16 +67,11 @@ tz-cflags = -DTZDIR='"$(zonedir)"' \
 	    -DTZDEFAULT='"$(localtime-file)"' \
 	    -DTZDEFRULES='"$(posixrules-file)"' \
 	    -DTM_GMTOFF=tm_gmtoff -DTM_ZONE=tm_zone \
-	    -DHAVE_GETTEXT -DUSE_LTZ=0 -D_ISOMAC -DTZ_DOMAIN='"libc"' \
+	    -DHAVE_GETTEXT -DUSE_LTZ=0 -DTZ_DOMAIN='"libc"' \
 	    -include $(common-objpfx)config.h $(config-cflags-wno-maybe-uninitialized)
 
-# The -Wno-unused-variable flag is used to prevent GCC 6
-# from warning about time_t_min and time_t_max which are
-# defined in private.h but not used.
-# $(config-cflags-wno-discarded-qualifiers) is because zic is not prepared for C23
-# -qualifier-generic strchr.
 CFLAGS-zdump.c += $(tz-cflags)
-CFLAGS-zic.c += $(tz-cflags) -Wno-unused-variable $(config-cflags-wno-discarded-qualifiers)
+CFLAGS-zic.c += $(tz-cflags)
 
 # We have to make sure the data for testing the tz functions is available.
 # Don't add leapseconds here since test-tz made checks that work only without

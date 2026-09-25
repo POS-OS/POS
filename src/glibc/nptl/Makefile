@@ -283,6 +283,7 @@ tests = \
   tst-cleanup5 \
   tst-cond26 \
   tst-context1 \
+  tst-deadlk \
   tst-default-attr \
   tst-dlsym1 \
   tst-exec4 \
@@ -311,6 +312,7 @@ tests = \
   tst-mutexpi10 \
   tst-mutexpi11 \
   tst-mutexpi12 \
+  tst-mutexpp11 \
   tst-once5 \
   tst-pthread-affinity-inheritance \
   tst-pthread-attr-affinity \
@@ -326,6 +328,7 @@ tests = \
   tst-pthread_exit-nothreads-static \
   tst-pthread_gettid_np \
   tst-robust-fork \
+  tst-robust12 \
   tst-robustpi1 \
   tst-robustpi2 \
   tst-robustpi3 \
@@ -350,6 +353,7 @@ tests = \
   tst-rwlock22 \
   tst-sched1 \
   tst-sem17 \
+  tst-setuid-eagain \
   tst-signal3 \
   tst-stack2 \
   tst-stack3 \
@@ -738,12 +742,9 @@ tst-audit-threads-ENV = LD_AUDIT=$(objpfx)tst-audit-threads-mod1.so
 tst-setuid1-static-ENV = \
   LD_LIBRARY_PATH=$(ld-library-path):$(common-objpfx)elf:$(common-objpfx)nss
 
-tst-pthread-proc-maps-ENV = \
-  GLIBC_TUNABLES=glibc.malloc.arena_max=8:glibc.malloc.mmap_threshold=1024
-tst-pthread-proc-maps-ARGS = 8
-
-# The tests here better do not run in parallel.
-ifeq ($(run-built-tests),yes)
+# The tests here better do not run in parallel, unless serialize-tests is
+# cleared (make check-parallel).
+ifeq (yes-yes,$(run-built-tests)-$(serialize-tests))
 ifneq ($(filter %tests,$(MAKECMDGOALS)),)
 .NOTPARALLEL:
 endif

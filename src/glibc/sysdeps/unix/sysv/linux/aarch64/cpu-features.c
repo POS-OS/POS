@@ -20,7 +20,6 @@
 #include <cpu-features.h>
 #include <sys/auxv.h>
 #include <elf/dl-hwcaps.h>
-#include <sys/prctl.h>
 #include <sys/utsname.h>
 #include <dl-tunables-parse.h>
 #include <dl-symbol-redir-ifunc.h>
@@ -34,53 +33,54 @@
    to see when pointer have been correctly tagged.  */
 #define MTE_ALLOWED_TAGS (0xfffe << PR_MTE_TAG_SHIFT)
 
-struct cpu_list
+static void
+TUNABLE_CALLBACK (set_hwcaps) (tunable_val_t *val)
 {
-  const char *name;
-  size_t len;
-  uint64_t midr;
-};
+  struct cpu_features *cpu_features = &GLRO(dl_aarch64_cpu_features);
+  struct tunable_str_comma_state_t cs;
+  tunable_str_comma_init (&cs, val);
 
-static const struct cpu_list cpu_list[] =
+  struct tunable_str_comma_t n;
+  while (tunable_str_comma_next (&cs, &n))
+    {
+      /* Support disabling of features to select more generic ifuncs.  */
+      if (!n.disable)
+	continue;
+      if (tunable_str_comma_strcmp_cte (&n, "midr"))
+	cpu_features->midr_el1 = 0;
+      else if (tunable_str_comma_strcmp_cte (&n, "zva"))
+	cpu_features->zva_size = 0;
+      else if (tunable_str_comma_strcmp_cte (&n, "sve"))
+	cpu_features->sve = false;
+      else if (tunable_str_comma_strcmp_cte (&n, "sve2"))
+	cpu_features->sve2 = false;
+      else if (tunable_str_comma_strcmp_cte (&n, "mops"))
+	cpu_features->mops = false;
+    }
+}
+
+static void
+TUNABLE_CALLBACK (set_aarch64_mte_mode) (tunable_val_t *val)
 {
-#define CPU_LIST_ENTRY(__str, __num) { __str, sizeof (__str) - 1, __num }
-  CPU_LIST_ENTRY ("kunpeng920",     0x481FD010),
-  CPU_LIST_ENTRY ("kunpeng950",     0x480FD060),
-  CPU_LIST_ENTRY ("a64fx",          0x460F0010),
-  CPU_LIST_ENTRY ("generic",        0x0),
-};
-
-static uint64_t
-get_midr_from_mcpu (const struct tunable_str_t *mcpu)
-{
-  for (int i = 0; i < array_length (cpu_list); i++)
-    if (tunable_strcmp (mcpu, cpu_list[i].name, cpu_list[i].len))
-      return cpu_list[i].midr;
-
-  return UINT64_MAX;
+  if (tunable_strcmp_cte (val, "enabled"))
+    GL (dl_aarch64_mte_mode) = MTE_MODE_ENABLED;
+  else if (tunable_strcmp_cte (val, "sync"))
+    GL (dl_aarch64_mte_mode) = MTE_MODE_SYNC;
+  else if (tunable_strcmp_cte (val, "async"))
+    GL (dl_aarch64_mte_mode) = MTE_MODE_ASYNC;
+  else if (tunable_strcmp_cte (val, "disabled"))
+    GL (dl_aarch64_mte_mode) = MTE_MODE_DISABLED;
+  else
+    GL (dl_aarch64_mte_mode) = MTE_MODE_ENABLED;
 }
 
 static inline void
 init_cpu_features (struct cpu_features *cpu_features)
 {
-  register uint64_t midr = UINT64_MAX;
+  uint64_t midr = 0;
 
-  /* Get the tunable override.  */
-  const struct tunable_str_t *mcpu = TUNABLE_GET (glibc, cpu, name,
-						  struct tunable_str_t *,
-						  NULL);
-  if (mcpu != NULL)
-    midr = get_midr_from_mcpu (mcpu);
-
-  /* If there was no useful tunable override, query the MIDR if the kernel
-     allows it.  */
-  if (midr == UINT64_MAX)
-    {
-      if (GLRO (dl_hwcap) & HWCAP_CPUID)
-	asm volatile ("mrs %0, midr_el1" : "=r"(midr));
-      else
-	midr = 0;
-    }
+  if (GLRO (dl_hwcap) & HWCAP_CPUID)
+    asm volatile ("mrs %0, midr_el1" : "=r"(midr));
 
   cpu_features->midr_el1 = midr;
 
@@ -96,35 +96,14 @@ init_cpu_features (struct cpu_features *cpu_features)
   if (cpu_features->bti)
     GLRO (dl_aarch64_bti) = TUNABLE_GET (glibc, cpu, aarch64_bti, uint64_t, 0);
 
-  /* Setup memory tagging support if the HW and kernel support it, and if
-     the user has requested it.  */
-  cpu_features->mte_state = 0;
-
-#ifdef USE_MTAG
-  int mte_state = TUNABLE_GET (glibc, mem, tagging, unsigned, 0);
-  cpu_features->mte_state = (GLRO (dl_hwcap2) & HWCAP2_MTE) ? mte_state : 0;
-  /* If we lack the MTE feature, disable the tunable, since it will
-     otherwise cause instructions that won't run on this CPU to be used.  */
-  TUNABLE_SET (glibc, mem, tagging, cpu_features->mte_state);
-
-  if (cpu_features->mte_state & 4)
-    /* Enable choosing system-preferred faulting mode.  */
-    __prctl (PR_SET_TAGGED_ADDR_CTRL,
-	     (PR_TAGGED_ADDR_ENABLE | PR_MTE_TCF_SYNC | PR_MTE_TCF_ASYNC
-	      | MTE_ALLOWED_TAGS),
-	     0, 0, 0);
-  else if (cpu_features->mte_state & 2)
-    __prctl (PR_SET_TAGGED_ADDR_CTRL,
-	     (PR_TAGGED_ADDR_ENABLE | PR_MTE_TCF_SYNC | MTE_ALLOWED_TAGS),
-	     0, 0, 0);
-  else if (cpu_features->mte_state)
-    __prctl (PR_SET_TAGGED_ADDR_CTRL,
-	     (PR_TAGGED_ADDR_ENABLE | PR_MTE_TCF_ASYNC | MTE_ALLOWED_TAGS),
-	     0, 0, 0);
-#endif
+  /* Check if MTE is supported.  */
+  if (GLRO (dl_hwcap2) & HWCAP2_MTE)
+    TUNABLE_GET (glibc, cpu, mtemode, tunable_val_t *,
+		 TUNABLE_CALLBACK (set_aarch64_mte_mode));
 
   /* Check if SVE is supported.  */
   cpu_features->sve = GLRO (dl_hwcap) & HWCAP_SVE;
+  cpu_features->sve2 = GLRO (dl_hwcap2) & HWCAP2_SVE2;
 
   /* Check if MOPS is supported.  */
   cpu_features->mops = GLRO (dl_hwcap2) & HWCAP2_MOPS;
@@ -132,4 +111,8 @@ init_cpu_features (struct cpu_features *cpu_features)
   if (GLRO (dl_hwcap) & HWCAP_GCS)
     /* GCS status may be updated later by binary compatibility checks.  */
     GL (dl_aarch64_gcs) = TUNABLE_GET (glibc, cpu, aarch64_gcs, uint64_t, 0);
+
+  /* Allow override by glibc.cpu.hwcaps tunable after setting features.  */
+  TUNABLE_GET (glibc, cpu, hwcaps, tunable_val_t *,
+	       TUNABLE_CALLBACK (set_hwcaps));
 }

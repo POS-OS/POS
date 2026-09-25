@@ -28,7 +28,7 @@ xprintf-funcs := p as d f s sn v vas vd vf vs vsn
 
 # List of data types and formats for individual per-conversion printf tests.
 fmt-convs := double ldouble
-fmts := E e F f G g
+fmts := A a E e F f G g
 
 # List of data types grouping all conversions in single printf tests.
 nonfmt-convs := c char int llong long s short
@@ -327,6 +327,7 @@ tests := \
   tst-scanf-binary-gnu11 \
   tst-scanf-binary-gnu89 \
   tst-scanf-bz27650 \
+  tst-scanf-bz34208 \
   tst-scanf-intn \
   tst-scanf-nan \
   tst-scanf-round \
@@ -349,7 +350,9 @@ tests := \
   tst-vfprintf-user-type \
   tst-vfprintf-width-i18n \
   tst-vfprintf-width-prec-alloc \
+  tst-vfscanf-bz34008 \
   tst-wc-printf \
+  tst-wscanf-bz34208 \
   tstdiomisc \
   tstgetln \
   tstscanf \
@@ -564,6 +567,9 @@ tst-printf-bz18872-ENV = MALLOC_TRACE=$(objpfx)tst-printf-bz18872.mtrace \
 tst-vfprintf-width-prec-ENV = \
   MALLOC_TRACE=$(objpfx)tst-vfprintf-width-prec.mtrace \
   LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
+tst-vfscanf-bz34008-ENV = \
+  MALLOC_CHECK_=3 \
+  LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
 tst-printf-bz25691-ENV = \
   MALLOC_TRACE=$(objpfx)tst-printf-bz25691.mtrace \
   LD_PRELOAD=$(common-objpfx)/malloc/libc_malloc_debug.so
@@ -627,7 +633,7 @@ $(objpfx)tst-printf.out: tst-printf.sh $(objpfx)tst-printf
 
 # We can't split a quoted recipe line, so do it via an auxiliary variable.
 make-tst-printf-format-out = \
-  AWK='$(AWK)' BASH='$(BASH)' \
+  PYTHON='$(PYTHON)' BASH='$(BASH)' \
     $(BASH) $< $@ $(common-objpfx) \
     '$(run-program-prefix-before-env) \
      $(run-program-env) \
@@ -636,7 +642,7 @@ make-tst-printf-format-out = \
      $(run-program-prefix-after-env)'
 $(objpfx)tst-printf-format-%.out: \
   tst-printf-format.sh $(foreach c,$(convs),tst-printf-format-$(c).sh) \
-  $(foreach f,$(xprintf-srcs),$(objpfx)$(f)) tst-printf-format.awk
+  $(foreach f,$(xprintf-srcs),$(objpfx)$(f)) tst-printf-format.py
 	$(make-tst-printf-format-out) > $@; \
 	$(evaluate-test)
 

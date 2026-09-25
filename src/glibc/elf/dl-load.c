@@ -33,31 +33,8 @@
 #include <sys/types.h>
 #include <gnu/lib-names.h>
 #include <dl-tunables.h>
-
-/* Type for the buffer we put the ELF header and hopefully the program
-   header.  This buffer does not really have to be too large.  In most
-   cases the program header follows the ELF header directly.  If this
-   is not the case all bets are off and we can make the header
-   arbitrarily large and still won't get it read.  This means the only
-   question is how large are the ELF and program header combined.  The
-   ELF header 32-bit files is 52 bytes long and in 64-bit files is 64
-   bytes long.  Each program header entry is again 32 and 56 bytes
-   long respectively.  I.e., even with a file which has 10 program
-   header entries we only have to read 372B/624B respectively.  Add to
-   this a bit of margin for program notes and reading 512B and 832B
-   for 32-bit and 64-bit files respectively is enough.  If this
-   heuristic should really fail for some file the code in
-   `_dl_map_object_from_fd' knows how to recover.  */
-struct filebuf
-{
-  ssize_t len;
-#if __WORDSIZE == 32
-# define FILEBUF_SIZE 512
-#else
-# define FILEBUF_SIZE 832
-#endif
-  char buf[FILEBUF_SIZE] __attribute__ ((aligned (__alignof (ElfW(Ehdr)))));
-};
+#include <dl-scratch-buffer.h>
+#include <dl-path-normalize.h>
 
 #include "dynamic-link.h"
 #include "get-dynamic-info.h"
@@ -115,54 +92,24 @@ static const size_t system_dirs_len[] =
 };
 #define nsystem_dirs_len array_length (system_dirs_len)
 
+/* Return true if the normalized path NPATH of length NLEN is rooted in one of
+   the trusted system directories.  The system_dirs entries carry a trailing
+   '/'; NPATH matches an entry when it shares the entry's leading component
+   sequence and then either ends or continues with '/'.  For instance,
+   "/lib64" and "/lib64/x" match "/lib64/" but "/lib64x" does not.  */
 static bool
-is_trusted_path_normalize (const char *path, size_t len)
+path_is_trusted (const char *npath, size_t nlen)
 {
-  if (len == 0)
-    return false;
-
-  char *npath = (char *) alloca (len + 2);
-  char *wnp = npath;
-  while (*path != '\0')
-    {
-      if (path[0] == '/')
-	{
-	  if (path[1] == '.')
-	    {
-	      if (path[2] == '.' && (path[3] == '/' || path[3] == '\0'))
-		{
-		  while (wnp > npath && *--wnp != '/')
-		    ;
-		  path += 3;
-		  continue;
-		}
-	      else if (path[2] == '/' || path[2] == '\0')
-		{
-		  path += 2;
-		  continue;
-		}
-	    }
-
-	  if (wnp > npath && wnp[-1] == '/')
-	    {
-	      ++path;
-	      continue;
-	    }
-	}
-
-      *wnp++ = *path++;
-    }
-
-  if (wnp == npath || wnp[-1] != '/')
-    *wnp++ = '/';
-
   const char *trun = system_dirs;
 
   for (size_t idx = 0; idx < nsystem_dirs_len; ++idx)
     {
-      if (wnp - npath >= system_dirs_len[idx]
-	  && memcmp (trun, npath, system_dirs_len[idx]) == 0)
-	/* Found it.  */
+      /* Compare against the entry without its trailing '/'.  */
+      size_t dirlen = system_dirs_len[idx] - 1;
+
+      if (nlen >= dirlen
+	  && memcmp (trun, npath, dirlen) == 0
+	  && (npath[dirlen] == '/' || npath[dirlen] == '\0'))
 	return true;
 
       trun += system_dirs_len[idx] + 1;
@@ -352,15 +299,20 @@ _dl_dst_substitute (struct link_map *l, const char *input, char *result)
      checked for trust, the authors of the binaries themselves are
      trusted to have designed this correctly.  Only $ORIGIN is tested in
      this way because it may be manipulated in some ways with hard
-     links.  */
-  if (__glibc_unlikely (check_for_trusted)
-      && !is_trusted_path_normalize (result, wp - result))
-    {
-      *result = '\0';
-      return result;
-    }
+     links.
+
+     _dl_normalize_path replaces the expansion with its normalized form
+     in place, so that the path that is opened is exactly the path that
+     was validated.  */
 
   *wp = '\0';
+
+  if (__glibc_unlikely (check_for_trusted))
+    {
+      size_t nlen = _dl_normalize_path (result);
+      if (!path_is_trusted (result, nlen))
+	*result = '\0';
+    }
 
   return result;
 }
@@ -439,7 +391,10 @@ struct r_search_path_struct __rtld_search_dirs attribute_relro;
 
 static size_t max_dirnamelen;
 
-static struct r_search_path_elem **
+/* Tokenize RPATH (in place) and populate RESULT with one entry per non-empty
+   directory.  Returns false if a per-entry allocation fails, leaving the
+   caller responsible for signaling any error.  */
+static bool
 fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
 	      const char *what, const char *where, struct link_map *l)
 {
@@ -507,8 +462,10 @@ fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
 	    malloc (sizeof (*dirp) + ncapstr * sizeof (enum r_dir_status)
 		    + where_len + len + 1);
 	  if (dirp == NULL)
-	    _dl_signal_error (ENOMEM, NULL, NULL,
-			      N_("cannot create cache for search path"));
+	    {
+	      free (to_free);
+	      return false;
+	    }
 
 	  dirp->dirname = ((char *) dirp + sizeof (*dirp)
 			   + ncapstr * sizeof (enum r_dir_status));
@@ -545,7 +502,7 @@ fillin_rpath (char *rpath, struct r_search_path_elem **result, const char *sep,
   /* Terminate the array.  */
   result[nelems] = NULL;
 
-  return result;
+  return true;
 }
 
 
@@ -626,7 +583,13 @@ decompose_rpath (struct r_search_path_struct *sps,
       _dl_signal_error (ENOMEM, NULL, NULL, errstring);
     }
 
-  fillin_rpath (copy, result, ":", what, where, l);
+  if (!fillin_rpath (copy, result, ":", what, where, l))
+    {
+      free (copy);
+      free (result);
+      errstring = N_("cannot create cache for search path");
+      goto signal_error;
+    }
 
   /* Free the copied RPATH string.  `fillin_rpath' make own copies if
      necessary.  */
@@ -799,12 +762,13 @@ _dl_init_paths (const char *llp, const char *source,
 
   if (llp != NULL && *llp != '\0')
     {
-      char *llp_tmp = strdupa (llp);
-
-      /* Decompose the LD_LIBRARY_PATH contents.  First determine how many
-	 elements it has.  */
+      /* Count entries directly off the const LD_LIBRARY_PATH so the
+	 search-path dirs array can be allocated before the scratch buffer is
+	 live; that way an OOM on either of the two heap allocations the
+	 loader controls (the dirs array or the per-entry malloc inside
+	 fillin_rpath) is signalled after the scratch has been released.  */
       size_t nllp = 1;
-      for (const char *cp = llp_tmp; *cp != '\0'; ++cp)
+      for (const char *cp = llp; *cp != '\0'; ++cp)
 	if (*cp == ':' || *cp == ';')
 	  ++nllp;
 
@@ -816,8 +780,25 @@ _dl_init_paths (const char *llp, const char *source,
 	  goto signal_error;
 	}
 
-      (void) fillin_rpath (llp_tmp, __rtld_env_path_list.dirs, ":;",
-			   source, NULL, l);
+      /* fillin_rpath needs a mutable copy because __strsep punches NULs
+	 into it as it tokenizes.  */
+      size_t llp_len = strlen (llp);
+      struct dl_scratch_buffer scratch = dl_scratch_buffer_init ();
+      dl_scratch_buffer_allocate (&scratch, llp_len + 1, 0);
+      char *llp_tmp = memcpy (scratch.data, llp, llp_len + 1);
+
+      bool ok = fillin_rpath (llp_tmp, __rtld_env_path_list.dirs, ":;",
+			      source, NULL, l);
+
+      dl_scratch_buffer_free (&scratch);
+
+      if (!ok)
+	{
+	  free (__rtld_env_path_list.dirs);
+	  __rtld_env_path_list.dirs = NULL;
+	  errstring = N_("cannot create cache for search path");
+	  goto signal_error;
+	}
 
       if (__rtld_env_path_list.dirs[0] == NULL)
 	{
@@ -935,6 +916,167 @@ _dl_notify_new_object (int mode, Lmid_t nsid, struct link_map *l)
 #endif
 }
 
+/* Initialize the PT_LOAD iterator IT for reading program headers from FD
+   at file offset PHOFF with PHNUM entries.  FBP is used as scratch space
+   for batched program-header reads; if open_verify's initial read into
+   FBP->buf already covers the whole phdr table, the iterator runs
+   entirely from that buffer without any further pread.  Zeros all
+   precomputed fields so the caller's scan loop can fill them in.  */
+static void
+_dl_pt_load_iterator_init (struct dl_pt_load_iterator *it, int fd,
+			   struct filebuf *fbp, ElfW(Off) phoff,
+			   uint16_t phnum)
+{
+  it->fd = fd;
+  it->fbp = fbp;
+  it->phoff = phoff;
+  it->phnum = phnum;
+  it->idx = 0;
+  it->pagesize = GLRO (dl_pagesize);
+  it->p_align_max = 0;
+  it->nloadcmds = 0;
+  it->first_mapstart = 0;
+  it->last_mapstart = 0;
+  it->last_allocend = 0;
+  it->cached = (phoff + (ElfW(Off)) phnum * sizeof (ElfW(Phdr))
+		<= (ElfW(Off)) fbp->len);
+  it->buf_base = 0;
+  it->buf_count = it->cached ? phnum : 0;
+}
+
+/* Scan all program headers from IT->fd, using the iterator's filebuf as a
+   scratch buffer for batched reads (skipped entirely if open_verify
+   already read the whole table).  Fills in IT's precomputed PT_LOAD
+   metadata and collects segment attributes into L.  Returns NULL on
+   success, or an error message string on failure; sets *ERRVALP to errno
+   for I/O errors, 0 otherwise.  */
+static const char *
+_dl_map_object_scan_phdrs (struct dl_pt_load_iterator *it,
+			   struct link_map *l, int mode,
+			   unsigned int *stack_flagsp, bool *has_holesp,
+			   bool *empty_dynamicp, int *errvalp)
+{
+  ElfW(Addr) prev_mapend = 0;
+  struct dl_machine_phdr_info minfo;
+  elf_machine_phdr_info_init (&minfo);
+
+  for (ElfW(Half) i = 0; i < it->phnum; i++)
+    {
+      const ElfW(Phdr) *ph = _dl_pt_load_iterator_phdr_at (it, i);
+      if (__glibc_unlikely (ph == NULL))
+	{
+	  *errvalp = errno;
+	  return N_("cannot read file data");
+	}
+      elf_machine_phdr_collect (&minfo, ph);
+      switch (ph->p_type)
+	{
+	case PT_LOAD:
+	  {
+	    if (__glibc_unlikely (((ph->p_vaddr - ph->p_offset)
+				   & (it->pagesize - 1)) != 0))
+	      {
+		*errvalp = 0;
+		return N_("ELF load command address/offset not page-aligned");
+	      }
+	    ElfW(Addr) mapstart = ALIGN_DOWN (ph->p_vaddr, it->pagesize);
+	    ElfW(Addr) mapend = ALIGN_UP (ph->p_vaddr + ph->p_filesz,
+					  it->pagesize);
+	    ElfW(Off)  mapoff = ALIGN_DOWN (ph->p_offset, it->pagesize);
+	    int prot = pf_to_prot (ph->p_flags);
+	    if (powerof2 (ph->p_align) && ph->p_align > it->p_align_max)
+	      it->p_align_max = ph->p_align;
+	    it->p_align_max = _dl_map_segment_align (&(struct loadcmd) {
+						       .mapstart = mapstart,
+						       .mapend   = mapend,
+						       .mapoff   = mapoff,
+						       .prot     = prot },
+						     it->p_align_max);
+	    if (it->nloadcmds > 0 && prev_mapend != mapstart)
+	      *has_holesp = true;
+	    prev_mapend = mapend;
+	    if (it->nloadcmds == 0)
+	      it->first_mapstart = mapstart;
+	    it->last_mapstart = mapstart;
+	    it->last_allocend = ph->p_vaddr + ph->p_memsz;
+	    it->nloadcmds++;
+	  }
+	  break;
+
+	/* These entries tell us where to find things once the file's
+	   segments are mapped in.  We record the addresses it says
+	   verbatim, and later correct for the run-time load address.  */
+	case PT_DYNAMIC:
+	  if (ph->p_filesz == 0)
+	    *empty_dynamicp = true; /* Usually separate debuginfo.  */
+	  else
+	    {
+	      /* Debuginfo only files from "objcopy --only-keep-debug"
+		 contain a PT_DYNAMIC segment with p_filesz == 0.  Skip
+		 such a segment to avoid a crash later.  */
+	      l->l_ld = (void *) ph->p_vaddr;
+	      l->l_ldnum = ph->p_memsz / sizeof (ElfW(Dyn));
+	      l->l_ld_readonly = (ph->p_flags & PF_W) == 0;
+	    }
+	  break;
+
+	case PT_PHDR:
+	  l->l_phdr = (void *) ph->p_vaddr;
+	  break;
+
+	case PT_TLS:
+	  if (ph->p_memsz == 0)
+	    /* Nothing to do for an empty segment.  */
+	    break;
+
+	  l->l_tls_blocksize = ph->p_memsz;
+	  l->l_tls_align = ph->p_align;
+	  if (ph->p_align == 0)
+	    l->l_tls_firstbyte_offset = 0;
+	  else
+	    l->l_tls_firstbyte_offset = ph->p_vaddr & (ph->p_align - 1);
+	  l->l_tls_initimage_size = ph->p_filesz;
+	  /* Since we don't know the load address yet only store the
+	     offset.  We will adjust it later.  */
+	  l->l_tls_initimage = (void *) ph->p_vaddr;
+
+	  /* l->l_tls_modid is assigned below, once there is no
+	     possibility for failure.  */
+
+	  if (l->l_type != lt_library
+	      && GL(dl_tls_dtv_slotinfo_list) == NULL)
+	    {
+#ifdef SHARED
+	      /* We are loading the executable itself when the dynamic
+		 linker was executed directly.  The setup will happen
+		 later.  */
+	      assert (l->l_prev == NULL || (mode & __RTLD_AUDIT) != 0);
+#else
+	      assert (false && "TLS not initialized in static application");
+#endif
+	    }
+	  break;
+
+	case PT_GNU_STACK:
+	  *stack_flagsp = pf_to_prot (ph->p_flags);
+	  break;
+
+	case PT_GNU_RELRO:
+	  l->l_relro_addr = ph->p_vaddr;
+	  l->l_relro_size = ph->p_memsz;
+	  break;
+	}
+    }
+
+  if (__glibc_unlikely (elf_machine_reject_phdr_p (&minfo, l, it->fd)))
+    {
+      *errvalp = 0;
+      return N_("ELF file incompatible with this system");
+    }
+
+  return NULL;
+}
+
 /* Map in the shared object NAME, actually located in REALNAME, and already
    opened on FD.  */
 
@@ -948,8 +1090,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
 			const void *stack_endp, Lmid_t nsid)
 {
   struct link_map *l = NULL;
-  const ElfW(Ehdr) *header;
-  const ElfW(Phdr) *phdr;
+  ElfW(Ehdr) header;
   const ElfW(Phdr) *ph;
   size_t maplength;
   int type;
@@ -1059,8 +1200,10 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_FILES))
     _dl_debug_printf ("file=%s [%lu];  generating link map\n", name, nsid);
 
-  /* This is the ELF header.  We read it in `open_verify'.  */
-  header = (void *) fbp->buf;
+  /* The ELF header is already validate in `open_verify', make a local copy
+     because _dl_map_object_scan_phdrs may overwrite fbp->buf when reading
+     phdrs via pread in the slow path.  */
+  memcpy (&header, fbp->buf, sizeof header);
 
   /* Enter the new object in the list of loaded objects.  */
   l = _dl_new_object (realname, name, l_type, loader, mode, nsid);
@@ -1072,26 +1215,9 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
       errstring = N_("cannot create shared object descriptor");
       goto lose_errno;
     }
-
-  /* Extract the remaining details we need from the ELF header
-     and then read in the program header table.  */
-  l->l_entry = header->e_entry;
-  type = header->e_type;
-  l->l_phnum = header->e_phnum;
-
-  maplength = header->e_phnum * sizeof (ElfW(Phdr));
-  if (header->e_phoff + maplength <= (size_t) fbp->len)
-    phdr = (void *) (fbp->buf + header->e_phoff);
-  else
-    {
-      phdr = alloca (maplength);
-      if ((size_t) __pread64_nocancel (fd, (void *) phdr, maplength,
-				       header->e_phoff) != maplength)
-	{
-	  errstring = N_("cannot read file data");
-	  goto lose_errno;
-	}
-    }
+  l->l_entry = header.e_entry;
+  type = header.e_type;
+  l->l_phnum = header.e_phnum;
 
    /* On most platforms presume that PT_GNU_STACK is absent and the stack is
     * executable.  Other platforms default to a nonexecutable stack and don't
@@ -1099,139 +1225,28 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
    unsigned int stack_flags = DEFAULT_STACK_PROT_PERMS;
 
   {
-    /* Scan the program header table, collecting its load commands.  */
-    struct loadcmd loadcmds[l->l_phnum];
-    size_t nloadcmds = 0;
-    bool has_holes = false;
+    /* Single pass over the program header table: initialize the PT_LOAD
+       iterator (precomputing p_align_max, has_holes, and first/last segment
+       metadata) and collect all other segment attributes simultaneously.
+       Program headers are read in chunks into fbp->buf via pread so that
+       no large stack buffer is needed regardless of e_phnum.  */
+    struct dl_pt_load_iterator it;
+    bool has_holes;
     bool empty_dynamic = false;
-    ElfW(Addr) p_align_max = 0;
 
-    /* The struct is initialized to zero so this is not necessary:
-    l->l_ld = 0;
-    l->l_phdr = 0;
-    l->l_addr = 0; */
-    for (ph = phdr; ph < &phdr[l->l_phnum]; ++ph)
-      switch (ph->p_type)
-	{
-	  /* These entries tell us where to find things once the file's
-	     segments are mapped in.  We record the addresses it says
-	     verbatim, and later correct for the run-time load address.  */
-	case PT_DYNAMIC:
-	  if (ph->p_filesz == 0)
-	    empty_dynamic = true; /* Usually separate debuginfo.  */
-	  else
-	    {
-	      /* Debuginfo only files from "objcopy --only-keep-debug"
-		 contain a PT_DYNAMIC segment with p_filesz == 0.  Skip
-		 such a segment to avoid a crash later.  */
-	      l->l_ld = (void *) ph->p_vaddr;
-	      l->l_ldnum = ph->p_memsz / sizeof (ElfW(Dyn));
-	      l->l_ld_readonly = (ph->p_flags & PF_W) == 0;
-	    }
-	  break;
+    _dl_pt_load_iterator_init (&it, fd, fbp, header.e_phoff, l->l_phnum);
+    has_holes = false;
 
-	case PT_PHDR:
-	  l->l_phdr = (void *) ph->p_vaddr;
-	  break;
+    errstring = _dl_map_object_scan_phdrs (&it, l, mode, &stack_flags,
+					   &has_holes, &empty_dynamic, &errval);
+    if (__glibc_unlikely (errstring != NULL))
+      goto lose;
 
-	case PT_LOAD:
-	  /* A load command tells us to map in part of the file.
-	     We record the load commands and process them all later.  */
-	  if (__glibc_unlikely (((ph->p_vaddr - ph->p_offset)
-				 & (GLRO(dl_pagesize) - 1)) != 0))
-	    {
-	      errstring
-		= N_("ELF load command address/offset not page-aligned");
-	      goto lose;
-	    }
-
-	  struct loadcmd *c = &loadcmds[nloadcmds++];
-	  c->mapstart = ALIGN_DOWN (ph->p_vaddr, GLRO(dl_pagesize));
-	  c->mapend = ALIGN_UP (ph->p_vaddr + ph->p_filesz, GLRO(dl_pagesize));
-	  c->dataend = ph->p_vaddr + ph->p_filesz;
-	  c->allocend = ph->p_vaddr + ph->p_memsz;
-	  /* Remember the maximum p_align.  */
-	  if (powerof2 (ph->p_align) && ph->p_align > p_align_max)
-	    p_align_max = ph->p_align;
-	  c->mapoff = ALIGN_DOWN (ph->p_offset, GLRO(dl_pagesize));
-
-	  DIAG_PUSH_NEEDS_COMMENT;
-
-#if __GNUC_PREREQ (11, 0)
-	  /* Suppress invalid GCC warning:
-	     ‘(((char *)loadcmds.113_68 + _933 + 16))[329406144173384849].mapend’ may be used uninitialized [-Wmaybe-uninitialized]
-	     See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106008
-	   */
-	  DIAG_IGNORE_NEEDS_COMMENT_GCC (11, "-Wmaybe-uninitialized");
-#endif
-	  /* Determine whether there is a gap between the last segment
-	     and this one.  */
-	  if (nloadcmds > 1 && c[-1].mapend != c->mapstart)
-	    has_holes = true;
-	  DIAG_POP_NEEDS_COMMENT;
-
-	  /* Optimize a common case.  */
-	  c->prot = pf_to_prot (ph->p_flags);
-
-	  /* Architecture-specific adjustment of segment alignment. */
-	  p_align_max = _dl_map_segment_align (c, p_align_max);
-	  break;
-
-	case PT_TLS:
-	  if (ph->p_memsz == 0)
-	    /* Nothing to do for an empty segment.  */
-	    break;
-
-	  l->l_tls_blocksize = ph->p_memsz;
-	  l->l_tls_align = ph->p_align;
-	  if (ph->p_align == 0)
-	    l->l_tls_firstbyte_offset = 0;
-	  else
-	    l->l_tls_firstbyte_offset = ph->p_vaddr & (ph->p_align - 1);
-	  l->l_tls_initimage_size = ph->p_filesz;
-	  /* Since we don't know the load address yet only store the
-	     offset.  We will adjust it later.  */
-	  l->l_tls_initimage = (void *) ph->p_vaddr;
-
-	  /* l->l_tls_modid is assigned below, once there is no
-	     possibility for failure.  */
-
-	  if (l->l_type != lt_library
-	      && GL(dl_tls_dtv_slotinfo_list) == NULL)
-	    {
-#ifdef SHARED
-	      /* We are loading the executable itself when the dynamic
-		 linker was executed directly.  The setup will happen
-		 later.  */
-	      assert (l->l_prev == NULL || (mode & __RTLD_AUDIT) != 0);
-#else
-	      assert (false && "TLS not initialized in static application");
-#endif
-	    }
-	  break;
-
-	case PT_GNU_STACK:
-	  stack_flags = pf_to_prot (ph->p_flags);
-	  break;
-
-	case PT_GNU_RELRO:
-	  l->l_relro_addr = ph->p_vaddr;
-	  l->l_relro_size = ph->p_memsz;
-	  break;
-	}
-
-    if (__glibc_unlikely (nloadcmds == 0))
+    if (__glibc_unlikely (it.nloadcmds == 0))
       {
-	/* This only happens for a bogus object that will be caught with
-	   another error below.  But we don't want to go through the
-	   calculations below using NLOADCMDS - 1.  */
 	errstring = N_("object file has no loadable segments");
 	goto lose;
       }
-
-    /* Align all PT_LOAD segments to the maximum p_align.  */
-    for (size_t i = 0; i < nloadcmds; i++)
-      loadcmds[i].mapalign = p_align_max;
 
     /* dlopen of an executable is not valid because it is not possible
        to perform proper relocations, handle static TLS, or run the
@@ -1254,13 +1269,13 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
       }
 
     /* Length of the sections to be loaded.  */
-    maplength = loadcmds[nloadcmds - 1].allocend - loadcmds[0].mapstart;
+    maplength = it.last_allocend - it.first_mapstart;
 
     /* Now process the load commands and map segments into memory.
        This is responsible for filling in:
        l_map_start, l_map_end, l_addr, l_contiguous, l_phdr
      */
-    errstring = _dl_map_segments (l, fd, header, type, loadcmds, nloadcmds,
+    errstring = _dl_map_segments (l, fd, &header, type, &it,
 				  maplength, has_holes, loader);
     if (__glibc_unlikely (errstring != NULL))
       {
@@ -1273,7 +1288,7 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   if (l->l_ld != NULL)
     l->l_ld = (ElfW(Dyn) *) ((ElfW(Addr)) l->l_ld + l->l_addr);
 
-  elf_get_dynamic_info (l, false, false);
+  elf_get_dynamic_info (l, false);
 
   /* Make sure we are not dlopen'ing an object that has the
      DF_1_NOOPEN flag set, or a PIE object.  */
@@ -1293,18 +1308,22 @@ _dl_map_object_from_fd (const char *name, const char *origname, int fd,
   if (l->l_phdr == NULL)
     {
       /* The program header is not contained in any of the segments.
-	 We have to allocate memory ourself and copy it over from out
-	 temporary place.  */
-      ElfW(Phdr) *newp = (ElfW(Phdr) *) malloc (header->e_phnum
-						* sizeof (ElfW(Phdr)));
+	 Allocate memory and read the program header table from the file.  */
+      size_t phdr_size = (size_t) header.e_phnum * sizeof (ElfW(Phdr));
+      ElfW(Phdr) *newp = (ElfW(Phdr) *) malloc (phdr_size);
       if (newp == NULL)
 	{
 	  errstring = N_("cannot allocate memory for program header");
 	  goto lose_errno;
 	}
-
-      l->l_phdr = memcpy (newp, phdr,
-			  (header->e_phnum * sizeof (ElfW(Phdr))));
+      if ((size_t) __pread64_nocancel (fd, newp, phdr_size,
+				       header.e_phoff) != phdr_size)
+	{
+	  free (newp);
+	  errstring = N_("cannot read file data");
+	  goto lose_errno;
+	}
+      l->l_phdr = newp;
       l->l_phdr_allocated = 1;
     }
   else
@@ -1457,12 +1476,17 @@ cannot enable executable stack as shared object requires");
   return l;
 }
 
-/* Print search path.  */
+/* Print search path.  BUF is a scratch buffer provided by the caller;
+   it must be large enough to hold the longest "<dirname><capstr>" plus
+   a trailing NUL byte -- i.e. at least
+   max_dirnamelen + max_capstrlen + 1 bytes.  open_path's path buffer
+   (max_dirnamelen + max_capstrlen + namelen, namelen >= 1) is reused
+   here so that enabling LD_DEBUG=libs does not require an extra mmap
+   per call.  */
 static void
 print_search_path (struct r_search_path_elem **list,
-		   const char *what, const char *name)
+		   const char *what, const char *name, char *buf)
 {
-  char buf[max_dirnamelen + max_capstrlen];
   int first = 1;
 
   _dl_debug_printf (" search path=");
@@ -1564,8 +1588,6 @@ open_verify (const char *name, int fd,
   if (fd != -1)
     {
       ElfW(Ehdr) *ehdr;
-      ElfW(Phdr) *phdr;
-      size_t maplength;
 
       /* We successfully opened the file.  Now verify it is a file
 	 we can use.  */
@@ -1691,32 +1713,6 @@ open_verify (const char *name, int fd,
 	  goto lose;
 	}
 
-      maplength = ehdr->e_phnum * sizeof (ElfW(Phdr));
-      if (ehdr->e_phoff + maplength <= (size_t) fbp->len)
-	phdr = (void *) (fbp->buf + ehdr->e_phoff);
-      else
-	{
-	  phdr = alloca (maplength);
-	  if ((size_t) __pread64_nocancel (fd, (void *) phdr, maplength,
-					   ehdr->e_phoff) != maplength)
-	    {
-	      errval = errno;
-	      errstring = N_("cannot read file data");
-	      goto lose;
-	    }
-	}
-
-      if (__glibc_unlikely (elf_machine_reject_phdr_p
-			    (phdr, ehdr->e_phnum, fbp->buf, fbp->len,
-			     loader, fd)))
-	{
-	  if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
-	    _dl_debug_printf ("    (incompatible ELF headers with the host)\n");
-	  __close_nocancel (fd);
-	  __set_errno (ENOENT);
-	  return -1;
-	}
-
     }
   else
     {
@@ -1740,7 +1736,6 @@ open_path (const char *name, size_t namelen, int mode,
 	   bool *found_other_class)
 {
   struct r_search_path_elem **dirs = sps->dirs;
-  char *buf;
   int fd = -1;
   const char *current_what = NULL;
   int any = 0;
@@ -1750,7 +1745,18 @@ open_path (const char *name, size_t namelen, int mode,
        given on the command line when rtld is run directly.  */
     return -1;
 
-  buf = alloca (max_dirnamelen + max_capstrlen + namelen);
+  /* The scratch buffer below is sized to satisfy both this function's
+     candidate-path construction (max_dirnamelen + max_capstrlen + namelen)
+     and print_search_path's buffer precondition
+     (max_dirnamelen + max_capstrlen + 1).  An empty NAME would under-size the
+     buffer for the latter and would also produce a meaningless lookup (the
+     loader rejects empty names well before reaching here).  */
+  assert (namelen >= 1);
+
+  size_t bufsize = max_dirnamelen + max_capstrlen + namelen;
+  struct dl_scratch_buffer scratch = dl_scratch_buffer_init ();
+  dl_scratch_buffer_allocate (&scratch, bufsize, 0);
+  char *buf = scratch.data;
   do
     {
       struct r_search_path_elem *this_dir = *dirs;
@@ -1765,7 +1771,7 @@ open_path (const char *name, size_t namelen, int mode,
 	  && current_what != this_dir->what)
 	{
 	  current_what = this_dir->what;
-	  print_search_path (dirs, current_what, this_dir->where);
+	  print_search_path (dirs, current_what, this_dir->where, buf);
 	}
 
       edp = (char *) __mempcpy (buf, this_dir->dirname, this_dir->dirnamelen);
@@ -1853,6 +1859,7 @@ open_path (const char *name, size_t namelen, int mode,
 	  if (*realname != NULL)
 	    {
 	      memcpy (*realname, buf, buflen);
+	      dl_scratch_buffer_free (&scratch);
 	      return fd;
 	    }
 	  else
@@ -1860,6 +1867,7 @@ open_path (const char *name, size_t namelen, int mode,
 	      /* No memory for the name, we certainly won't be able
 		 to load and link it.  */
 	      __close_nocancel (fd);
+	      dl_scratch_buffer_free (&scratch);
 	      return -1;
 	    }
 	}
@@ -1869,7 +1877,10 @@ open_path (const char *name, size_t namelen, int mode,
 	 directory (for instance, if the component is a existing file meaning
 	 essentially that the pathname is invalid - ENOTDIR).  */
       if (here_any && errno != ENOENT && errno != EACCES && errno != ENOTDIR)
-	return -1;
+	{
+	  dl_scratch_buffer_free (&scratch);
+	  return -1;
+	}
 
       /* Remember whether we found anything.  */
       any |= here_any;
@@ -1890,6 +1901,7 @@ open_path (const char *name, size_t namelen, int mode,
 	sps->dirs = (void *) -1;
     }
 
+  dl_scratch_buffer_free (&scratch);
   return -1;
 }
 
