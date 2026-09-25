@@ -1,0 +1,12 @@
+Files:
+tests/test-gettext-h.c
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-gettext-h
+check_PROGRAMS += test-gettext-h
+test_gettext_h_LDADD = $(LDADD) $(LIBINTL)

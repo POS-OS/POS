@@ -1,0 +1,13 @@
+Files:
+tests/test-avltree_omap.c
+tests/macros.h
+
+Depends-on:
+array-omap
+stdcountof-h
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-avltree_omap
+check_PROGRAMS += test-avltree_omap

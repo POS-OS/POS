@@ -1,0 +1,41 @@
+Description:
+A <uchar.h> in which the char32_t values are always Unicode code points.
+
+Files:
+lib/lc-charset-unicode.h
+lib/lc-charset-unicode.c
+m4/uchar_h-c23.m4
+
+Depends-on:
+uchar-h
+wchar-h
+iconv
+localcharset
+streq
+streq-opt
+once
+tls
+mbszero
+wcrtomb
+unistr/u8-mbtouc
+unistr/u8-uctomb
+mbrtowc
+
+configure.ac:
+gl_UCHAR_H_C23
+
+Makefile.am:
+lib_SOURCES += lc-charset-unicode.c
+
+Include:
+<uchar.h>
+
+Link:
+$(LTLIBUNISTRING) when linking with libtool, $(LIBUNISTRING) otherwise
+$(LTLIBC32CONV) when linking with libtool, $(LIBC32CONV) otherwise
+
+License:
+LGPLv2+
+
+Maintainer:
+all

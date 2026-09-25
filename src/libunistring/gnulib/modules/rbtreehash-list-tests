@@ -1,0 +1,15 @@
+Files:
+tests/test-rbtreehash_list.c
+tests/macros.h
+
+Depends-on:
+array-list
+stdcountof-h
+streq
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-rbtreehash_list
+check_PROGRAMS += test-rbtreehash_list

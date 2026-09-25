@@ -1,0 +1,26 @@
+Description:
+Abstract ordered set data type as a C++ class.
+
+Files:
+lib/gl_oset.hh
+
+Depends-on:
+xoset
+
+configure.ac:
+AC_DEFINE([_GL_HAVE_OSET_HH], [1],
+  [Define if the gnulib module oset-c++ is present.])
+
+Makefile.am:
+
+Include:
+"gl_oset.hh"
+
+Link:
+$(LTLIBINTL) when linking with libtool, $(LIBINTL) otherwise
+
+License:
+GPL
+
+Maintainer:
+all

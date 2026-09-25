@@ -1,0 +1,24 @@
+@node ftw.h
+@section @file{ftw.h}
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/ftw.h.html}
+
+Gnulib module: ---
+
+Portability problems fixed by Gnulib:
+@itemize
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+This header file is missing on some platforms:
+FreeBSD 5.2.1, NetBSD 3.0, Minix 3.1.8, mingw, MSVC 14.
+
+@item
+POSIX.1-2024 allows, but does not require, this file to make visible
+all symbols from the header @code{<sys/stat.h>}.
+Programs should not assume that these other symbols are visible merely
+because this file is included, or that they are invisible because only
+this file is included.
+@end itemize

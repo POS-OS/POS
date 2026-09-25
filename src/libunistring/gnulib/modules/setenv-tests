@@ -1,0 +1,13 @@
+Files:
+tests/test-setenv.c
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-setenv
+check_PROGRAMS += test-setenv

@@ -1,0 +1,44 @@
+@node sigprocmask
+@subsection @code{sigprocmask}
+@findex sigprocmask
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/functions/sigprocmask.html}
+
+Gnulib module: sigprocmask
+@mindex sigprocmask
+
+Portability problems fixed by Gnulib:
+@itemize
+@item
+This function is missing on some platforms:
+mingw, MSVC 14.
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+In case of failure, the return value is wrong on some platforms:
+@c https://gnats.netbsd.org/cgi-bin/query-pr-single.pl?number=57213
+NetBSD 10.0 when libpthread is in use.
+
+@item
+POSIX says that in multi-threaded processes @code{sigprocmask} has
+unspecified behavior so @code{pthread_sigmask} should be used instead.
+On most platforms, @code{sigprocmask} is essentially equivalent to
+@code{pthread_sigmask}, with only a difference regarding the error
+return convention.
+However, on macOS and on the Gnulib replacement on native MS-Windows,
+@code{sigprocmask} can affect the signal masks of other threads,
+which can lead to race conditions.
+
+@item
+The Gnulib replacement on native MS-Windows is not async-signal-safe
+(see
+@url{https://pubs.opengroup.org/onlinepubs/9799919799/functions/V2_chap02.html#tag_16_04_03,
+POSIX section ``Signal Actions''}).
+@end itemize
+
+Note: In single-threaded programs it's simpler to use
+@code{sigprocmask}, since it does not require compiling with
+@code{-pthread} and/or linking with @code{-lpthread} on some platforms:
+AIX.

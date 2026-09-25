@@ -1,0 +1,11 @@
+Files:
+tests/test-arcfour.c
+
+Depends-on:
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-arcfour
+check_PROGRAMS += test-arcfour

@@ -1,0 +1,23 @@
+@node posix_spawn_file_actions_addchdir
+@subsection @code{posix_spawn_file_actions_addchdir}
+@findex posix_spawn_file_actions_addchdir
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/functions/posix_spawn_file_actions_addchdir.html}
+
+Gnulib module: ---
+
+Portability problems fixed by Gnulib:
+@itemize
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+This function is missing on many platforms:
+glibc 2.43, macOS 14, FreeBSD 14.0, NetBSD 9.3, OpenBSD 7.9, Minix 3.3.0, AIX 7.3.1, HP-UX 11.31, Solaris 11.4, Cygwin 3.5.3, mingw, MSVC 14, Android 9.0.
+@item
+This function is not defined at the linker level, only through @code{<spawn.h>},
+on some platforms:
+@c https://sourceware.org/bugzilla/show_bug.cgi?id=34437
+glibc 2.44.
+@end itemize

@@ -1,0 +1,24 @@
+@node mlock
+@subsection @code{mlock}
+@findex mlock
+
+POSIX specification:@* @url{https://pubs.opengroup.org/onlinepubs/9799919799/functions/mlock.html}
+
+Gnulib module: ---
+
+Portability problems fixed by Gnulib:
+@itemize
+@end itemize
+
+Portability problems not fixed by Gnulib:
+@itemize
+@item
+This function is missing on some platforms:
+Minix 3.1.8, mingw, MSVC 14.
+@item
+On Solaris 10 this function accepts @code{char *} not @code{void const *},
+unless you define feature test macros like @code{_POSIX_C_SOURCE}
+or @code{_XOPEN_SOURCE} that may undesirably hide other symbols.
+To work around this problem, callers can limit themselves to either
+@code{void const *} or @code{char const *}.
+@end itemize

@@ -1,0 +1,15 @@
+Files:
+tests/test-snprintf.c
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+streq
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-snprintf
+check_PROGRAMS += test-snprintf
+

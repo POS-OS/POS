@@ -1,0 +1,22 @@
+Files:
+tests/test-rename.h
+tests/test-renameatu.c
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+ignore-value
+filenamecat
+getcwd-lgpl
+opendir
+readdir
+closedir
+streq
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-renameatu
+check_PROGRAMS += test-renameatu
+test_renameatu_LDADD = $(LDADD) @LIBINTL@

@@ -1,0 +1,14 @@
+Files:
+tests/test-strerror_r.c
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+stdcountof-h
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-strerror_r
+check_PROGRAMS += test-strerror_r

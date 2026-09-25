@@ -1,0 +1,125 @@
+-*- outline -*-
+Here are most of the steps we (maintainers) follow when making a release.
+We assume that the following environment variables are set:
+
+  GPG_KEY_ID - your gpg key ID
+  CURRENT_VERSION - the next release version
+  PREVIOUS_VERSION - the previous release version
+  GNULIB_SRCDIR - the local directory where gnulib sources reside
+
+* Making a snapshot release
+
+** Run these commands, in this order:
+
+    ./autopull.sh
+    ./autogen.sh
+    ./configure --disable-shared
+    make
+    make dist VERSION=YYYYmmdd
+
+  Then you will get a distribution tarball:
+
+    libunistring-YYYYmmdd.tar.gz
+
+* Making an official release
+
+** Update files:
+
+  - version.sh: Bump version number, date, gnulib version.
+
+  - README: Update version.
+
+  - NEWS: Update version. Add news entries if any.
+
+  - lib/Makefile.am
+
+    Update -version-info arguments, according to libtool versioning
+    (info "(libtool) Updating version info").
+    Preferrably using the $GNULIB_SRCDIR/build-aux/libtool-next-version
+    program.
+    Or manually, using these rules:
+
+      * increment LTV_REVISION,
+      * if any interfaces (functions/variables/classes) have been removed
+        or changed [i.e. backwards compatibility has been broken],
+        increment LTV_CURRENT, set LTV_REVISION to 0, set LTV_AGE to 0.
+      * otherwise:
+        * if any interfaces (functions/variables/classes) have been added,
+          increment LTV_CURRENT, set LTV_REVISION to 0, increment LTV_AGE.
+
+** Create a release:
+
+    ./autopull.sh
+    ./autogen.sh
+    ./configure --disable-shared
+    make
+    make distcheck
+
+  If necessary, produce variants with higher compression:
+
+    gzip -d -c < libunistring-$CURRENT_VERSION.tar.gz | xz -c -e > libunistring-$CURRENT_VERSION.tar.xz
+
+  Add a git tag (an annotated tag, not a lightweight tag):
+
+    git commit --allow-empty -m "Release $CURRENT_VERSION"
+    git tag -a -m "Release $CURRENT_VERSION" v$CURRENT_VERSION
+
+** Upload tarballs:
+
+    $GNULIB_SRCDIR/build-aux/gnupload --to ftp.gnu.org:libunistring \
+                                      --symlink-regex \
+                                      libunistring-$CURRENT_VERSION.tar.{gz,xz}
+
+** Update the homepage on www.gnu.org:
+
+  - Bump the version number in libunistring.html.
+
+** Regenerate the documentation for www.gnu.org:
+
+    LIBUNISTRING_CHECKOUT=.../libunistring
+    LIBUNISTRING_WWW_CHECKOUT=.../libunistring
+
+    LIBUNISTRING_WWW_CHECKOUT=`cd $LIBUNISTRING_WWW_CHECKOUT && pwd`
+    cd $LIBUNISTRING_WWW_CHECKOUT
+    tar -cf html-CVS.tar manual/html_node/CVS manual/html_node/.symlinks
+    cd $LIBUNISTRING_CHECKOUT/doc
+    make stamp-vti
+    GENDOCS_TEMPLATE_DIR=$GNULIB_SRCDIR/doc \
+      $GNULIB_SRCDIR/build-aux/gendocs.sh --email bug-libunistring@gnu.org \
+                                          -o "$LIBUNISTRING_WWW_CHECKOUT/manual" \
+                                          libunistring \
+                                          "The GNU Unicode String Library"
+    cd $LIBUNISTRING_WWW_CHECKOUT
+    tar -xf html-CVS.tar
+    rm html-CVS.tar
+
+  Commit the resulting manual/ directory in CVS, and for every removed
+  HTML file (that corresponds to a deleted node) add a line to the .symlinks
+  file in the same directory.
+
+** Announce on info-gnu
+
+  The announcement text is based on
+  - The previous release's announcement for the general layout,
+  - The top of the NEWS file,
+  - A "Download" section based on the output of:
+
+    $GNULIB_SRCDIR/build-aux/announce-gen \
+      --release-type stable \
+      --package-name libunistring \
+      --previous-version $PREVIOUS_VERSION \
+      --current-version $CURRENT_VERSION \
+      --gpg-key-id $GPG_KEY_ID \
+      --url-directory https://ftp.gnu.org/gnu/libunistring \
+      --bootstrap-tools=autoconf,automake,libtool,gnulib \
+      --gnulib-version=$(cd $GNULIB_SRCDIR && git describe)
+
+* Submit a News entry on https://savannah.gnu.org/projects/libunistring/,
+  with the top of the NEWS file (reformatted to infinite line length).
+
+* In the bug tracker on https://savannah.gnu.org/projects/libunistring/, search
+  using the Advanced query form for the bugs with
+    Open/Closed = Closed
+    Status = Fixed
+  and move them to Status = Fix Released, adding a comment
+    The fix is contained in libunistring $CURRENT_VERSION.

@@ -1,0 +1,16 @@
+Files:
+tests/test-snzprintf-posix.c
+tests/test-snzprintf-posix.h
+tests/infinity.h
+tests/macros.h
+
+Depends-on:
+nan
+streq
+memeq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-snzprintf-posix
+check_PROGRAMS += test-snzprintf-posix

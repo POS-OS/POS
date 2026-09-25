@@ -1,0 +1,44 @@
+Description:
+Get information about the locale
+
+Files:
+lib/localeinfo.c
+lib/localeinfo.h
+
+Depends-on:
+bool
+btoc32
+c32tolower
+c32toupper
+c99
+limits-h
+mbrtoc32-regular
+mbszero
+stdcountof-h
+uchar-h
+# The lonesome_lower array requires ISO C 23 semantics for char32_t.
+# But uchar-h-c23 has a global effect, therefore leave it to each package
+# to enable it.
+#uchar-h-c23
+verify
+wchar-h
+
+configure.ac:
+
+Makefile.am:
+lib_SOURCES += localeinfo.c
+
+Include:
+"localeinfo.h"
+
+Link:
+$(LTLIBUNISTRING) when linking with libtool, $(LIBUNISTRING) otherwise
+$(MBRTOWC_LIB)
+$(LTLIBC32CONV) when linking with libtool, $(LIBC32CONV) otherwise
+$(LTLIBINTL) when linking with libtool, $(LIBINTL) otherwise
+
+License:
+LGPLv2+
+
+Maintainer:
+Jim Meyering, Paul Eggert

@@ -1,0 +1,16 @@
+Files:
+tests/test-explicit_bzero.c
+tests/signature.h
+tests/macros.h
+
+Depends-on:
+stdint-h
+vma-iter
+memeq
+bool
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-explicit_bzero
+check_PROGRAMS += test-explicit_bzero

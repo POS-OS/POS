@@ -1,0 +1,27 @@
+Description:
+Abstract sequential list data type as a C++ class.
+
+Files:
+lib/gl_list.hh
+
+Depends-on:
+xlist
+xsublist
+
+configure.ac:
+AC_DEFINE([_GL_HAVE_LIST_HH], [1],
+  [Define if the gnulib module list-c++ is present.])
+
+Makefile.am:
+
+Include:
+"gl_list.hh"
+
+Link:
+$(LTLIBINTL) when linking with libtool, $(LIBINTL) otherwise
+
+License:
+GPL
+
+Maintainer:
+all

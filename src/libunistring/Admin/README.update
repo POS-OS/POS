@@ -1,0 +1,84 @@
+-*- outline -*-
+
+The substance of libunistring is maintained in Gnulib:
+
+  https://git.savannah.gnu.org/gitweb/?p=gnulib.git
+
+This file attempts to describe the procedure of updating Gnulib to the
+latest Unicode release.  Also, a few scripts are included here to make
+the update job easier.  All those scripts respect the following
+environment variables
+
+- GNULIB_SRCDIR, which points to the absolute path of the Gnulib
+- UCD, which points to the directory containing the Unicode UCD
+
+Before updating, read the Unicode release note carefully and
+understand any changes that might affect Gnulib.  The release notes are
+typically available at:
+
+  https://unicode.org/versions/Unicode<VERSION>/
+
+In particular, changes in the text segmentation algorithms often
+require manual adjustment of source files:
+
+  - For unigbrk/ updates, look at the revision history of UAX #29
+    <https://www.unicode.org/reports/tr29/>, section 3.
+  - For uniwbrk/ updates, look at the revision history of UAX #29
+    <https://www.unicode.org/reports/tr29/>, section 4.
+  - For unilbrk/ updates, look at the revision history of UAX #14
+    <https://www.unicode.org/reports/tr14/>.
+
+
+* Regenerating the Gnulib source code
+
+The source files in Gnulib are updated using a couple of tools:
+'lib/gen-uni-tables.c' and 'lib/uniname/gen-uninames.lisp'.
+
+You can use wrapper scripts included in this directory:
+'gen-uni-tables' and 'gen-uninames' as follows:
+
+  $ export GNULIB_SRCDIR=..
+  $ export UCD=..
+  $ ./gen-uni-tables
+  $ ./gen-uninames
+
+Note that 'gen-uni-tables' sometimes fails when a large portion of
+Unicode data changes.  In that case, errors are reported as assertion
+failures and you will need to adjust 'lib/gen-uni-tables.c'.
+
+Also note that the files under 'tests/uniwidth' are currently _not_
+updated automatically.  You need to check the test failures by hand.
+
+* Updating the version numbers of modules
+
+The 'libunistring-optional' module in Gnulib allows you to use the
+system libunistring, when possible (i.e., when certain modules are
+equal to or older than the system libunistring).  This is done by
+checking the version specified with gl_LIBUNISTRING_MODULE invocation
+in modules:
+
+  $ cat modules/uniwidth/width
+  ...
+  configure.ac:
+  gl_LIBUNISTRING_MODULE([0.9.6], [uniwidth/width])
+  ...
+
+The version specified as the first argument should be incremented when
+the behavior of the module changes.  Thus, if you regenerate the
+Gnulib source files for the latest Unicode release, you will also need
+to bump the version of affected modules.
+
+To identify affected modules, you can use the following steps:
+1. Identify the modified files.
+   $ git diff HEAD~1 lib
+   and ignore the files that have only comment changes.
+2. Identify the modified modules.
+   $ modules=`./gnulib-tool --find lib/FILE1 lib/FILE2 ... | sort -u`
+3. Identify the modules with a gl_LIBUNISTRING_MODULE invocation.
+   $ modules=`./gnulib-tool --extract-recursive-dependents $modules \
+              | grep -v tests | sort -u`
+   $ cd modules
+   $ modules=`grep -l gl_LIBUNISTRING_MODULE $modules`
+4. Edit the gl_LIBUNISTRING_MODULE invocation in each of these modules.
+
+Daiki Ueno <ueno@gnu.org>

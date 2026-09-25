@@ -1,0 +1,12 @@
+Files:
+tests/test-bcp47.c
+tests/macros.h
+
+Depends-on:
+streq
+
+configure.ac:
+
+Makefile.am:
+TESTS += test-bcp47
+check_PROGRAMS += test-bcp47
