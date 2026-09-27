@@ -1,0 +1,90 @@
+/* Resolving ambiguity of argument lists: Information given through
+   command-line options.
+   Copyright (C) 2001-2026 Free Software Foundation, Inc.
+
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+
+/* Written by Bruno Haible.  */
+
+#ifndef _XGETTEXT_ARGLIST_CALLSHAPE_H
+#define _XGETTEXT_ARGLIST_CALLSHAPE_H
+
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "attribute.h"
+#include "flexmember.h"
+#include "str-list.h"
+#include "mem-hash-map.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/* Calling convention for a given keyword.  */
+struct callshape
+{
+  int argnum1; /* argument number to use for msgid */
+  int argnum2; /* argument number to use for msgid_plural */
+  int argnumc; /* argument number to use for msgctxt */
+  bool argnum1_glib_context; /* argument argnum1 has the syntax "ctxt|msgid" */
+  bool argnum2_glib_context; /* argument argnum2 has the syntax "ctxt|msgid" */
+  int argtotal; /* total number of arguments */
+  string_list_ty xcomments; /* auto-extracted comments */
+};
+
+/* Split keyword spec into keyword, argnum1, argnum2, argnumc.  */
+extern void split_keywordspec (const char *spec, const char **endp,
+                               struct callshape *shapep);
+
+/* Test whether the preceding split_keywordspec call was successful,
+   assuming a programming language in which a keyword cannot contain
+   colons.  */
+extern bool split_keywordspec_ok (const char *keyword, size_t keyword_len);
+
+/* Test whether the preceding split_keywordspec call was successful,
+   assuming a programming language in which a keyword cannot contain colons,
+   except in pairs (such as e.g. in C++).  */
+extern bool split_keywordspec_ok2 (const char *keyword, size_t keyword_len);
+
+/* Test whether the preceding split_keywordspec call was successful,
+   assuming a programming language in which a keyword cannot contain colons,
+   except a single colon or a pair of colons (such as e.g. in Common Lisp).  */
+extern bool split_keywordspec_ok_lisp (const char *keyword, size_t keyword_len);
+
+/* Set of alternative calling conventions for a given keyword.  */
+struct callshapes
+{
+  size_t keyword_len;           /* the keyword's length */
+  const char *keyword           /* the keyword, not NUL terminated */
+    COUNTED_BY (keyword_len);
+  size_t nshapes;
+  struct callshape shapes[FLEXIBLE_ARRAY_MEMBER]
+    COUNTED_BY (nshapes);
+};
+
+/* Insert a (keyword, callshape) pair into a hash table mapping keyword to
+   'struct callshapes *'.  */
+extern void insert_keyword_callshape (hash_table *table,
+                                      const char *keyword, size_t keyword_len,
+                                      const struct callshape *shape);
+
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#endif /* _XGETTEXT_ARGLIST_CALLSHAPE_H */
