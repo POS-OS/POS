@@ -1,0 +1,133 @@
+# List of gnulib modules needed for GNU tar.
+# A module name per line. Empty lines and comments are ignored.
+
+# Copyright 2005-2026 Free Software Foundation, Inc.
+
+# This file is part of GNU tar.
+
+# GNU tar is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+
+# GNU tar is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+areadlinkat-with-size
+argmatch
+argp
+argp-version-etc
+assert-h
+attribute
+backupfile
+bool
+c-ctype
+c32rtomb
+c32tolower
+c32toupper
+closeout
+configmake
+dirname
+dup2
+errno-h
+error
+exclude
+exitfail
+extern-inline
+faccessat
+fchmodat
+fchownat
+fcntl-h
+fdopendir
+fdutimensat
+file-has-acl
+fileblocks
+flexmember
+fnmatch-gnu
+free-posix
+fseeko
+fstatat
+full-read
+full-write
+futimens
+gendocs
+getline
+getopt-gnu
+getpagesize
+gettext-h
+gettime
+gitlog-to-changelog
+hash
+human
+ialloc
+idx
+intprops
+inttostr
+inttypes-h
+issymlinkat
+largefile
+lchown
+limits-h
+linkat
+localcharset
+manywarnings
+mbrtoc32-regular
+mcel-prefer
+mempcpy
+mkdirat
+mkfifoat
+modechange
+nstrftime-limited
+obstack
+openat
+openat2
+parse-datetime
+priv-set
+progname
+quote
+quotearg
+readlinkat
+reallocarray
+renameat
+root-uid
+rpmatch
+safe-read
+same-inode
+savedir
+selinux-at
+setenv
+stat-time
+std-gnu23
+stdcountof-h
+stddef-h
+stdint-h
+stdopen
+stpcpy
+strdup-posix
+strerror
+stringeq
+strnlen
+symlinkat
+sys_stat-h
+tempname
+time_rz
+timespec
+timespec-sub
+unlinkat
+unlinkdir
+unlocked-io
+utimensat
+verror
+version-etc-fsf
+xalignalloc
+xalloc
+xalloc-die
+xgetcwd
+xstrtoumax
+xvasprintf
+year2038-recommended
