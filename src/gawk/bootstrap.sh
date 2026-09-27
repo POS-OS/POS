@@ -1,0 +1,45 @@
+#! /bin/sh
+
+# bootstrap.sh --- touch relevant files to avoid out-of-date issues in
+#		   Git sandboxes
+
+# Copyright (C) 2007, 2009-2014, 2025, 2026 the Free Software Foundation, Inc.
+# 
+# This file is part of GAWK, the GNU implementation of the
+# AWK Programming Language.
+# 
+# GAWK is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+# 
+# GAWK is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+touch aclocal.m4
+touch extension/aclocal.m4
+find awklib -type f -print | xargs touch
+sleep 1
+touch configure
+touch extension/configure
+sleep 2
+touch configh.in
+touch extension/configh.in
+sleep 1
+touch test/Maketests
+find . -name Makefile.in -print | xargs touch
+touch pc/Makefile.tst
+sleep 1
+for i in gawkinet.texi gawk.texi gawkworkflow.texi gawknotes.texi pm-gawk.texi
+do
+	touch doc/${i%.texi}.info	# file may not be there, can't use *.info
+done
+touch po/*.gmo
+touch po/stamp-po
+touch awkgram.c
+touch command.c

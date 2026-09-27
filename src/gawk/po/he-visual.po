@@ -1,0 +1,3792 @@
+# Hebrew messages for GNU Awk
+# Copyright (C) 2001, 2002, 2023 Free Software Foundation, Inc.
+# Eli Zaretskii <eliz@gnu.org>, 2001, 2002.
+# Arnold Robbins <arnold@skeeve.com>, 2023, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: gawk 5.2.60\n"
+"Report-Msgid-Bugs-To: bug-gawk@gnu.org\n"
+"POT-Creation-Date: 2023-05-07 21:31+0300\n"
+"PO-Revision-Date: 2026-01-08 05:21+0000\n"
+"Last-Translator: Yaron Shahrabani <sh.yaron@gmail.com>\n"
+"Language-Team: Hebrew <https://translate.codeberg.org/projects/gawk/main/he/>"
+"\n"
+"Language: he\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=4; plural=(n == 1) ? 0 : ((n == 2) ? 1 : ((n > 10 && "
+"n % 10 == 0) ? 2 : 3));\n"
+"X-Generator: Weblate 5.15.1\n"
+
+#: array.c:249
+#, c-format
+msgid "from %s"
+msgstr "%1$s־מ"
+
+#: array.c:355
+msgid "attempt to use a scalar value as array"
+msgstr "ךרעמכ ראלקסב שומיש ןויסינ"
+
+#: array.c:357
+#, c-format
+msgid "attempt to use scalar parameter `%s' as an array"
+msgstr "ךרעמכ `%1$s' ירלקס הנתשמב שומיש ןויסנ"
+
+#: array.c:360
+#, c-format
+msgid "attempt to use scalar `%s' as an array"
+msgstr "ךרעמכ `%1$s' ראלקסב שומיש ןויסינ"
+
+#: array.c:407 array.c:574 builtin.c:88 builtin.c:1746 builtin.c:1794
+#: builtin.c:1807 builtin.c:2323 builtin.c:2350 eval.c:1156 eval.c:1161 eval.c:1555
+#, c-format
+msgid "attempt to use array `%s' in a scalar context"
+msgstr "ראלקס לש רשקהב `%1$s' ךרעמב שומיש ןויסנ"
+
+#: array.c:581
+#, c-format
+msgid "delete: index `%.*s' not in array `%s'"
+msgstr "delete: `%2$s' ךרעמב אצמנ אל '%1$.*s` חתפמה"
+
+#: array.c:595
+#, c-format
+msgid "attempt to use scalar `%s[\"%.*s\"]' as an array"
+msgstr "ךרעמכ ']"\%2$.*s"\[%1$s` ראלקסב שומיש ןויסינ"
+
+#: array.c:808 array.c:858
+#, c-format
+msgid "%s: first argument is not an array"
+msgstr "%1$s: ךרעמ וניא ןושארה טנמוגראה"
+
+#: array.c:850
+#, c-format
+msgid "%s: second argument is not an array"
+msgstr "%1$s: ךרעמ וניא ינש טנמוגרא"
+
+#: array.c:853 field.c:1006 field.c:1100
+#, c-format
+msgid "%s: cannot use %s as second argument"
+msgstr "%1$s: ינש טנמוגראכ `%2$s'־ב שמתשהל רוסא"
+
+#: array.c:861
+#, c-format
+msgid "%s: first argument cannot be SYMTAB without a second argument"
+msgstr "%1$s: SYMTAB ינש טנמוגרא אלל תויהל לוכי אל ןושאר טנמוגרא"
+
+#: array.c:863
+#, c-format
+msgid "%s: first argument cannot be FUNCTAB without a second argument"
+msgstr "%1$s: FUNCTAB ינש טנמוגרא אלל תויהל לוכי אל ןושאר טנמוגרא"
+
+#: array.c:870
+msgid ""
+"asort/asorti: using the same array as source and destination without a third "
+"argument is silly."
+msgstr "asort/asorti: .ישפיט אוה ישילש טנמוגרא אלל דעיו רוקמכ ךרעמ ותואב שומיש"
+
+#: array.c:875
+#, c-format
+msgid "%s: cannot use a subarray of first argument for second argument"
+msgstr "%1$s: ינש טנמוגרא רובע ןושאר טנמוגרא לש הנשמ ךרעמב שמתשהל לוכי אל"
+
+#: array.c:880
+#, c-format
+msgid "%s: cannot use a subarray of second argument for first argument"
+msgstr "%1$s: ןושאר טנמוגרא רובע ינש טנמוגרא לש הנשמ ךרעמב שמתשהל לוכי אל"
+
+#: array.c:1410
+#, c-format
+msgid "`%s' is invalid as a function name"
+msgstr "`%1$s' היצקנופ םשכ יקוח וניא"
+
+#: array.c:1414
+#, c-format
+msgid "sort comparison function `%s' is not defined"
+msgstr "תרדגומ הניא `%1$s' ןוימה תייצקנופ"
+
+#: awkgram.y:278
+#, c-format
+msgid "%s blocks must have an action part"
+msgstr "הלועפ תרדגה לולכל בייח %1$s קולב"
+
+#: awkgram.y:281
+msgid "each rule must have a pattern or an action part"
+msgstr "הלועפ וא תינבת וא היהיש ךירצ קוח לכל"
+
+#: awkgram.y:435 awkgram.y:447
+msgid "old awk does not support multiple `BEGIN' or `END' rules"
+msgstr "awk BEGIN END וא יקוח המכב ךמות וניא ןשי"
+
+#: awkgram.y:500
+#, c-format
+msgid "`%s' is a built-in function, it cannot be redefined"
+msgstr "`%1$s' התרדגה תא תונשל ןיא ,תינבומ היצקנופ הניה"
+
+#: awkgram.y:564
+msgid "regexp constant `//' looks like a C++ comment, but is not"
+msgstr "C++, הרעה וניא ךא תפשב הרעה ומכ הארנ `//' ירלוגרה יוטיבה"
+
+#: awkgram.y:568
+#, c-format
+msgid "regexp constant `/%s/' looks like a C comment, but is not"
+msgstr "C, הרעה וניא ךא תפשב הרעה ומכ הארנ `/%1$s/' ירלוגר יוטיב"
+
+#: awkgram.y:695
+#, c-format
+msgid "duplicate case values in switch body: %s"
+msgstr "%1$s :גתמה ףוגב תוישיר יכרע לופכ"
+
+#: awkgram.y:716
+msgid "duplicate `default' detected in switch body"
+msgstr "default' גותימה ףוגב לופכ` ההוז"
+
+#: awkgram.y:1052 awkgram.y:4484
+msgid "`break' is not allowed outside a loop or switch"
+msgstr "break' האלולל ץוחמ`־ב שמתשהל ןיא"
+
+#: awkgram.y:1062 awkgram.y:4476
+msgid "`continue' is not allowed outside a loop"
+msgstr "continue' האלולל ץוחמ`־ב שמתשהל ןיא"
+
+#: awkgram.y:1073
+#, c-format
+msgid "`next' used in %s action"
+msgstr "next' %1$s לש הלועפ תרדגהב`־ב שומיש"
+
+#: awkgram.y:1084
+#, c-format
+msgid "`nextfile' used in %s action"
+msgstr "nextfile' %1$s לש הלועפ תרדגהב`־ב שומיש"
+
+#: awkgram.y:1112
+msgid "`return' used outside function context"
+msgstr "return` היצקנופ לש טסקטנוקב אלש`-ב שומיש"
+
+#: awkgram.y:1185
+msgid "plain `print' in BEGIN or END rule should probably be `print \"\"'"
+msgstr "`print' BEGIN END print \"\"'` תויהל םתסה ןמ ךירצ וא יללכב טושפ"
+
+#: awkgram.y:1255 awkgram.y:1304
+msgid "`delete' is not allowed with SYMTAB"
+msgstr "`delete' SYMTAB םע רוסא"
+
+#: awkgram.y:1257 awkgram.y:1306
+msgid "`delete' is not allowed with FUNCTAB"
+msgstr "`delete' FUNCTAB םע רוסא"
+
+#: awkgram.y:1291 awkgram.y:1295
+msgid "`delete(array)' is a non-portable tawk extension"
+msgstr "`delete(array)' tawk ילבטרופ אל לש הבחרה וניה"
+
+#: awkgram.y:1431
+msgid "multistage two-way pipelines don't work"
+msgstr "םידבוע םניא םיבלש יבורמ םיינוויכ־וד םיקיפא"
+
+#: awkgram.y:1433
+msgid "concatenation as I/O `>' redirection target is ambiguous"
+msgstr "I/O `>' יעמשמ דח וניא לש שדחמ בותינ דעיכ רושרשה"
+
+#: awkgram.y:1645
+msgid "regular expression on right of assignment"
+msgstr "ךרע תמשה תארוה לש ןימי דצב ירלוגר יוטיב"
+
+#: awkgram.y:1660 awkgram.y:1673
+msgid "regular expression on left of `~' or `!~' operator"
+msgstr "`!~' וא `~' רוטרפואל לאמשמ ירלוגר יוטיב"
+
+#: awkgram.y:1690 awkgram.y:1840
+msgid "old awk does not support the keyword `in' except after `for'"
+msgstr "awk in' for'` ירחא טעמל` יוטיבב ךמות אל ןשי"
+
+#: awkgram.y:1700
+msgid "regular expression on right of comparison"
+msgstr "האוושה לש ןימי דצב ירלוגר יוטיב"
+
+#: awkgram.y:1819
+#, c-format
+msgid "non-redirected `getline' invalid inside `%s' rule"
+msgstr "`getline' `%1$s' ללכ ךותב יקוח אל בתונמ אל"
+
+#: awkgram.y:1822
+msgid "non-redirected `getline' undefined inside END action"
+msgstr "`getline' END תלועפ ךותב רדגומ וניא היינפה אלל"
+
+#: awkgram.y:1842
+msgid "old awk does not support multidimensional arrays"
+msgstr "awk םידמימ המכ לש םיכרעמב ךמות וניא ןשי"
+
+#: awkgram.y:1945
+msgid "call of `length' without parentheses is not portable"
+msgstr "length' תדיינ הניא םיירגוס ילב`־ל האירק"
+
+#: awkgram.y:2019
+msgid "indirect function calls are a gawk extension"
+msgstr "gawk־ל הבחרה ןניה תויצקנופל תופיקע תואירק"
+
+#: awkgram.y:2032
+#, c-format
+msgid "cannot use special variable `%s' for indirect function call"
+msgstr "היצקנופל הפיקע האירק ליבשב `%1$s' דחוימ הנתשמב שמתשהל רוסא"
+
+#: awkgram.y:2065
+#, c-format
+msgid "attempt to use non-function `%s' in function call"
+msgstr "היצקנןפ תאורקב `%1$s' היצקנופב אל אוהש רבדב שומיש ןויסנ"
+
+#: awkgram.y:2130
+msgid "invalid subscript expression"
+msgstr "ךרעמ ןייצמב יוגש ריבחת לעב יוטיב"
+
+#: awkgram.y:2505 awkgram.y:2525 gawkapi.c:274 gawkapi.c:291 msg.c:133
+msgid "warning: "
+msgstr " :הרהזא"
+
+#: awkgram.y:2523 gawkapi.c:246 gawkapi.c:289 msg.c:165
+msgid "fatal: "
+msgstr " :עירכמ"
+
+#: awkgram.y:2576
+msgid "unexpected newline or end of string"
+msgstr "יופצ-יתלב םוקמב הרוש ףוס"
+
+#: awkgram.y:2597
+msgid ""
+"source files / command-line arguments must contain complete functions or rules"
+msgstr ""
+"םיללכ וא תואלמ תויצקנופ ליכהל םיבייח הדוקפה תרוש לש םיטנמוגרא / רוקמ יצבוק"
+
+#: awkgram.y:2881 awkgram.y:2959 awkgram.y:3197 debug.c:545 debug.c:561
+#: debug.c:2844 debug.c:5213
+#, c-format
+msgid "cannot open source file `%s' for reading: %s"
+msgstr "%2$s :האירקל `%1$s' רוקמה ץבוק תא חותפל ןתינ אל"
+
+#: awkgram.y:2882 awkgram.y:3019
+#, c-format
+msgid "cannot open shared library `%s' for reading: %s"
+msgstr "%2$s :האירקל `%1$s' תפתושמה הייקיתה תא חותפל ןתינ אל"
+
+#: awkgram.y:2884 awkgram.y:2960 awkgram.y:3020 builtin.c:136 debug.c:5364
+msgid "reason unknown"
+msgstr "העודי-יתלב הביסמ"
+
+#: awkgram.y:2893 awkgram.y:2917
+#, c-format
+msgid "cannot include `%s' and use it as a program file"
+msgstr "תינכות ץבוקכ וב שמתשהלו `%1$s' לולכל לוכי אל"
+
+#: awkgram.y:2906
+#, c-format
+msgid "already included source file `%s'"
+msgstr "ללכנ רבכ `%1$s' רוקמ ץבוק"
+
+#: awkgram.y:2907
+#, c-format
+msgid "already loaded shared library `%s'"
+msgstr "ללכנ רבכ `%1$s' תפתושמ הירפס ץבוק"
+
+#: awkgram.y:2944
+msgid "@include is a gawk extension"
+msgstr "@include gawk־ל תיתדוקנ הבחרה איה"
+
+#: awkgram.y:2950
+msgid "empty filename after @include"
+msgstr "include@ ירחא קיר ץבוק םש"
+
+#: awkgram.y:2999
+msgid "@load is a gawk extension"
+msgstr "@load gawk-ל תיפיצפס הבחרה וניה"
+
+#: awkgram.y:3006
+msgid "empty filename after @load"
+msgstr "load@ ירחא קיר ץבוק םש"
+
+#: awkgram.y:3149
+msgid "empty program text on command line"
+msgstr "הדוקפה תרושמ הלבקתה הקיר תינכת"
+
+#: awkgram.y:3265 debug.c:470 debug.c:628
+#, c-format
+msgid "cannot read source file `%s': %s"
+msgstr "%2$s :`%1$s' רוקמה ץבוק תא אורקל ןתינ אל"
+
+#: awkgram.y:3276
+#, c-format
+msgid "source file `%s' is empty"
+msgstr "קיר `%1$s' רוקמה ץבוק"
+
+#: awkgram.y:3336
+#, c-format
+msgid "error: invalid character '\\%03o' in source code"
+msgstr "\\%1$03o' יוגש רוקמה דוקב` ותה :האיגש"
+
+#: awkgram.y:3563
+msgid "source file does not end in newline"
+msgstr "השדח הרושב םייתסמ וניא רוקמה ץבוק"
+
+#: awkgram.y:3673
+msgid "unterminated regexp ends with `\\' at end of file"
+msgstr "ץבוקה ףסב '\\`-ב םייתסמ רומג-יתלב ירלוגר יוטיב"
+
+#: awkgram.y:3700
+#, c-format
+msgid "%s: %d: tawk regex modifier `/.../%c' doesn't work in gawk"
+msgstr "%1$s: %2$d: tawk gawk-ב דבוע אל לש '%3$c/.../` ירלוגר יוטיב הנשמ"
+
+#: awkgram.y:3704
+#, c-format
+msgid "tawk regex modifier `/.../%c' doesn't work in gawk"
+msgstr "tawk gawk-ב דבוע אל לש '%1$c/.../` ירלוגר יוטיב הנשמ"
+
+#: awkgram.y:3717
+msgid "unterminated regexp"
+msgstr "רומג-יתלב ירלוגר יוטיב"
+
+#: awkgram.y:3721
+msgid "unterminated regexp at end of file"
+msgstr "ץבוקה ףוסב רומג-יתלב ירלוגר יוטיב"
+
+#: awkgram.y:3810
+msgid "use of `\\ #...' line continuation is not portable"
+msgstr "יליבטרופ וניא הרוש ךשמהל ןמיסכ '...# \\`-ב שומיש"
+
+#: awkgram.y:3832
+msgid "backslash not last character on line"
+msgstr "הרושב ןורחא ות וניאש ךופה ןסכול"
+
+#: awkgram.y:3880 awkgram.y:3882
+msgid "multidimensional arrays are a gawk extension"
+msgstr "gawk לש הבחרה םה םיידממ-בר םיכרעמ"
+
+#: awkgram.y:3907 awkgram.y:3918
+#, c-format
+msgid "POSIX does not allow operator `%s'"
+msgstr "POSIX `%1$s' רוטרפוא השרמ וניא"
+
+#: awkgram.y:3909 awkgram.y:3920 awkgram.y:3955 awkgram.y:3963
+#, c-format
+msgid "operator `%s' is not supported in old awk"
+msgstr "awk ןשי-ב ךמתנ וניא `%1$s' רוטרפוא"
+
+#: awkgram.y:4060 awkgram.y:4082 command.y:1188
+msgid "unterminated string"
+msgstr "הרומג-יתלב תזורחמ"
+
+#: awkgram.y:4070 main.c:1284
+msgid "POSIX does not allow physical newlines in string values"
+msgstr "POSIX תזורחמ יכרעב תויזיפ תושדח תורוש רשפאמ וניא"
+
+#: awkgram.y:4072 node.c:460
+msgid "backslash string continuation is not portable"
+msgstr "יליביטרופ וניא ירוחא יוטנ תזורחמ ךשמה"
+
+#: awkgram.y:4313
+#, c-format
+msgid "invalid char '%c' in expression"
+msgstr "יוטיבב '%1$c' יוגש ות"
+
+#: awkgram.y:4408
+#, c-format
+msgid "`%s' is a gawk extension"
+msgstr "`%1$s' gawk־ל הבחרה איה"
+
+#: awkgram.y:4413
+#, c-format
+msgid "POSIX does not allow `%s'"
+msgstr "POSIX `%1$s' השרמ וניא"
+
+#: awkgram.y:4421
+#, c-format
+msgid "`%s' is not supported in old awk"
+msgstr "`%1$s' awk ןשי-ב ךמתנ וניא"
+
+#: awkgram.y:4521
+msgid "`goto' considered harmful!"
+msgstr "`goto' !ינסרה בשחנ"
+
+#: awkgram.y:4590
+#, c-format
+msgid "%d is invalid as number of arguments for %s"
+msgstr "%1$d %2$s רובע םיטנמוגרא לש יוגש רפסמ אוה"
+
+#: awkgram.y:4625
+#, c-format
+msgid "%s: string literal as last argument of substitute has no effect"
+msgstr "%1$s: העפשה ןיא ףילחת לש ןורחא טנמוגראכ תילולימ תזורחמל"
+
+#: awkgram.y:4630
+#, c-format
+msgid "%s third parameter is not a changeable object"
+msgstr "sub' תונשל ןתינש טירפ וניא` לש ישילש %1$s טנמוגרא"
+
+#: awkgram.y:4734 awkgram.y:4737
+msgid "match: third argument is a gawk extension"
+msgstr "match' gawk-ל תיפיצפס הבחרה וניה` לש ישילש טנמוגרא"
+
+#: awkgram.y:4791 awkgram.y:4794
+msgid "close: second argument is a gawk extension"
+msgstr "close' gawk-ל תיפיצפס הבחרה וניה` לש ינש טנמוגרא"
+
+#: awkgram.y:4806
+msgid "use of dcgettext(_\"...\") is incorrect: remove leading underscore"
+msgstr "dcgettext(\"...\"): טנמוגרא תמדקבש ןותחת-ףקמ קלסל שי-ב יוגש שומיש"
+
+#: awkgram.y:4821
+msgid "use of dcngettext(_\"...\") is incorrect: remove leading underscore"
+msgstr "dcngettext(\"...\"): טנמוגרא תמדקבש ןותחת-ףקמ קלסל שי-ב יוגש שומיש"
+
+#: awkgram.y:4840
+msgid "index: regexp constant as second argument is not allowed"
+msgstr "index: רתומ וניא ינש טנמוגראכ ירלוגר יוטיב עובק"
+
+#: awkgram.y:4893
+#, c-format
+msgid "function `%s': parameter `%s' shadows global variable"
+msgstr "יללכ הנתשמ לע רבוג `%2$s' רטמרפה :`%1$s' היצקנופה"
+
+#: awkgram.y:4942 debug.c:4197 debug.c:4240 debug.c:5362 profile.c:110
+#, c-format
+msgid "could not open `%s' for writing: %s"
+msgstr ")%2$s( הלקת הביתכ ךרוצל `%1$s' תחיתפ תעב"
+
+#: awkgram.y:4943
+msgid "sending variable list to standard error"
+msgstr "ינקת תואיגש ץורעל חלשנ םינתשמ תמישר"
+
+#: awkgram.y:4951
+#, c-format
+msgid "%s: close failed: %s"
+msgstr "%1$s: %2$s :תריגס תעב הלקת"
+
+#: awkgram.y:4976
+msgid "shadow_funcs() called twice!"
+msgstr "shadow_funcs() !םיימעפ הארקנ"
+
+#: awkgram.y:4984
+msgid "there were shadowed variables"
+msgstr "םיליפאמ םינתשמ ויה"
+
+#: awkgram.y:5061
+#, c-format
+msgid "function name `%s' previously defined"
+msgstr "`%1$s' םשב היצקנופ תרדגומ רבכ"
+
+#: awkgram.y:5112
+#, c-format
+msgid "function `%s': cannot use function name as parameter name"
+msgstr "רטמרפ םשכ שמשל לוכי וניא היצקנופ םש :`%1$s' היצקנופב"
+
+#: awkgram.y:5115
+#, c-format
+msgid "function `%s': cannot use special variable `%s' as a function parameter"
+msgstr "רטמרפ םשכ שמשל לוכי וניא דחוימ הנתשמ םש `%2$s' :`%1$s' היצקנופב"
+
+#: awkgram.y:5119
+#, c-format
+msgid "function `%s': parameter `%s' cannot contain a namespace"
+msgstr "םש בחרמ ליכהל לוכי אל `%2$s' רטמרפה :`%1$s' היצקנופה"
+
+#: awkgram.y:5126
+#, c-format
+msgid "function `%s': parameter #%d, `%s', duplicates parameter #%d"
+msgstr "%4$d ׳סמ רטמרפ תא לפכשמ ,`%3$s' ,%2$d ׳סמ רטמרפ :`%1$s' היצקנופה"
+
+#: awkgram.y:5215
+#, c-format
+msgid "function `%s' called but never defined"
+msgstr "תרדגומ הניאש `%1$s' היצקנופל האירק"
+
+#: awkgram.y:5219
+#, c-format
+msgid "function `%s' defined but never called directly"
+msgstr "תארקנ אל ךא ,הרדגוה `%1$s' היצקנופ"
+
+#: awkgram.y:5251
+#, c-format
+msgid "regexp constant for parameter #%d yields boolean value"
+msgstr "ינאילוב ךרע בינמ %1$d ׳סמ הנתשמל עובק ירלוגר יוטיב"
+
+#: awkgram.y:5266
+#, c-format
+msgid ""
+"function `%s' called with space between name and `(',\n"
+"or used as a variable or an array"
+msgstr ""
+"n\,'(` ןיבל המש ןיב םיחוור םע `%1$s' היצקנןפל האירק"
+"ךרעמ וא הנתשמכ שמשמ וא"
+
+#: awkgram.y:5489 awkgram.y:5542 mpfr.c:1589 mpfr.c:1624
+msgid "division by zero attempted"
+msgstr "ספאב הקולח ןויסנ"
+
+#: awkgram.y:5498 awkgram.y:5551 mpfr.c:1634
+#, c-format
+msgid "division by zero attempted in `%%'"
+msgstr "`%1$%'-ב ספאב הקולח ןויסנ"
+
+#: awkgram.y:5871
+msgid "cannot assign a value to the result of a field post-increment expression"
+msgstr "הדש לש הלדגה רחאלש יוטיב לש האצותל ךרע תוצקהל ןתינ אל"
+
+#: awkgram.y:5874
+#, c-format
+msgid "invalid target of assignment (opcode %s)"
+msgstr ")%1$s דוקפוא( האצקה לש יקוח אל דעי"
+
+#: awkgram.y:6254
+msgid "statement has no effect"
+msgstr "העפשה ןיא הזרכהל"
+
+#: awkgram.y:6769
+#, c-format
+msgid "identifier %s: qualified names not allowed in traditional / POSIX mode"
+msgstr "POSIX / יתרוסמ בצמב םירתומ םניא םיכמסומ תומש :%1$s ההזמ"
+
+#: awkgram.y:6774
+#, c-format
+msgid "identifier %s: namespace separator is two colons, not one"
+msgstr "דחא אל ,םייתדוקנ ינש אוה תומשה בחרמ דירפמ :%1$s ההזמ"
+
+#: awkgram.y:6780
+#, c-format
+msgid "qualified identifier `%s' is badly formed"
+msgstr "היוגש הרוצב רצונ `%1$s' ךמסומ ההזמ"
+
+#: awkgram.y:6787
+#, c-format
+msgid ""
+"identifier `%s': namespace separator can only appear once in a qualified name"
+msgstr "ךמסומ םשב תחא םעפ קר עיפוהל לוכי תומש בחרמ דירפמ :`%1$s' ההזמ"
+
+#: awkgram.y:6836 awkgram.y:6887
+#, c-format
+msgid "using reserved identifier `%s' as a namespace is not allowed"
+msgstr "רתומ וניא תומש בחרמכ `%1$s' רומש ההזמב שומיש"
+
+#: awkgram.y:6843 awkgram.y:6853
+#, c-format
+msgid ""
+"using reserved identifier `%s' as second component of a qualified name is not "
+"allowed"
+msgstr "השרומ אל אוה ךמסומ םש לש ינש ביכרכ `%1$s' רומש ההזמב שומיש"
+
+#: awkgram.y:6871
+msgid "@namespace is a gawk extension"
+msgstr "@namespace gawk-ל תיפיצפס הבחרה וניה"
+
+#: awkgram.y:6878
+#, c-format
+msgid "namespace name `%s' must meet identifier naming rules"
+msgstr "םיהזמ לש תומש ןתמ יללכב דומעל בייח `%1$s' תומשה בחרמ םש"
+
+#: builtin.c:98 builtin.c:105
+#, c-format
+msgid "%s: called with %d arguments"
+msgstr "%1$s: םיטנמוגרא %2$d םע ארקנ"
+
+#: builtin.c:130
+#, c-format
+msgid "%s to \"%s\" failed: %s"
+msgstr "%1$s %3$s :לקתנ "\%2$s"\-ל"
+
+#: builtin.c:134
+msgid "standard output"
+msgstr "תיטרדנטס טלפ תדיחי"
+
+#: builtin.c:135
+msgid "standard error"
+msgstr "תיטרדנטס טלפ תדיחי"
+
+#: builtin.c:211 builtin.c:549 builtin.c:649 builtin.c:1859 builtin.c:2608
+#: builtin.c:2626 builtin.c:2745 builtin.c:3758 mpfr.c:821
+#, c-format
+msgid "%s: received non-numeric argument"
+msgstr "%1$s: רפסמ וניא טנמוגרא"
+
+#: builtin.c:217
+#, c-format
+msgid "exp: argument %g is out of range"
+msgstr "exp: חווטל ץוחמ %1$g טנמוגראה"
+
+#: builtin.c:281 builtin.c:618 builtin.c:2201 builtin.c:2263 builtin.c:2517
+#: builtin.c:2550
+#, c-format
+msgid "%s: received non-string argument"
+msgstr "%1$s: תזורחמ וניא טנמוגרא"
+
+#: builtin.c:298
+#, c-format
+msgid "fflush: cannot flush: pipe `%.*s' opened for reading, not writing"
+msgstr "fflush: הביתכל אל ,האירקל חותפ `%1$.*s' קיפא :ןקורל ןתינ אל"
+
+#: builtin.c:301
+#, c-format
+msgid "fflush: cannot flush: file `%.*s' opened for reading, not writing"
+msgstr "fflush: הביתכל אל ,האירקל חותפ `%1$.*s' :ץצוחה ןקורל ןתינ אל"
+
+#: builtin.c:312
+#, c-format
+msgid "fflush: cannot flush file `%.*s': %s"
+msgstr "fflush: %2$s :`%1$.*s' ץבוק ןקורל ןתינ אל"
+
+#: builtin.c:317
+#, c-format
+msgid "fflush: cannot flush: two-way pipe `%.*s' has closed write end"
+msgstr "fflush: הביתכה דצ רגס `%1$.*s' ליבקמ ךילהת :ץצוחה ןקורל ןתינ אל"
+
+#: builtin.c:323
+#, c-format
+msgid "fflush: `%.*s' is not an open file, pipe or co-process"
+msgstr "fflush: `%1$.*s' ליבקמ ךילהת וא חותפ קיפא ,חותפ ץבוק וניא"
+
+#: builtin.c:432 builtin.c:1897 builtin.c:2107 builtin.c:2787 builtin.c:4020
+#: builtin.c:4107 builtin.c:4174
+#, c-format
+msgid "%s: received non-string first argument"
+msgstr "%1$s: תזורחמ וניאש ןושאר טנמוגרא לבקתה"
+
+#: builtin.c:434 builtin.c:3998 builtin.c:4013 builtin.c:4103 builtin.c:4165
+#, c-format
+msgid "%s: received non-string second argument"
+msgstr "%1$s: תזורחמ וניא ינש טנמוגרא"
+
+#: builtin.c:592
+msgid "length: received array argument"
+msgstr "length: תזורחמ וניא טנמוגרא"
+
+#: builtin.c:595
+msgid "`length(array)' is a gawk extension"
+msgstr "`length(array)' gawk-ל תיפיצפס הבחרה וניה"
+
+#: builtin.c:652 builtin.c:1863
+#, c-format
+msgid "%s: received negative argument %g"
+msgstr "%1$s: %2$g ילילש טנמוגרא םע ארקנ"
+
+#: builtin.c:857 builtin.c:862 builtin.c:1016
+msgid "fatal: must use `count$' on all formats or none"
+msgstr "fatal: count$' דחא ףאב וא םיטמרופה לכב וא רתומ`-ב שומיש"
+
+#: builtin.c:935
+#, c-format
+msgid "field width is ignored for `%%' specifier"
+msgstr "`%1$%' טרפמ רובע הדשה בחורמ םימלעתמ"
+
+#: builtin.c:937
+#, c-format
+msgid "precision is ignored for `%%' specifier"
+msgstr "`%1$%' טרפמ רובע קוידהמ םימלעתמ"
+
+#: builtin.c:939
+#, c-format
+msgid "field width and precision are ignored for `%%' specifier"
+msgstr "`%1$%' טרפמ רובע קוידהו הדשה בחורמ םימלעתמ"
+
+#: builtin.c:990
+msgid "fatal: `$' is not permitted in awk formats"
+msgstr "fatal: `$' awk לש םיטמרופב שומישל רוסא"
+
+#: builtin.c:999
+msgid "fatal: argument index with `$' must be > 0"
+msgstr "0־מ לודג תויהל בייח '$` דיל םיטנמוגראה הנומ :עירכמ"
+
+#: builtin.c:1003
+#, c-format
+msgid "fatal: argument index %ld greater than total number of supplied arguments"
+msgstr "fatal: םיטנמוגראה לש ללוכה םרפסממ לודג %1$ld טנמוגראה הנומ"
+
+#: builtin.c:1007
+msgid "fatal: `$' not permitted after period in format"
+msgstr "fatal: `$' טמרופב הדוקנה ירחא עיפוהל לוכי וניא"
+
+#: builtin.c:1026
+msgid "fatal: no `$' supplied for positional field width or precision"
+msgstr "fatal: וקויד וא הדש בחור ןייצמב טנמוגראה הנומ רובע '$` אצמנ אל"
+
+#: builtin.c:1104
+#, c-format
+msgid "`%c' is meaningless in awk formats; ignored"
+msgstr "`%1$c' awk; חנזוה לש טמרופב תועמשמ רסח וניה"
+
+#: builtin.c:1108
+#, c-format
+msgid "fatal: `%c' is not permitted in POSIX awk formats"
+msgstr "fatal: `%1$c' awk POSIX יפ-לע לש טמרופב עיפוהל לוכי וניא"
+
+#: builtin.c:1139
+#, c-format
+msgid "[s]printf: value %g is too big for %%c format"
+msgstr "[s]printf: c%% טמרופ רובע ידמ לודג %1$g ךרעה"
+
+#: builtin.c:1152
+#, c-format
+msgid "[s]printf: value %g is not a valid wide character"
+msgstr "[s]printf: יקוח בחר ות וניא %1$g ךרעה"
+
+#: builtin.c:1544
+#, c-format
+msgid "[s]printf: value %g is out of range for `%%%c' format"
+msgstr "[s]printf: `%2$%%c' טמרופ רובע םוחתל ץוחמ אצמנ %1$g ךרעה"
+
+#: builtin.c:1552
+#, c-format
+msgid "[s]printf: value %s is out of range for `%%%c' format"
+msgstr "[s]printf: `%2$%%c' טמרופ רובע חווטל ץוחמ אצמנ %1$s ךרעה"
+
+#: builtin.c:1577
+#, c-format
+msgid "%%%c format is POSIX standard but not portable to other awks"
+msgstr "POSIX awks םירחא-ל דיינ וניא ךא ןקת אוה %1$c%% טמרופ"
+
+#: builtin.c:1688
+#, c-format
+msgid "ignoring unknown format specifier character `%c': no argument converted"
+msgstr "טנמוגרא רמוה אל :עודי אל טמרופ טרפמ לש '%1$c' ותהמ תומלעתה"
+
+#: builtin.c:1693
+msgid "fatal: not enough arguments to satisfy format string"
+msgstr "fatal: טמרופה רובע םיטנמוגרא קיפסמ ןיא"
+
+#: builtin.c:1695
+msgid "^ ran out for this one"
+msgstr "^ םיטנמוגראה יל ורמגנ ןאכ"
+
+#: builtin.c:1702
+msgid "[s]printf: format specifier does not have control letter"
+msgstr "[s]printf: הרמהה תרקב תוא ליכמ וניא טמרופה"
+
+#: builtin.c:1705
+msgid "too many arguments supplied for format string"
+msgstr "טמרופה רובע םיטנמוגרא ידמ רתוי"
+
+#: builtin.c:1752
+#, c-format
+msgid "%s: received non-string format string argument"
+msgstr "%1$s: תזורחמ וניא ןושאר טנמוגרא"
+
+#: builtin.c:1767
+msgid "sprintf: no arguments"
+msgstr "sprintf: םיטנמוגרא ןיא"
+
+#: builtin.c:1790 builtin.c:1801
+msgid "printf: no arguments"
+msgstr "printf: טנמוגרא ףא ןיא"
+
+#: builtin.c:1816
+msgid "printf: attempt to write to closed write end of two-way pipe"
+msgstr "printf: ינוויכ־וד קיפא לש רוגס הביתכ הצקל בותכל ןויסינ"
+
+#: builtin.c:1884 builtin.c:4096
+#, c-format
+msgid "%s: received non-numeric third argument"
+msgstr "%1$s: רפסמ וניא ישילש טנמוגרא"
+
+#: builtin.c:1891 builtin.c:2081 builtin.c:2587 builtin.c:3586 builtin.c:3627
+#: builtin.c:4227
+#, c-format
+msgid "%s: received non-numeric second argument"
+msgstr "%1$s: רפסמ וניא ינש טנמוגרא"
+
+#: builtin.c:1902
+#, c-format
+msgid "substr: length %g is not >= 1"
+msgstr "substr: ספאמ לודג רפסמ ונניא %1$g ךרוא"
+
+#: builtin.c:1904
+#, c-format
+msgid "substr: length %g is not >= 0"
+msgstr "substr: ספאמ לודג רפסמ ונניא %1$g ךרוא"
+
+#: builtin.c:1918
+#, c-format
+msgid "substr: non-integer length %g will be truncated"
+msgstr "substr: ץצוקי ,םלש רפסמ וניאש ,%1$g ךרוא"
+
+#: builtin.c:1923
+#, c-format
+msgid "substr: length %g too big for string indexing, truncating to %g"
+msgstr "substr: %2$g-ל ץצוק ,לודג ידמ רתוי %1$g ךרוא"
+
+#: builtin.c:1935
+#, c-format
+msgid "substr: start index %g is invalid, using 1"
+msgstr "substr: 1-ב ףלחוה ,יוגש וניה %1$g הלחתה ןייצמ"
+
+#: builtin.c:1940
+#, c-format
+msgid "substr: non-integer start index %g will be truncated"
+msgstr "substr: ץצוקי ,םלש רפסמ וניאש, %1$g הלחתה ןייצמ לש וכרע"
+
+#: builtin.c:1963
+msgid "substr: source string is zero length"
+msgstr "substr: ספא ךרואב הניה רוקמה תזורחמ"
+
+#: builtin.c:1977
+#, c-format
+msgid "substr: start index %g is past end of string"
+msgstr "substr: תזורחמה ףוסל רבעמ וניה %1$g הלחתה ןייצמ"
+
+#: builtin.c:1985
+#, c-format
+msgid "substr: length %g at start index %g exceeds length of first argument (%lu)"
+msgstr "substr: )%3$lu( ןושארה טנמוגרא ךרואמ לודג רתוו %2$g ןייצמב ליחמש %1$g ךרוא"
+
+#: builtin.c:2060
+msgid "strftime: format value in PROCINFO[\"strftime\"] has numeric type"
+msgstr "strftime: PROCINFO[\"strftime\"] ירפסמ גוסמ אוה תינבתב ךרעה"
+
+#: builtin.c:2091
+msgid "strftime: second argument less than 0 or too big for time_t"
+msgstr "strftime: 0 time_t רובע ידמ לודג וא-מ ןטק ינש טנמוגרא"
+
+#: builtin.c:2098
+msgid "strftime: second argument out of range for time_t"
+msgstr "strftime: time_t רובע חווטל ץוחמ ינש טנמוגרא"
+
+#: builtin.c:2114
+msgid "strftime: received empty format string"
+msgstr "strftime: הקיר טמרופ תזורחמ"
+
+#: builtin.c:2220
+msgid "mktime: at least one of the values is out of the default range"
+msgstr "mktime: ןוכנה ךוותב וניא םיכרעהמ דחא תוחפל"
+
+#: builtin.c:2258
+msgid "'system' function not allowed in sandbox mode"
+msgstr "system' לוח זגרא בצמב הרוסא` תייצקנופ"
+
+#: builtin.c:2332 builtin.c:2407
+msgid "print: attempt to write to closed write end of two-way pipe"
+msgstr "print: ינוויכ־וד קיפא לש רוגס הביתכ הצקל בותכל ןויסינ"
+
+#: builtin.c:2430
+#, c-format
+msgid "reference to uninitialized field `$%d'"
+msgstr "'%1$d$` לחותאמ-יתלב הדשל הינפה"
+
+#: builtin.c:2585 builtin.c:3584 builtin.c:3625 builtin.c:4225
+#, c-format
+msgid "%s: received non-numeric first argument"
+msgstr "%1$s: רפסמ וניא ןושאר טנמוגרא"
+
+#: builtin.c:2778
+msgid "match: third argument is not an array"
+msgstr "match: ךרעמ וניא ישילש טנמוגרא"
+
+#: builtin.c:2780
+#, c-format
+msgid "%s: cannot use %s as third argument"
+msgstr "%1$s: ישילש טנמוגראכ %2$s-ב שמתשהל לוכי אל"
+
+#: builtin.c:3027
+#, c-format
+msgid "gensub: third argument `%.*s' treated as 1"
+msgstr "gensub: 1-ב ףלחוה `%1$.*s' ישילש טנמוגרא"
+
+#: builtin.c:3386
+#, c-format
+msgid "%s: can be called indirectly only with two arguments"
+msgstr "%1$s: םיטנמוגרא ינש םע קר ןיפיקעב אורקל ןתינ"
+
+#: builtin.c:3409
+msgid "indirect call to gensub requires three or four arguments"
+msgstr "gensub םיטנמוגרא העברא וא השולש תשרוד־ל הפיקע האירק"
+
+#: builtin.c:3471
+msgid "indirect call to match requires two or three arguments"
+msgstr "match םיטנמוגרא השולש וא םיינש תשרוד־ל הפיקע האירק"
+
+#: builtin.c:3515
+#, c-format
+msgid "indirect call to %s requires two to four arguments"
+msgstr "םיטנמוגרא העברא דע םיינש תשרוד %1$s־ל הפיקע האירק"
+
+#: builtin.c:3592
+#, c-format
+msgid "lshift(%f, %f): negative values are not allowed"
+msgstr "lshift(%1$f, %2$f): םירתומ םניא םיילילש םיכרע"
+
+#: builtin.c:3596
+#, c-format
+msgid "lshift(%f, %f): fractional values will be truncated"
+msgstr "lshift(%1$f, %2$f): וצצוקי םירובש םיכרע"
+
+#: builtin.c:3598
+#, c-format
+msgid "lshift(%f, %f): too large shift value will give strange results"
+msgstr "lshift(%1$f, %2$f): תויופצ-יתלב תואצות ביני ידמ לודג הזזה רועיש"
+
+#: builtin.c:3633
+#, c-format
+msgid "rshift(%f, %f): negative values are not allowed"
+msgstr "rshift(%1$f, %2$f): םירתומ םניא םיילילש םיכרע"
+
+#: builtin.c:3637
+#, c-format
+msgid "rshift(%f, %f): fractional values will be truncated"
+msgstr "rshift(%1$f, %2$f): וצצוקי םירובש םיכרע"
+
+#: builtin.c:3639
+#, c-format
+msgid "rshift(%f, %f): too large shift value will give strange results"
+msgstr "rshift(%1$f, %2$f): תויופצ-יתלב תואצות ביני ידמ לודג הזזה רועיש"
+
+#: builtin.c:3663 builtin.c:3694 builtin.c:3724
+#, c-format
+msgid "%s: called with less than two arguments"
+msgstr "%1$s: םיטנמוגרא ינשמ תוחפ םע ארקנ"
+
+#: builtin.c:3668 builtin.c:3699 builtin.c:3730
+#, c-format
+msgid "%s: argument %d is non-numeric"
+msgstr "%1$s: רפסמ וניא %2$d טנמוגרא"
+
+#: builtin.c:3672 builtin.c:3703 builtin.c:3734
+#, c-format
+msgid "%s: argument %d negative value %g is not allowed"
+msgstr "%1$s: רתומ וניא %3$g ילילש ךרע %2$d טנמוגרא"
+
+#: builtin.c:3763
+#, c-format
+msgid "compl(%f): negative value is not allowed"
+msgstr "compl(%1$f): ילילש ךרע רוסא"
+
+#: builtin.c:3766
+#, c-format
+msgid "compl(%f): fractional value will be truncated"
+msgstr "compl(%1$f): ץצוקי רובש ךרע"
+
+#: builtin.c:3954
+#, c-format
+msgid "dcgettext: `%s' is not a valid locale category"
+msgstr "dcgettext:הניקת תוימוקמ תורדגה תיירוגטק הניא `%1$s' "
+
+#: builtin.c:3989 builtin.c:4007
+#, c-format
+msgid "%s: received non-string third argument"
+msgstr "%1$s: תזורחמ וניא ישילש טנמוגרא"
+
+#: builtin.c:4062 builtin.c:4083
+#, c-format
+msgid "%s: received non-string fifth argument"
+msgstr "%1$s: תזורחמ וניא ישימח טנמוגרא"
+
+#: builtin.c:4072 builtin.c:4089
+#, c-format
+msgid "%s: received non-string fourth argument"
+msgstr "%1$s: תזורחמ וניא יעיבר טנמוגרא"
+
+#: builtin.c:4217 mpfr.c:1337
+msgid "intdiv: third argument is not an array"
+msgstr "intdiv: ךרעמ וניא ישילש טנמוגרא"
+
+#: builtin.c:4236 mpfr.c:1386
+msgid "intdiv: division by zero attempted"
+msgstr "intdiv: ספאב הקולח ןויסנ"
+
+#: builtin.c:4277
+msgid "typeof: second argument is not an array"
+msgstr "typeof: ךרעמ וניא ינשה טנמוגראה"
+
+#: builtin.c:4367
+#, c-format
+msgid "typeof detected invalid flags combination `%s'; please file a bug report"
+msgstr "גאב חוד שיגהל אנ ;`%1$s' ההוזש יקוח אל םילגד בוליש לש גוס"
+
+#: builtin.c:4405
+#, c-format
+msgid "typeof: unknown argument type `%s'"
+msgstr "typeof: `%1$s' עודי אל טנמוגרא גוס"
+
+#: cint_array.c:1268 cint_array.c:1296
+#, c-format
+msgid "cannot add a new file (%.*s) to ARGV in sandbox mode"
+msgstr "ARGV לוח זגרא בצמב־ל )%1$.*s( שדח ץבוק ףיסוהל ןתינ אל"
+
+#: command.y:228
+#, c-format
+msgid "Type (g)awk statement(s). End with the command `end'\n"
+msgstr "(g)awk statement(s). end'\n` הדוקפב םייסל דילקהל אנ"
+
+#: command.y:292
+#, c-format
+msgid "invalid frame number: %d"
+msgstr "%1$d :יוגש תרגסמ רפסמ"
+
+#: command.y:298
+#, c-format
+msgid "info: invalid option - `%s'"
+msgstr "info: `%1$s' - היוגש תורשפא"
+
+#: command.y:324
+#, c-format
+msgid "source: `%s': already sourced"
+msgstr "source: `%1$s' ארקנ רבכ"
+
+#: command.y:329
+#, c-format
+msgid "save: `%s': command not permitted"
+msgstr "save: `%1$s': השרומ אל הדוקפ"
+
+#: command.y:342
+msgid "cannot use command `commands' for breakpoint/watchpoint commands"
+msgstr "commands' בקעמ תדוקנ/הריצע תדוקנ תודוקפ רובע` הדוקפב שמתשהל ןתינ אל"
+
+#: command.y:344
+msgid "no breakpoint/watchpoint has been set yet"
+msgstr "הרימש תדוקנ/הריצע תדוקנ הרדגוה אל ןיידע"
+
+#: command.y:346
+msgid "invalid breakpoint/watchpoint number"
+msgstr "יקוח אל הרימש תדוקנ/הריצע תדוקנ רפסמ"
+
+#: command.y:351
+#, c-format
+msgid "Type commands for when %s %d is hit, one per line.\n"
+msgstr "n\.הרושב תחא ,%2$d %1$s שחרתמש הרקמל תודוקפ אלמל אנ"
+
+#: command.y:353
+#, c-format
+msgid "End with the command `end'\n"
+msgstr "end'\n` הדוקפה םע םייסל"
+
+#: command.y:360
+msgid "`end' valid only in command `commands' or `eval'"
+msgstr "`end' commands' eval'` וא` תודוקפב קר ףקת"
+
+#: command.y:370
+msgid "`silent' valid only in command `commands'"
+msgstr "`silent' commands'` הדוקפב קר רתומ"
+
+#: command.y:376
+#, c-format
+msgid "trace: invalid option - `%s'"
+msgstr "trace: `%1$s' - תיקוח אל תורשפא"
+
+#: command.y:390 command.y:452
+msgid "argument not a string"
+msgstr "ךרעמ וניא טנמוגראה"
+
+#: command.y:462 command.y:467
+#, c-format
+msgid "option: invalid parameter - `%s'"
+msgstr "option: `%1$s' - יקוח אל רטמרפ"
+
+#: command.y:477
+#, c-format
+msgid "no such function - `%s'"
+msgstr "`%1$s' - תאזכ היצקנופ ןיא"
+
+#: command.y:534
+#, c-format
+msgid "enable: invalid option - `%s'"
+msgstr "enable: `%1$s' - היוגש תורשפא"
+
+#: command.y:600
+#, c-format
+msgid "invalid range specification: %d - %d"
+msgstr "%2$d - %1$d :םיות םוחת לש היוגש הרדגה"
+
+#: command.y:662
+msgid "non-numeric value for field number"
+msgstr "הדש רפסמ רובע ירפסמ אל ךרע"
+
+#: command.y:683 command.y:690
+msgid "non-numeric value found, numeric expected"
+msgstr "ירפסמ יופצ ,ירפסמ אל ךרע אצמנ"
+
+#: command.y:715 command.y:721
+msgid "non-zero integer value"
+msgstr "ספא וניאש םלש רפסמ ךרע"
+
+#: command.y:820
+msgid ""
+"backtrace [N] - print trace of all or N innermost (outermost if N < 0) frames"
+msgstr ""
+"backtrace [N] - N N < 0) םא תוינוציחה( רתויב תוימינפה וא תורגסמה לכ לש תובקע ספדה"
+
+#: command.y:822
+msgid "break [[filename:]N|function] - set breakpoint at the specified location"
+msgstr "break [[filename:]N|ןיוצש םוקימב הריצע תדוקנ רדגה - ]היצקנופ"
+
+#: command.y:824
+msgid "clear [[filename:]N|function] - delete breakpoints previously set"
+msgstr "clear [[filename:]N|רבעב ורדגוהש הריבש תודוקנ קחמ - ]היצקנופ"
+
+#: command.y:826
+msgid ""
+"commands [num] - starts a list of commands to be executed at a "
+"breakpoint(watchpoint) hit"
+msgstr ""
+"commands [num] - )הרימש תדוקנ( הריצע תדוקנ עגפב עוציבל תודוקפ לש המישר ליחתמ"
+
+#: command.y:828
+msgid "condition num [expr] - set or clear breakpoint or watchpoint condition"
+msgstr "condition num [expr] - הרימש תדוקנ בצמ וא הריצע תדוקנ הקנ וא רדגה"
+
+#: command.y:830
+msgid "continue [COUNT] - continue program being debugged"
+msgstr "continue [תינכותב םיגאב רותיא ךשמה - ]תומכ"
+
+#: command.y:832
+msgid "delete [breakpoints] [range] - delete specified breakpoints"
+msgstr "delete [וניוצש הריצעה תודוקנ תקיחמ - ]חווט[ ]הריצע תודוקנ"
+
+#: command.y:834
+msgid "disable [breakpoints] [range] - disable specified breakpoints"
+msgstr "disable [וניוצש הריצעה תודוקנ תתבשה - ]חווט[ ]הריצע תודוקנ"
+
+# ------------------------------------------
+#: command.y:836
+msgid "display [var] - print value of variable each time the program stops"
+msgstr "display [תרצענ תינכותהש םעפ לכב הנתשמ לש ךרע תספדה - ]הנתשמ"
+
+#: command.y:838
+msgid "down [N] - move N frames down the stack"
+msgstr "down [המירעה דרומב תורגסמ ש לש הדירי - ]ש"
+
+#: command.y:840
+msgid "dump [filename] - dump instructions to file or stdout"
+msgstr "dump [stdout־ל וא ץבוקל תויחנהה תלטה - ]ץבוק םש"
+
+#: command.y:842
+msgid "enable [once|del] [breakpoints] [range] - enable specified breakpoints"
+msgstr "enable [once|del] [תומיוסמ הריצע תודוקנ תלעפה - ]חווט[ ]הריצע תודוקנ"
+
+#: command.y:844
+msgid "end - end a list of commands or awk statements"
+msgstr "end - awk לש תורהצה וא תודוקפ תמישר ףוס"
+
+#: command.y:846
+msgid "eval stmt|[p1, p2, ...] - evaluate awk statement(s)"
+msgstr "eval stmt|[p1, p2, ...] - awk ייוטיב בושיח"
+
+#: command.y:848
+msgid "exit - (same as quit) exit debugger"
+msgstr "exit - (quit) תואיגשה הפנממ האיצי ומכ"
+
+#: command.y:850
+msgid "finish - execute until selected stack frame returns"
+msgstr "finish - תרזוח תרחבנה תינסחמה תרגסמש דע ץירהל"
+
+#: command.y:852
+msgid "frame [N] - select and print stack frame number N"
+msgstr "frame [ש ׳סמ תרגסמ לש הספדהו הריחב - ]ש"
+
+#: command.y:854
+msgid "help [command] - print list of commands or explanation of command"
+msgstr "help [הדוקפ לש רבסה וא תודוקפ תמישר תספדה - ]הדוקפ"
+
+#: command.y:856
+msgid "ignore N COUNT - set ignore-count of breakpoint number N to COUNT"
+msgstr "ignore N COUNT - N COUNT ידכל הריצעה תדוקנ לש תומלעתה תומכ תרדגה"
+
+#: command.y:858
+msgid ""
+"info topic - source|sources|variables|functions|break|frame|args|locals|display|"
+"watch"
+msgstr ""
+"info topic - "
+"source|sources|variables|functions|break|frame|args|locals|display|watch"
+
+#: command.y:860
+msgid "list [-|+|[filename:]lineno|function|range] - list specified line(s)"
+msgstr "list [-|+|[filename:]lineno|function|range] - וניוצש תורושה תגצה"
+
+#: command.y:862
+msgid "next [COUNT] - step program, proceeding through subroutine calls"
+msgstr "next [תורגש־תתל תאירקל דעבמ תומדקתה ךות ,תינכותב הדיעצ - ]תומכ"
+
+#: command.y:864
+msgid "nexti [COUNT] - step one instruction, but proceed through subroutine calls"
+msgstr "nexti [תורגשה־תתל תואירקל דעבמ ךישמהל לבא ,תחא היחנהב תומדקתה - ]תומכ"
+
+#: command.y:866
+msgid "option [name[=value]] - set or display debugger option(s)"
+msgstr "option [name[=value]] - תואיגש הפנמ תויורשפא תגצה וא תרדגה"
+
+#: command.y:868
+msgid "print var [var] - print value of a variable or array"
+msgstr "print var [ךרעמ וא הנתשמ לש ךרע תגצה - ]הנתשמ"
+
+#: command.y:870
+msgid "printf format, [arg], ... - formatted output"
+msgstr "printf format, [arg], ... - בצועמ טלפ"
+
+#: command.y:872
+msgid "quit - exit debugger"
+msgstr "quit - תואיגשה הפנממ האיצי"
+
+#: command.y:874
+msgid "return [value] - make selected stack frame return to its caller"
+msgstr "return [הל ארקש ימל רוזחל תרחבנה המירעה תרגסמל םורגל - ]ךרע"
+
+#: command.y:876
+msgid "run - start or restart executing program"
+msgstr "run - תינכות תצרה שודיח וא תלחתה"
+
+#: command.y:879
+msgid "save filename - save commands from the session to file"
+msgstr "save filename - ץבוקל הלעפההמ תודוקפ תרימש"
+
+#: command.y:882
+msgid "set var = value - assign value to a scalar variable"
+msgstr "set var = value - יראלקס הנתשמל ךרע תלחה"
+
+#: command.y:884
+msgid "silent - suspends usual message when stopped at a breakpoint/watchpoint"
+msgstr "silent - בקעמ/הריצע תדוקנ לע הריצע ןמזב תוליגרה תועדוהה בוכיע"
+
+#: command.y:886
+msgid "source file - execute commands from file"
+msgstr "ץבוקמ תודוקפ תצרה -- רוקמ ץבוק"
+
+#: command.y:888
+msgid "step [COUNT] - step program until it reaches a different source line"
+msgstr "step [COUNT] - תרחא רוקמ תרושל העגהל דע תינכותב דעצ דעצ רובעל"
+
+#: command.y:890
+msgid "stepi [COUNT] - step one instruction exactly"
+msgstr "stepi [דבלב תחא היחנה םדקתהל - ]תומכ"
+
+#: command.y:892
+msgid "tbreak [[filename:]N|function] - set a temporary breakpoint"
+msgstr "tbreak [[filename:]N|function] - תינמז הריצע תדוקנ תרדגה"
+
+#: command.y:894
+msgid "trace on|off - print instruction before executing"
+msgstr "trace on|off - התצרה ינפל היחנהה תא סיפדהל"
+
+#: command.y:896
+msgid "undisplay [N] - remove variable(s) from automatic display list"
+msgstr "undisplay [N] - תיטמוטוא הגוצת תמישרמ םינתשמ תרסה"
+
+#: command.y:898
+msgid ""
+"until [[filename:]N|function] - execute until program reaches a different line "
+"or line N within current frame"
+msgstr ""
+"until [[filename:]N|function] -  הרושל וא תרחא תרושל העיגמ תינכותהש דע ץירהל"
+"N תיחכונה תרגסמב"
+
+#: command.y:900
+msgid "unwatch [N] - remove variable(s) from watch list"
+msgstr "unwatch [N] - בקעמה תמישרמ םינתשמ תרסה"
+
+#: command.y:902
+msgid "up [N] - move N frames up the stack"
+msgstr "up [N] - N המישרה הלעמב תורגסמ תאלעה"
+
+#: command.y:904
+msgid "watch var - set a watchpoint for a variable"
+msgstr "watch var - הנתשמל בקעמ תדוקנ תרדגה"
+
+#: command.y:906
+msgid ""
+"where [N] - (same as backtrace) print trace of all or N innermost (outermost if "
+"N < 0) frames"
+msgstr ""
+"where [N] - (backtrace/N  וא תורגסמה לכ לש תובקע תספדה )תואירק בקעמ־ל ההז"
+"N < 0) םא תוינוציחה( רתויב תוימינפה"
+
+#: command.y:1017 debug.c:423 gawkapi.c:260 msg.c:142
+#, c-format
+msgid "error: "
+msgstr " :האיגש"
+
+#: command.y:1061
+#, c-format
+msgid "cannot read command: %s\n"
+msgstr "n\%1$s :הדוקפ אורקל ןתינ אל"
+
+#: command.y:1075
+#, c-format
+msgid "cannot read command: %s"
+msgstr "%1$s :הדוקפ אורקל ןתינ אל"
+
+#: command.y:1126
+msgid "invalid character in command"
+msgstr "הדוקפב יקוח אל ות"
+
+#: command.y:1162
+#, c-format
+msgid "unknown command - `%.*s', try help"
+msgstr "help הסנ ,`%1$.*s' - העודי אל הדוקפ"
+
+#: command.y:1294
+msgid "invalid character"
+msgstr "יוגש ות"
+
+#: command.y:1498
+#, c-format
+msgid "undefined command: %s\n"
+msgstr "n\%1$s :תרדגומ אל הדוקפ"
+
+#: debug.c:257
+msgid "set or show the number of lines to keep in history file"
+msgstr "הירוטסיהה ץבוקב רומשל שיש תורושה רפסמ תא גצה וא רדגה"
+
+#: debug.c:259
+msgid "set or show the list command window size"
+msgstr "המישרה תדוקפ ןולח לדוג תא גצה וא רדגה"
+
+#: debug.c:261
+msgid "set or show gawk output file"
+msgstr "gawk טלפ ץבוק גצה וא רדגה"
+
+#: debug.c:263
+msgid "set or show debugger prompt"
+msgstr "םיגאב יופינ תעדוה תגצה וא הרדגה"
+
+#: debug.c:265
+msgid "(un)set or show saving of command history (value=on|off)"
+msgstr "(on|off)=ךרע( תודוקפה תיירוטסיה תרימש תגצה וא הרדגה )לוטיב"
+
+#: debug.c:267
+msgid "(un)set or show saving of options (value=on|off)"
+msgstr "(on|off)=ךרע( תויצפוא תרימש תגצה וא תרדגה )לוטיב"
+
+#: debug.c:269
+msgid "(un)set or show instruction tracing (value=on|off)"
+msgstr "(on|off)=ךרע( תוארוה רחא בקעמ תגצה וא הרדגה )לוטיב"
+
+#: debug.c:358
+msgid "program not running"
+msgstr "תלעופ אל תינכותה"
+
+#: debug.c:475
+#, c-format
+msgid "source file `%s' is empty.\n"
+msgstr "n\.קיר וניה `%1$s' רוקמ ץבוק"
+
+#: debug.c:502
+msgid "no current source file"
+msgstr "יחכונ רוקמ ץבוק ןיא"
+
+#: debug.c:527
+#, c-format
+msgid "cannot find source file named `%s': %s"
+msgstr "%2$s :`%1$s' םשב רוקמ ץבוק אוצמל לוכי אל"
+
+#: debug.c:551
+#, c-format
+msgid "warning: source file `%s' modified since program compilation.\n"
+msgstr "n\.תינכותה רודיה זאמ הנתשה `%1$s' רוקמה ץבוק :הרהזא"
+
+#: debug.c:573
+#, c-format
+msgid "line number %d out of range; `%s' has %d lines"
+msgstr "תורוש %3$d שי `%2$s' -ל ;חווטל ץוחמ %1$d רפסמ הרוש"
+
+#: debug.c:633
+#, c-format
+msgid "unexpected eof while reading file `%s', line %d"
+msgstr "eof %2$d הרוש ,`%1$s' ץבוקה תאירק ןמזב יופצ אל"
+
+#: debug.c:642
+#, c-format
+msgid "source file `%s' modified since start of program execution"
+msgstr "תינכותה תצרה תליחת זאמ ךרענ `%1$s' רוקמה ץבוק"
+
+#: debug.c:754
+#, c-format
+msgid "Current source file: %s\n"
+msgstr "n\%1$s :יחכונה רוקמה ץבוק"
+
+#: debug.c:755
+#, c-format
+msgid "Number of lines: %d\n"
+msgstr "n\%1$d :תורושה רפסמ"
+
+#: debug.c:762
+#, c-format
+msgid "Source file (lines): %s (%d)\n"
+msgstr "n\)%2$d( %1$s :)תורוש( רוקמ ץבוק"
+
+#: debug.c:776
+msgid ""
+"Number  Disp  Enabled  Location\n"
+"\n"
+msgstr ""
+"n\םוקמ  ?ליעפ  הגוצת  רפסמ"
+"\n"
+
+#: debug.c:787
+#, c-format
+msgid "\tnumber of hits = %ld\n"
+msgstr "\tn\%1$ld = תודיכלה רפסמ"
+
+#: debug.c:789
+#, c-format
+msgid "\tignore next %ld hit(s)\n"
+msgstr "\tn\תואבה תועיגפה %1$ %ld ־מ תומלעתה"
+
+#: debug.c:791 debug.c:931
+#, c-format
+msgid "\tstop condition: %s\n"
+msgstr "\tn\%1$s :הריצע יאנת"
+
+#: debug.c:793 debug.c:933
+msgid "\tcommands:\n"
+msgstr "\tn\:תודוקפ"
+
+#: debug.c:815
+#, c-format
+msgid "Current frame: "
+msgstr " :תיחכונ תרגסמ"
+
+#: debug.c:818
+#, c-format
+msgid "Called by frame: "
+msgstr " :תרגסמ ידי לע ארקנ"
+
+#: debug.c:822
+#, c-format
+msgid "Caller of frame: "
+msgstr " :תרגסמל ארוק"
+
+#: debug.c:840
+#, c-format
+msgid "None in main().\n"
+msgstr "main().\n־ב ןיא"
+
+#: debug.c:870
+msgid "No arguments.\n"
+msgstr "n\.םיטנמוגרא ןיא"
+
+#: debug.c:871
+msgid "No locals.\n"
+msgstr "n\.םיימוקמ םינתשמ ןיא"
+
+#: debug.c:879
+msgid ""
+"All defined variables:\n"
+"\n"
+msgstr ""
+"n\:םירדגומה םינתשמה לכ"
+"\n"
+
+#: debug.c:889
+msgid ""
+"All defined functions:\n"
+"\n"
+msgstr ""
+"n\:תורדגומה תויצקנופה לכ"
+"\n"
+
+#: debug.c:908
+msgid ""
+"Auto-display variables:\n"
+"\n"
+msgstr ""
+"n\:תיטמוטוא םינתשמ תגצה"
+"\n"
+
+#: debug.c:911
+msgid ""
+"Watch variables:\n"
+"\n"
+msgstr ""
+"n\:םינתשמ רחא בקעמ"
+"\n"
+
+#: debug.c:1054
+#, c-format
+msgid "no symbol `%s' in current context\n"
+msgstr "n\יחכונה רשקהב `%1$s' למס ןיא"
+
+#: debug.c:1066 debug.c:1455
+#, c-format
+msgid "`%s' is not an array\n"
+msgstr "`%1$s' n\ךרעמ וניא"
+
+#: debug.c:1080
+#, c-format
+msgid "$%ld = uninitialized field\n"
+msgstr "$%1$ld = n\לחתואמ אל הדש"
+
+#: debug.c:1101
+#, c-format
+msgid "array `%s' is empty\n"
+msgstr "n\קיר `%1$s' ךרעמה"
+
+#: debug.c:1144 debug.c:1196
+#, c-format
+msgid "subscript \"%.*s\" is not in array `%s'\n"
+msgstr "n\`%2$s' ךרעמב וניא ”%1$.*s„ חתפמה"
+
+#: debug.c:1200
+#, c-format
+msgid "`%s[\"%.*s\"]' is not an array\n"
+msgstr "`%1$s[\"%.*s\"]' n\ךרעמ וניא"
+
+#: debug.c:1262 debug.c:5122
+#, c-format
+msgid "`%s' is not a scalar variable"
+msgstr "`%1$s' ירלקס הנתשמ וניא"
+
+#: debug.c:1285 debug.c:5152
+#, c-format
+msgid "attempt to use array `%s[\"%.*s\"]' in a scalar context"
+msgstr "ראלקס שרודה רשקהב `%1$s[\"%.*s\"]' ךרעמב שומיש ןויסנ"
+
+#: debug.c:1308 debug.c:5163
+#, c-format
+msgid "attempt to use scalar `%s[\"%.*s\"]' as array"
+msgstr "ךרעמכ `%1$s[\"%.*s\"]' ראלקסב שמתשהל ןויסינ"
+
+#: debug.c:1451
+#, c-format
+msgid "`%s' is a function"
+msgstr "`%1$s' היצקנופ איה"
+
+#: debug.c:1493
+#, c-format
+msgid "watchpoint %d is unconditional\n"
+msgstr "n\םיאנת תלוטנ %1$d בקעמה תדוקנ"
+
+#: debug.c:1527
+#, c-format
+msgid "no display item numbered %ld"
+msgstr "%1$ld רפסמה םע הגוצת טירפ ןיא"
+
+#: debug.c:1530
+#, c-format
+msgid "no watch item numbered %ld"
+msgstr "%1$ld רפסמה םע בקעמ טירפ ןיא"
+
+#: debug.c:1556
+#, c-format
+msgid "%d: subscript \"%.*s\" is not in array `%s'\n"
+msgstr "%1$d: n\`%3$s' ךרעמב וניא ”%2$.*s„ חתפמה"
+
+#: debug.c:1796
+msgid "attempt to use scalar value as array"
+msgstr "ךרעמכ יראלקס ךרעב שמתשהל ןויסינ"
+
+#: debug.c:1887
+#, c-format
+msgid "Watchpoint %d deleted because parameter is out of scope.\n"
+msgstr "n\.חווטב וניא הנתשמה יכ הקחמנ %1$d בקעמה תדוקנ"
+
+#: debug.c:1898
+#, c-format
+msgid "Display %d deleted because parameter is out of scope.\n"
+msgstr "n\.חווטל ץוחמ הנתשמהש ןוויכ הקחמנ %1$d הגוצתה"
+
+#: debug.c:1931
+#, c-format
+msgid " in file `%s', line %d\n"
+msgstr " n\%2$d הרוש ,`%1$s' ץבוקב"
+
+#: debug.c:1952
+#, c-format
+msgid " at `%s':%d"
+msgstr " %2$d:`%1$s'־ב"
+
+#: debug.c:1968 debug.c:2031
+#, c-format
+msgid "#%ld\tin "
+msgstr "t ־ב\%1$ld ׳סמ"
+
+#: debug.c:2005
+#, c-format
+msgid "More stack frames follow ...\n"
+msgstr "n\…ךשמהב המירע תורגסמ דוע"
+
+#: debug.c:2048
+msgid "invalid frame number"
+msgstr "יוגש תרגסמה רפסמ"
+
+#: debug.c:2231
+#, c-format
+msgid "Note: breakpoint %d (enabled, ignore next %ld hits), also set at %s:%d"
+msgstr ""
+"ב םג תרדגומ ,)תואבה תועיגפה %2$ld־מ םלעתהל ,הליעפ( %1$d הריצע תדוקנ :ךביל תמושתל"
+"%2$d:%1$s־"
+
+#: debug.c:2238
+#, c-format
+msgid "Note: breakpoint %d (enabled), also set at %s:%d"
+msgstr ""
+
+#: debug.c:2245
+#, c-format
+msgid "Note: breakpoint %d (disabled, ignore next %ld hits), also set at %s:%d"
+msgstr ""
+
+#: debug.c:2252
+#, c-format
+msgid "Note: breakpoint %d (disabled), also set at %s:%d"
+msgstr ""
+
+#: debug.c:2269
+#, c-format
+msgid "Breakpoint %d set at file `%s', line %d\n"
+msgstr "n\%3$d הרוש ,`%2$s' ץבוקב הרדגוה %1$d הריצעה תדוקנ"
+
+#: debug.c:2371
+#, c-format
+msgid "cannot set breakpoint in file `%s'\n"
+msgstr "n\`%1$s' ץבוקב הריצע תדוקנ רידגהל ןתינ אל"
+
+#: debug.c:2400
+#, c-format
+msgid "line number %d in file `%s' is out of range"
+msgstr "םוחתל ץוחמ איה `%2$s' ץבוקב %1$d רפסמ הרוש"
+
+#: debug.c:2404
+#, c-format
+msgid "internal error: cannot find rule\n"
+msgstr "n\ללכה תא אוצמל ןתינ אל :תימינפ האיגש"
+
+#: debug.c:2406
+#, c-format
+msgid "cannot set breakpoint at `%s':%d\n"
+msgstr "n\%2$d:`%1$s'־ב הריצע תדוקנ רידגהל ןתינ אל"
+
+#: debug.c:2418
+#, c-format
+msgid "cannot set breakpoint in function `%s'\n"
+msgstr "n\`%1$s'־ב הריצע תדוקנ רידגהל ןתינ אל"
+
+#: debug.c:2436
+#, c-format
+msgid "breakpoint %d set at file `%s', line %d is unconditional\n"
+msgstr ""
+
+#: debug.c:2524 debug.c:3381
+#, c-format
+msgid "line number %d in file `%s' out of range"
+msgstr "חווטל ץוחמ איה `%2$s' ץבוקב %1$d ׳סמ הרוש"
+
+#: debug.c:2540 debug.c:2562
+#, c-format
+msgid "Deleted breakpoint %d"
+msgstr "%1$d הריצע תדוקנ תקיחמ"
+
+#: debug.c:2546
+#, c-format
+msgid "No breakpoint(s) at entry to function `%s'\n"
+msgstr ""
+
+#: debug.c:2573
+#, c-format
+msgid "No breakpoint at file `%s', line #%d\n"
+msgstr "n\%2$d ׳סמ הרוש ,`%1$s' ץבוקב הריצע תדוקנ ןיא"
+
+#: debug.c:2628 debug.c:2669 debug.c:2689 debug.c:2732
+msgid "invalid breakpoint number"
+msgstr "יוגש הריצעה תדוקנ רפסמ"
+
+#: debug.c:2644
+msgid "Delete all breakpoints? (y or n) "
+msgstr "y n)  וא( ?הריצעה תודוקנ לכ תא קוחמל"
+
+#: debug.c:2645 debug.c:2955 debug.c:3008
+msgid "y"
+msgstr "כ"
+
+#: debug.c:2694
+#, c-format
+msgid "Will ignore next %ld crossing(s) of breakpoint %d.\n"
+msgstr ""
+
+#: debug.c:2698
+#, c-format
+msgid "Will stop next time breakpoint %d is reached.\n"
+msgstr ""
+
+#: debug.c:2815
+#, c-format
+msgid "Can only debug programs provided with the `-f' option.\n"
+msgstr ""
+
+#: debug.c:2835
+#, c-format
+msgid "Restarting ...\n"
+msgstr "n\…שדחמ לעפומ"
+
+#: debug.c:2940
+#, c-format
+msgid "Failed to restart debugger"
+msgstr "הלשכנ שדחמ תואיגשה הפנמ תלעפה"
+
+#: debug.c:2954
+msgid "Program already running. Restart from beginning (y/n)? "
+msgstr "y/n)? ( הלחתההמ ליחתהל .הליעפ רבכ תינכותה"
+
+#: debug.c:2958
+#, c-format
+msgid "Program not restarted\n"
+msgstr "n\שדחמ הלעפוה אל תינכותה"
+
+#: debug.c:2968
+#, c-format
+msgid "error: cannot restart, operation not allowed\n"
+msgstr "n\תישרומ אל הלועפה ,הלחתההמ ליעפהל ןתינ אל :האיגש"
+
+#: debug.c:2974
+#, c-format
+msgid "error (%s): cannot restart, ignoring rest of the commands\n"
+msgstr "n\תומלעתהל וכזי תודוקפה ראש ,שדחמ ליעפהל ןתינ אל :)%1$s( האיגש"
+
+#: debug.c:2982
+#, c-format
+msgid "Starting program:\n"
+msgstr "n\:תלעפומ תינכותה"
+
+#: debug.c:2992
+#, c-format
+msgid "Program exited abnormally with exit value: %d\n"
+msgstr "n\%1$d :האיציה ךרע םע גירח ןפואב העטקנ תינכותה"
+
+#: debug.c:2993
+#, c-format
+msgid "Program exited normally with exit value: %d\n"
+msgstr "n\%1$d :האיציה ךרע םע ליגרכ האצי תינכותה"
+
+#: debug.c:3007
+msgid "The program is running. Exit anyway (y/n)? "
+msgstr "y/n)? ( תאז לכב תאצל .הליעפ תינכותה"
+
+#: debug.c:3042
+#, c-format
+msgid "Not stopped at any breakpoint; argument ignored.\n"
+msgstr "n\.חספנ טנמוגראה ,הריצע תדוקנ ףאב רצענ אל"
+
+#: debug.c:3047
+#, c-format
+msgid "invalid breakpoint number %d"
+msgstr "יוגש %1$d הריצעה תדוקנ רפסמ"
+
+#: debug.c:3052
+#, c-format
+msgid "Will ignore next %ld crossings of breakpoint %d.\n"
+msgstr ""
+
+#: debug.c:3239
+#, c-format
+msgid "'finish' not meaningful in the outermost frame main()\n"
+msgstr ""
+
+#: debug.c:3244
+#, c-format
+msgid "Run until return from "
+msgstr " ־מ הרזח דע ץורל"
+
+#: debug.c:3287
+#, c-format
+msgid "'return' not meaningful in the outermost frame main()\n"
+msgstr ""
+
+#: debug.c:3400
+#, c-format
+msgid "cannot find specified location in function `%s'\n"
+msgstr ""
+
+#: debug.c:3408
+#, c-format
+msgid "invalid source line %d in file `%s'"
+msgstr "`%2$s' ץבוקב היוגש %1$d רוקמה תרוש"
+
+#: debug.c:3423
+#, c-format
+msgid "cannot find specified location %d in file `%s'\n"
+msgstr "n\`%2$s' ץבוקב %1$d ןיוצש םוקמה תא אוצמל ןתינ אל"
+
+#: debug.c:3455
+#, c-format
+msgid "element not in array\n"
+msgstr "n\ךרעמב אל ביכרה"
+
+#: debug.c:3455
+#, c-format
+msgid "untyped variable\n"
+msgstr "n\גוס אלל הנתשמ"
+
+#: debug.c:3497
+#, c-format
+msgid "Stopping in %s ...\n"
+msgstr ""
+
+#: debug.c:3574
+#, c-format
+msgid "'finish' not meaningful with non-local jump '%s'\n"
+msgstr ""
+
+#: debug.c:3581
+#, c-format
+msgid "'until' not meaningful with non-local jump '%s'\n"
+msgstr ""
+
+#. TRANSLATORS: don't translate the 'q' inside the brackets.
+#: debug.c:4342
+msgid "\t------[Enter] to continue or [q] + [Enter] to quit------"
+msgstr "\t------[Enter] q] Enter] ------תאצל ידכ[ זאו[ וא ךישמהל ידכ"
+
+#: debug.c:5159
+#, c-format
+msgid "[\"%.*s\"] not in array `%s'"
+msgstr "[\"%1$.*s\"] `%2$s' ךרעמב אל"
+
+#: debug.c:5365
+#, c-format
+msgid "sending output to stdout\n"
+msgstr "stdout\n־ל חלשנ טלפ"
+
+#: debug.c:5405
+msgid "invalid number"
+msgstr "יוגש רפסמ"
+
+#: debug.c:5539
+#, c-format
+msgid "`%s' not allowed in current context; statement ignored"
+msgstr ""
+
+#: debug.c:5547
+msgid "`return' not allowed in current context; statement ignored"
+msgstr ""
+
+#: debug.c:5595
+#, c-format
+msgid "fatal error during eval, need to restart.\n"
+msgstr "eval (n\שדחמ ליעפהל שי ,)הכרעה ךלהמב תיתוהמ האיגש"
+
+#: debug.c:5785
+#, c-format
+msgid "no symbol `%s' in current context"
+msgstr "יחכונה רשקהב `%1$s' לומיס ןיא"
+
+#: eval.c:405
+#, c-format
+msgid "unknown nodetype %d"
+msgstr "nodetype %1$d רכומ אל"
+
+#: eval.c:416 eval.c:432
+#, c-format
+msgid "unknown opcode %d"
+msgstr "opcode %1$d רכומ אל"
+
+#: eval.c:429
+#, c-format
+msgid "opcode %s not an operator or keyword"
+msgstr "opcode %1$s רכומ אל"
+
+#: eval.c:488
+msgid "buffer overflow in genflags2str"
+msgstr "genflags2str-ב ץצוח תשילג"
+
+#: eval.c:690
+#, c-format
+msgid ""
+"\n"
+"\t# Function Call Stack:\n"
+"\n"
+msgstr ""
+"\n"
+"\t# n\:תויצקנופל תואירקה תינסחמ"
+"\n"
+
+#: eval.c:716
+msgid "`IGNORECASE' is a gawk extension"
+msgstr "`IGNORECASE' gawk-ל תיפיצפס הבחרה וניה"
+
+#: eval.c:737
+msgid "`BINMODE' is a gawk extension"
+msgstr "`BINMODE' gawk-ל תיפיצפס הבחרה וניה"
+
+#: eval.c:794
+#, c-format
+msgid "BINMODE value `%s' is invalid, treated as 3"
+msgstr "BINMODE 3-ב םישמתשמ ,ןוכנ וניא-ל `%1$s' ךרע"
+
+#: eval.c:917
+#, c-format
+msgid "bad `%sFMT' specification `%s'"
+msgstr "`%2$s' םוגפ `%1$sFMT' טרפמ"
+
+#: eval.c:987
+msgid "turning off `--lint' due to assignment to `LINT'"
+msgstr "lint' LINT''-ל ךרע תמשה בקע--` לטבמ"
+
+#: eval.c:1190
+#, c-format
+msgid "reference to uninitialized argument `%s'"
+msgstr "`%1$s' לחתואמ יתלב טנמוגראל הינפה"
+
+#: eval.c:1191
+#, c-format
+msgid "reference to uninitialized variable `%s'"
+msgstr "`%1$s' לחתואמ-יתלב הנתשמל הינפה"
+
+#: eval.c:1209
+msgid "attempt to field reference from non-numeric value"
+msgstr "רפסמ וניאש ךרע תועצמאב הדשל הינפה ןויסנ"
+
+#: eval.c:1211
+msgid "attempt to field reference from null string"
+msgstr "הקיר תזורחמ תועצמאב הדשל הינפה ןויסנ"
+
+#: eval.c:1219
+#, c-format
+msgid "attempt to access field %ld"
+msgstr "%1$ld הדשל השיג ןויסינ"
+
+#: eval.c:1228
+#, c-format
+msgid "reference to uninitialized field `$%ld'"
+msgstr "'%1$ld$` לחתואמ יתלב הדשל הינפה"
+
+#: eval.c:1292
+#, c-format
+msgid "function `%s' called with more arguments than declared"
+msgstr "וזרכוהשמ םיטנמוגרא רתוי םע הארקנ `%1$s' היצקנופה"
+
+#: eval.c:1497
+#, c-format
+msgid "unwind_stack: unexpected type `%s'"
+msgstr "unwind_stack: יופצ יתלב `%1$s' גוס"
+
+#: eval.c:1672
+msgid "division by zero attempted in `/='"
+msgstr "'=/`־ב ספאב הקולח ןויסינ"
+
+#: eval.c:1679
+#, c-format
+msgid "division by zero attempted in `%%='"
+msgstr "`%1$%='-ב ספאב הקולח ןויסינ"
+
+#: ext.c:51
+msgid "extensions are not allowed in sandbox mode"
+msgstr "לוח זגרא בצמב תורוסא תובחרה"
+
+#: ext.c:54
+msgid "-l / @load are gawk extensions"
+msgstr "-l / @load gawk לש תובחרה ןה"
+
+#: ext.c:57
+msgid "load_ext: received NULL lib_name"
+msgstr "load_ext: NULL lib_name רותב לביק"
+
+#: ext.c:60
+#, c-format
+msgid "load_ext: cannot open library `%s': %s"
+msgstr "load_ext: %2$s :`%1$s' הירפסה תא חותפל ןתינ אל"
+
+#: ext.c:66
+#, c-format
+msgid "load_ext: library `%s': does not define `plugin_is_GPL_compatible': %s"
+msgstr ""
+
+#: ext.c:72
+#, c-format
+msgid "load_ext: library `%s': cannot call function `%s': %s"
+msgstr "load_ext: %3$s :`%2$s' היצקנופל אורקל הלוכי אל :`%1$s' היירפסה"
+
+#: ext.c:76
+#, c-format
+msgid "load_ext: library `%s' initialization routine `%s' failed"
+msgstr "load_ext: הלשכנ `%2$s' היירפסה לש `%1$s' לוחתאה תרגש"
+
+#: ext.c:92
+msgid "make_builtin: missing function name"
+msgstr "make_builtin: רסח היצקנופה םש"
+
+#: ext.c:100 ext.c:111
+#, c-format
+msgid "make_builtin: cannot use gawk built-in `%s' as function name"
+msgstr "make_builtin: gawk היצקנופ םשכ־ב הנבומה `%1$s' םשב שמתשהל ןתינ אל"
+
+#: ext.c:109
+#, c-format
+msgid "make_builtin: cannot use gawk built-in `%s' as namespace name"
+msgstr "make_builtin: gawk בחרמ םשכ־ב הנבומה `%1$s' םשב שמתשהל ןתינ אל"
+
+#: ext.c:126
+#, c-format
+msgid "make_builtin: cannot redefine function `%s'"
+msgstr "make_builtin: שדחמ `%1$s' היצקנופה תא רידגהל ןתינ אל"
+
+#: ext.c:130
+#, c-format
+msgid "make_builtin: function `%s' already defined"
+msgstr "make_builtin: תרדגומ רבכ `%1$s' היצקנופה"
+
+#: ext.c:135
+#, c-format
+msgid "make_builtin: function name `%s' previously defined"
+msgstr "make_builtin: רבעב רדגוה רבכ `%1$s' היצקנופה םש"
+
+#: ext.c:139
+#, c-format
+msgid "make_builtin: negative argument count for function `%s'"
+msgstr "make_builitn: `%1$s': ילילש םיטנמוגרא רפסמ"
+
+#: ext.c:215
+#, c-format
+msgid "function `%s': argument #%d: attempt to use scalar as an array"
+msgstr "ךרעמכ ראלקסב שמתשהל ןויסינ :%2$d ׳סמ טנמוגרא :`%1$s' היצקנופ"
+
+#: ext.c:219
+#, c-format
+msgid "function `%s': argument #%d: attempt to use array as a scalar"
+msgstr "רלאקסכ ךרעמב שמתשהל ןויסינ :%2$d ׳סמ טנמוגרא :`%1$s' היצקנופ"
+
+#: ext.c:233
+msgid "dynamic loading of libraries is not supported"
+msgstr "תימניד תוירפס תניעטב הכימת ןיא"
+
+#: extension/filefuncs.c:446
+#, c-format
+msgid "stat: unable to read symbolic link `%s'"
+msgstr "stat: `%1$s' ילמסה רושיקה תא אורקל ןתינ אל"
+
+#: extension/filefuncs.c:479
+msgid "stat: first argument is not a string"
+msgstr "stat: תזורחמ וניא ןושארה טנמוגראה"
+
+#: extension/filefuncs.c:484
+msgid "stat: second argument is not an array"
+msgstr "stat: ךרעמ וניא ינשה טנמוגראה"
+
+#: extension/filefuncs.c:528
+msgid "stat: bad parameters"
+msgstr "stat: םייוגש םירטמרפ"
+
+#: extension/filefuncs.c:594
+#, c-format
+msgid "fts init: could not create variable %s"
+msgstr "fts init: %1$s הנתשמה תא רוציל ןתינ אל"
+
+#: extension/filefuncs.c:615
+msgid "fts is not supported on this system"
+msgstr "fts תאזה תכרעמב־ב הכימת ןיא"
+
+#: extension/filefuncs.c:634
+msgid "fill_stat_element: could not create array, out of memory"
+msgstr "fill_stat_element: ןורכיזה רמגנ ,ךרעמ רוציל ןתינ אל"
+
+#: extension/filefuncs.c:643
+msgid "fill_stat_element: could not set element"
+msgstr "fill_stat_element: ביכר רידגהל ןתינ אל"
+
+#: extension/filefuncs.c:658
+msgid "fill_path_element: could not set element"
+msgstr "fill_path_element: ביכר רידגהל ןתינ אל"
+
+#: extension/filefuncs.c:674
+msgid "fill_error_element: could not set element"
+msgstr "fill_error_element: ביכר רידגהל ןתינ אל"
+
+#: extension/filefuncs.c:726 extension/filefuncs.c:773
+msgid "fts-process: could not create array"
+msgstr "fts-process: ךרעמ רוציל ןתינ אל"
+
+#: extension/filefuncs.c:736 extension/filefuncs.c:783 extension/filefuncs.c:801
+msgid "fts-process: could not set element"
+msgstr "fts-process: ביכר רידגהל ןתינ אל"
+
+#: extension/filefuncs.c:850
+msgid "fts: called with incorrect number of arguments, expecting 3"
+msgstr "fts: 3 תויהל םירומא ,םיטנמוגרא לש היוגש תומכ םע ארקנ"
+
+#: extension/filefuncs.c:853
+msgid "fts: first argument is not an array"
+msgstr "fts: ךרעמ וניא ןושאר טנמוגרא"
+
+#: extension/filefuncs.c:859
+msgid "fts: second argument is not a number"
+msgstr "fst: רפסמ וניא ינשה טנמוגראה"
+
+#: extension/filefuncs.c:865
+msgid "fts: third argument is not an array"
+msgstr "fts: ךרעמ וניא ישילשה טנמוגראה"
+
+#: extension/filefuncs.c:872
+msgid "fts: could not flatten array\n"
+msgstr "fts: n\ךרעמה תא חטשל ןתינ אל"
+
+#: extension/filefuncs.c:890
+msgid "fts: ignoring sneaky FTS_NOSTAT flag. nyah, nyah, nyah."
+msgstr ""
+
+#: extension/fnmatch.c:120
+msgid "fnmatch: could not get first argument"
+msgstr "fnmatch: ןושארה טנמוגראה תא לבקל ןתינ אל"
+
+#: extension/fnmatch.c:125
+msgid "fnmatch: could not get second argument"
+msgstr "fnmatch: ינשה טנמוגראה תא לבקל ןתינ אל"
+
+#: extension/fnmatch.c:130
+msgid "fnmatch: could not get third argument"
+msgstr "fnmatch: ישילשה טנמוגראה תא לבקל ןתינ אל"
+
+#: extension/fnmatch.c:143
+msgid "fnmatch is not implemented on this system\n"
+msgstr "fnmatch n\תאזה תכרעמב שמוממ אל"
+
+#: extension/fnmatch.c:175
+msgid "fnmatch init: could not add FNM_NOMATCH variable"
+msgstr "fnmatch init: FNM_NOMATCH הנתשמה תא ףיסוהל ןתינ אל"
+
+#: extension/fnmatch.c:185
+#, c-format
+msgid "fnmatch init: could not set array element %s"
+msgstr "fnmatch init: %1$s ךרעמב ביכר רידגהל ןתינ אל"
+
+#: extension/fnmatch.c:195
+msgid "fnmatch init: could not install FNM array"
+msgstr "fnmatch init: FNM ךרעמ ןיקתהל ןתינ אל"
+
+#: extension/fork.c:92
+msgid "fork: PROCINFO is not an array!"
+msgstr "fork:PROCINFO !ךרעמ וניא "
+
+#: extension/inplace.c:131
+msgid "inplace::begin: in-place editing already active"
+msgstr ""
+
+#: extension/inplace.c:134
+#, c-format
+msgid "inplace::begin: expects 2 arguments but called with %d"
+msgstr "inplace::begin: 2 %1$d םע ארקנ לבא םיטנמוגרא־ל הפצמ"
+
+#: extension/inplace.c:137
+msgid "inplace::begin: cannot retrieve 1st argument as a string filename"
+msgstr "inplace::begin: תזורחמ ץבוק םשכ ןושאר טנמוגרא לבקל ןתינ אל"
+
+#: extension/inplace.c:145
+#, c-format
+msgid "inplace::begin: disabling in-place editing for invalid FILENAME `%s'"
+msgstr ""
+
+#: extension/inplace.c:152
+#, c-format
+msgid "inplace::begin: Cannot stat `%s' (%s)"
+msgstr ""
+
+#: extension/inplace.c:159
+#, c-format
+msgid "inplace::begin: `%s' is not a regular file"
+msgstr "inplace::begin:ליגר ץבוק וניא `%1$s' "
+
+#: extension/inplace.c:170
+#, c-format
+msgid "inplace::begin: mkstemp(`%s') failed (%s)"
+msgstr "inplace::begin:mkstemp(`%1$s') )%2$s( לשכנ "
+
+#: extension/inplace.c:182
+#, c-format
+msgid "inplace::begin: chmod failed (%s)"
+msgstr "inplace::begin:chmod )%1$s( לשכנ "
+
+#: extension/inplace.c:189
+#, c-format
+msgid "inplace::begin: dup(stdout) failed (%s)"
+msgstr "inplace::begindup(stdout) )%1$s( הלשכנ :"
+
+#: extension/inplace.c:192
+#, c-format
+msgid "inplace::begin: dup2(%d, stdout) failed (%s)"
+msgstr "inplace::begindup2(%1$d, stdout) )%2$s( הלשכנ :"
+
+#: extension/inplace.c:195
+#, c-format
+msgid "inplace::begin: close(%d) failed (%s)"
+msgstr "inplace::begin:close(%1$d) )%2$s( הלשכנ "
+
+#: extension/inplace.c:211
+#, c-format
+msgid "inplace::end: expects 2 arguments but called with %d"
+msgstr "inplace::end: 2 %1$d םע ארקנ לבא םיטנמוגרא־ל הפצמ"
+
+#: extension/inplace.c:214
+msgid "inplace::end: cannot retrieve 1st argument as a string filename"
+msgstr "inplace::end: תזורחמ ץבוק םשכ ןושאר טנמוגרא לבקל ןתינ אל"
+
+#: extension/inplace.c:221
+msgid "inplace::end: in-place editing not active"
+msgstr ""
+
+#: extension/inplace.c:227
+#, c-format
+msgid "inplace::end: dup2(%d, stdout) failed (%s)"
+msgstr "inplace::end:dup2(%1$d, stdout) )%2$s( הלשכנ "
+
+#: extension/inplace.c:230
+#, c-format
+msgid "inplace::end: close(%d) failed (%s)"
+msgstr "inplace::end:close(%1$d) )%2$s( הלשכנ "
+
+#: extension/inplace.c:234
+#, c-format
+msgid "inplace::end: fsetpos(stdout) failed (%s)"
+msgstr "inplace::endfsetpos(stdout) )%1$s( הלשכנ :"
+
+#: extension/inplace.c:247
+#, c-format
+msgid "inplace::end: link(`%s', `%s') failed (%s)"
+msgstr "inplace::end:link(`%1$s', `%2$s') )%3$s( הלשכנ "
+
+#: extension/inplace.c:257
+#, c-format
+msgid "inplace::end: rename(`%s', `%s') failed (%s)"
+msgstr ""
+
+#: extension/ordchr.c:72
+msgid "ord: first argument is not a string"
+msgstr "ord: תזורחמ וניא ןושארה טנמוגראה"
+
+#: extension/ordchr.c:99
+msgid "chr: first argument is not a number"
+msgstr "chr: רפסמ וניא ןושארה טנמוגראה"
+
+#: extension/readdir.c:280
+#, c-format
+msgid "dir_take_control_of: opendir/fdopendir failed: %s"
+msgstr ""
+
+#: extension/readfile.c:133
+msgid "readfile: called with wrong kind of argument"
+msgstr "readfile: יוגש טנמוגרא גוס םע ארקנ"
+
+#: extension/revoutput.c:127
+msgid "revoutput: could not initialize REVOUT variable"
+msgstr ""
+
+#: extension/rwarray.c:145 extension/rwarray.c:548
+#, c-format
+msgid "%s: first argument is not a string"
+msgstr "%1$s: תזורחמ וניא ןושארה טנמוגראה"
+
+#: extension/rwarray.c:189
+msgid "writea: second argument is not an array"
+msgstr "writea: ךרעמ וניא ינשה טנמוגראה"
+
+#: extension/rwarray.c:206
+msgid "writeall: unable to find SYMTAB array"
+msgstr ""
+
+#: extension/rwarray.c:226
+msgid "write_array: could not flatten array"
+msgstr ""
+
+#: extension/rwarray.c:242
+msgid "write_array: could not release flattened array"
+msgstr "write_array: חטשוהש ךרעמ ררחשל ןתינ אל"
+
+#: extension/rwarray.c:307
+#, c-format
+msgid "array value has unknown type %d"
+msgstr "%1$d עודי אל ךרעמה ךרע גוס"
+
+#: extension/rwarray.c:398
+msgid ""
+"rwarray extension: received GMP/MPFR value but compiled without GMP/MPFR support."
+msgstr ""
+"rwarray: GMP/MPFR GMP/MPFR .־ב הכימת אלל עצוב רודיהה לבא ךרע לבקתה תבחרה"
+
+#: extension/rwarray.c:437
+#, c-format
+msgid "cannot free number with unknown type %d"
+msgstr "%1$d עודי אל גוסמ רפסמ ררחשל ןתינ אל"
+
+#: extension/rwarray.c:442
+#, c-format
+msgid "cannot free value with unhandled type %d"
+msgstr "%1$d לפוטמ אל גוסמ ךרע ררחשל ןתינ אל"
+
+#: extension/rwarray.c:481
+#, c-format
+msgid "readall: unable to set %s::%s"
+msgstr "readall: %2$s::%1$s רידגהל ןתינ אל"
+
+#: extension/rwarray.c:483
+#, c-format
+msgid "readall: unable to set %s"
+msgstr "readall: %1$s רידגהל ןתינ אל"
+
+#: extension/rwarray.c:525
+msgid "reada: clear_array failed"
+msgstr "reada:clear_array לשכנ "
+
+#: extension/rwarray.c:611
+msgid "reada: second argument is not an array"
+msgstr "reada: ךרעמ וניא ינשה טנמוגראה"
+
+#: extension/rwarray.c:648
+msgid "read_array: set_array_element failed"
+msgstr "read_array:set_array_element לשכנ "
+
+#: extension/rwarray.c:756
+#, c-format
+msgid "treating recovered value with unknown type code %d as a string"
+msgstr ""
+
+#: extension/rwarray.c:827
+msgid ""
+"rwarray extension: GMP/MPFR value in file but compiled without GMP/MPFR support."
+msgstr ""
+
+#: extension/time.c:142
+msgid "gettimeofday: not supported on this platform"
+msgstr "gettimeofday: תאזה המרופטלפב ךמתנ אל"
+
+#: extension/time.c:163
+msgid "sleep: missing required numeric argument"
+msgstr "sleep: יחרכה ירפסמ טנמוגרא רסח"
+
+#: extension/time.c:169
+msgid "sleep: argument is negative"
+msgstr "sleep: ילילש טנמוגראה"
+
+#: extension/time.c:203
+msgid "sleep: not supported on this platform"
+msgstr "sleep: תאזה המרופטלפב ךמתנ אל"
+
+#: extension/time.c:225
+msgid "strptime: called with no arguments"
+msgstr "strptime: םיטנמוגרא אלל ארקנ"
+
+#: extension/time.c:233
+#, c-format
+msgid "do_strptime: argument 1 is not a string\n"
+msgstr "do_strptime: 1 n\תזורחמ וניא טנמוגרא"
+
+#: extension/time.c:238
+#, c-format
+msgid "do_strptime: argument 2 is not a string\n"
+msgstr "do_strptime: 2 n\תזורחמ וניא טנמוגרא"
+
+#: field.c:287
+msgid "input record too large"
+msgstr "ידמ הלודג טלקה תמושר"
+
+#: field.c:408
+msgid "NF set to negative value"
+msgstr "NF ילילש ךרעל רדגוה"
+
+#: field.c:413
+msgid "decrementing NF is not portable to many awk versions"
+msgstr "NF awk תואסרג לש בחר ןווגמב תכמתנ הניא תנטקה"
+
+#: field.c:861
+msgid "accessing fields from an END rule may not be portable"
+msgstr "END awk לש םירחא םישומימב דבוע דימת אל ללכמ תודשל השיג"
+
+#: field.c:988 field.c:997
+msgid "split: fourth argument is a gawk extension"
+msgstr "split: gawk לש הבחרה אוה יעיברה טנמוגראה"
+
+#: field.c:992
+msgid "split: fourth argument is not an array"
+msgstr "split: ךרעמ וניא יעיברה טנמוגראה"
+
+#: field.c:994 field.c:1093
+#, c-format
+msgid "%s: cannot use %s as fourth argument"
+msgstr "%1$s: יעיבר טנמוגראכ %2$s־ב שמתשהל ןתינ אל"
+
+#: field.c:1004
+msgid "split: second argument is not an array"
+msgstr "split: ךרעמ וניא ינשה טנמוגראה"
+
+#: field.c:1010
+msgid "split: cannot use the same array for second and fourth args"
+msgstr "split: יעיברהו ינשה םיטנמוגראל ךרעמה ותואב שמתשהל ןתינ אל"
+
+#: field.c:1015
+msgid "split: cannot use a subarray of second arg for fourth arg"
+msgstr "split: יעיברה טנמוגראה רותב ינשה טנמוגראה לש ךרעמ־תתב שמתשהל רוסא"
+
+#: field.c:1018
+msgid "split: cannot use a subarray of fourth arg for second arg"
+msgstr "split: ינש טנמוגראכ יעיברה טנמוגראה לש ךרעמ־תתב שמתשהל רוסא"
+
+#: field.c:1052
+msgid "split: null string for third arg is a non-standard extension"
+msgstr "split' gawk־ל תיתדוקנ הבחרה איה`־ל ישילש טנומגראכ תספואמ תזורחמ"
+
+#: field.c:1091
+msgid "patsplit: fourth argument is not an array"
+msgstr "patsplit: ךרעמ וניא יעיברה טנמוגראה"
+
+#: field.c:1098
+msgid "patsplit: second argument is not an array"
+msgstr "patsplit: ךרעמ וניא ינשה טנמוגראה"
+
+#: field.c:1109
+msgid "patsplit: third argument must be non-null"
+msgstr "patsplit: קיר ראשיהל לוכי אל ישילשה טנמוגראה"
+
+#: field.c:1113
+msgid "patsplit: cannot use the same array for second and fourth args"
+msgstr "patsplit'`־ל יעיברו ינש םיטנמוגראכ ךרעמ ותואב שמתשהל רוסא"
+
+#: field.c:1118
+msgid "patsplit: cannot use a subarray of second arg for fourth arg"
+msgstr "patsplit'`־ל יעיברו ינש םיטנמוגראכ ךרעמ־תת ותואב שמתשהל רוסא"
+
+#: field.c:1121
+msgid "patsplit: cannot use a subarray of fourth arg for second arg"
+msgstr "patsplit'`־ל יעיברו ינש םיטנמוגראכ ךרעמ ותואב שמתשהל רוסא"
+
+#: field.c:1171
+msgid "`FIELDWIDTHS' is a gawk extension"
+msgstr "`FIELDWIDTHS' gawk לש הבחרה איה"
+
+#: field.c:1240
+msgid "`*' must be the last designator in FIELDWIDTHS"
+msgstr "`*' FIELDWIDTHS ()תודומע יבחור־ב ןורחאה דירפמה תויהל בייח"
+
+#: field.c:1261
+#, c-format
+msgid "invalid FIELDWIDTHS value, for field %d, near `%s'"
+msgstr "FIELDWIDTHS, `%2$s'־ל בורק ,%1$d הדשל־ל יוגש ךרע"
+
+#: field.c:1334
+msgid "null string for `FS' is a gawk extension"
+msgstr "FS' gawk־ל הבחרה איה`־כ תספואמ תזורחמ"
+
+#: field.c:1338
+msgid "old awk does not support regexps as value of `FS'"
+msgstr "awk FS'` לש ךרעכ םיירלוגר םייוטיבב ךמות אל ןשי"
+
+#: field.c:1464
+msgid "`FPAT' is a gawk extension"
+msgstr "`FPAT' gawk לש הבחרה איה"
+
+#: gawkapi.c:156
+msgid "awk_value_to_node: received null retval"
+msgstr "awk_value_to_node: null)( קיר הרזחה ךרע לבקתה"
+
+#: gawkapi.c:176 gawkapi.c:189
+msgid "awk_value_to_node: not in MPFR mode"
+msgstr "awk_value_to_node: MPFR בצמב אל"
+
+#: gawkapi.c:183 gawkapi.c:195
+msgid "awk_value_to_node: MPFR not supported"
+msgstr "awk_value_to_node: MPFR־ב הכימת ןיא"
+
+#: gawkapi.c:199
+#, c-format
+msgid "awk_value_to_node: invalid number type `%d'"
+msgstr "awk_value_to_node: יוגש `%1$d' רפסמה גוס"
+
+#: gawkapi.c:386
+msgid "add_ext_func: received NULL name_space parameter"
+msgstr "add_ext_func: name_space (NULL)( קיר )םש בחרמ הנתשמ לבקתה"
+
+#: gawkapi.c:524
+#, c-format
+msgid ""
+"node_to_awk_value: detected invalid numeric flags combination `%s'; please file "
+"a bug report"
+msgstr "node_to_awk_value: הלקתכ ךכ לע חוודל אנ ,`%1$s' יוגש םינולגד בוליש הלגתה"
+
+#: gawkapi.c:562
+msgid "node_to_awk_value: received null node"
+msgstr "node_to_awk_value: null)( קיר קרפמ לבקתה"
+
+#: gawkapi.c:565
+msgid "node_to_awk_value: received null val"
+msgstr "node_to_awk_value: null)( קיר ךרע לבקתה"
+
+#: gawkapi.c:633 gawkapi.c:670 gawkapi.c:700 gawkapi.c:737
+#, c-format
+msgid ""
+"node_to_awk_value detected invalid flags combination `%s'; please file a bug "
+"report"
+msgstr ""
+
+#: gawkapi.c:1129
+msgid "remove_element: received null array"
+msgstr "remove_element: קיר ךרעמ לבקתה"
+
+#: gawkapi.c:1132
+msgid "remove_element: received null subscript"
+msgstr ""
+
+#: gawkapi.c:1275
+#, c-format
+msgid "api_flatten_array_typed: could not convert index %d to %s"
+msgstr ""
+
+#: gawkapi.c:1280
+#, c-format
+msgid "api_flatten_array_typed: could not convert value %d to %s"
+msgstr ""
+
+#: gawkapi.c:1376 gawkapi.c:1393
+msgid "api_get_mpfr: MPFR not supported"
+msgstr "api_get_mpfr: MPFR־ב הכימת ןיא"
+
+#: gawkapi.c:1424
+msgid "cannot find end of BEGINFILE rule"
+msgstr "BEGINFILE ללכ ףוס תא אוצמל ןתינ אל"
+
+#: gawkapi.c:1478
+#, c-format
+msgid "cannot open unrecognized file type `%s' for `%s'"
+msgstr "`%2$s' רובע `%1$s' רכומ יתלבה ץבוקה גוס תא חותפל ןתינ אל"
+
+#: io.c:406
+#, c-format
+msgid "command line argument `%s' is a directory: skipped"
+msgstr "חספנ :הייקית אוה `%1$s' הדוקפה תרוש טנמוגרא"
+
+#: io.c:409 io.c:523
+#, c-format
+msgid "cannot open file `%s' for reading: %s"
+msgstr "%2$s :האירקל `%1$s' ץבוקה תא חותפל ןתינ אל"
+
+#: io.c:650
+#, c-format
+msgid "close of fd %d (`%s') failed: %s"
+msgstr "fd %1$d (`%2$s') %3$s :הלשכנ לש הריגסה"
+
+#: io.c:722
+#, c-format
+msgid "`%.*s' used for input file and for output file"
+msgstr ""
+
+#: io.c:724
+#, c-format
+msgid "`%.*s' used for input file and input pipe"
+msgstr ""
+
+#: io.c:726
+#, c-format
+msgid "`%.*s' used for input file and two-way pipe"
+msgstr ""
+
+#: io.c:728
+#, c-format
+msgid "`%.*s' used for input file and output pipe"
+msgstr ""
+
+#: io.c:730
+#, c-format
+msgid "unnecessary mixing of `>' and `>>' for file `%.*s'"
+msgstr "`%1$.*s' ץבוק רובע `>>'־ב ןהו `>'־ב ןה רתוימ שומיש"
+
+#: io.c:732
+#, c-format
+msgid "`%.*s' used for input pipe and output file"
+msgstr ""
+
+#: io.c:734
+#, c-format
+msgid "`%.*s' used for output file and output pipe"
+msgstr ""
+
+#: io.c:736
+#, c-format
+msgid "`%.*s' used for output file and two-way pipe"
+msgstr ""
+
+#: io.c:738
+#, c-format
+msgid "`%.*s' used for input pipe and output pipe"
+msgstr ""
+
+#: io.c:740
+#, c-format
+msgid "`%.*s' used for input pipe and two-way pipe"
+msgstr ""
+
+#: io.c:742
+#, c-format
+msgid "`%.*s' used for output pipe and two-way pipe"
+msgstr ""
+
+#: io.c:791
+msgid "redirection not allowed in sandbox mode"
+msgstr "לוח זגרא בצמב הרוסא הינפה"
+
+#: io.c:825
+#, c-format
+msgid "expression in `%s' redirection is a number"
+msgstr "רפסמ אוה `%1$s' הינפהב יוטיבה"
+
+#: io.c:829
+#, c-format
+msgid "expression for `%s' redirection has null string value"
+msgstr "null/קיר תזורחמ ךרע שי `%1$s' הינפהל יוטיבל"
+
+#: io.c:834
+#, c-format
+msgid "filename `%.*s' for `%s' redirection may be result of logical expression"
+msgstr "יגול יוטיב לש האצות תויהל יושע `%2$s' היינפהל '%1$.*s` ץבוקה םש"
+
+#: io.c:931 io.c:956
+#, c-format
+msgid "get_file cannot create pipe `%s' with fd %d"
+msgstr ""
+
+#: io.c:946
+#, c-format
+msgid "cannot open pipe `%s' for output: %s"
+msgstr "%2$s :טלפל `%1$s' קיפאה תא חותפל ןתינ אל"
+
+#: io.c:961
+#, c-format
+msgid "cannot open pipe `%s' for input: %s"
+msgstr "%2$s :טלקל `%1$s' קיפאה תא חותפל ןתינ אל"
+
+#: io.c:985
+#, c-format
+msgid "get_file socket creation not supported on this platform for `%s' with fd %d"
+msgstr ""
+
+#: io.c:996
+#, c-format
+msgid "cannot open two way pipe `%s' for input/output: %s"
+msgstr "%2$s :טלפ/טלקל `%1$s' ינוויכ־וד קיפא חותפל ןתינ אל"
+
+#: io.c:1083
+#, c-format
+msgid "cannot redirect from `%s': %s"
+msgstr "%2$s :`%1$s'־מ תונפהל ןתינ אל"
+
+#: io.c:1086
+#, c-format
+msgid "cannot redirect to `%s': %s"
+msgstr "%2$s :`%1$s' לא תונפהל ןתינ אל"
+
+#: io.c:1188
+msgid "reached system limit for open files: starting to multiplex file descriptors"
+msgstr ""
+"םיצבק ינייצמ בברל ליחתא וישכע :תכרעמה לש םיחותפה םיצבקה תומכ תלבגמל תעגה"
+
+#: io.c:1204
+#, c-format
+msgid "close of `%s' failed: %s"
+msgstr "%2$s :הלשכנ `%1$s' לש הריגסה"
+
+#: io.c:1212
+msgid "too many pipes or input files open"
+msgstr "pipes) םיחותפ טלק יצבוק וא( םיקיפא ידמ רתוי"
+
+#: io.c:1238
+msgid "close: second argument must be `to' or `from'"
+msgstr "close' to' from'` וא` תויהל בייח` לש ינשה טנמוגראה"
+
+#: io.c:1256
+#, c-format
+msgid "close: `%.*s' is not an open file, pipe or co-process"
+msgstr "close: `%1$.*s' הנשמ ךילהת וא חותפ קיפא ,חותפ ץבוק וניא"
+
+#: io.c:1261
+msgid "close of redirection that was never opened"
+msgstr "םלועמ החתפנ אלש היינפה תריגס"
+
+#: io.c:1363
+#, c-format
+msgid "close: redirection `%s' not opened with `|&', second argument ignored"
+msgstr "close: חנזוה ינשה טנמוגראה ,'&|` י"\ע החתפנ אל `%1$s' היינפה"
+
+#: io.c:1380
+#, c-format
+msgid "failure status (%d) on pipe close of `%s': %s"
+msgstr "%3$s :`%2$s' לש קיפאה תריגס םע )%1$d( לשכ בצמ"
+
+#: io.c:1383
+#, c-format
+msgid "failure status (%d) on two-way pipe close of `%s': %s"
+msgstr "%3$s :`%2$s' ינוויכ־וד קיפא תריגס לש )%1$d( לשכ בצמ"
+
+#: io.c:1386
+#, c-format
+msgid "failure status (%d) on file close of `%s': %s"
+msgstr "%3$s :`%2$s' לש ץבוקה תריגס לש )%1$d( הלקת בצמ"
+
+#: io.c:1406
+#, c-format
+msgid "no explicit close of socket `%s' provided"
+msgstr "socket) שרופמב רגסנ אל( `%1$s' עקש"
+
+#: io.c:1409
+#, c-format
+msgid "no explicit close of co-process `%s' provided"
+msgstr "co-process) שרופמב רגסנ אל( `%1$s' ליבקמ ךילהת"
+
+#: io.c:1412
+#, c-format
+msgid "no explicit close of pipe `%s' provided"
+msgstr "pipe) שרופמב רגסנ אל( `%1$s' קיפא"
+
+#: io.c:1415
+#, c-format
+msgid "no explicit close of file `%s' provided"
+msgstr "שרופמב רגסנ אל `%1$s' ץבוק"
+
+#: io.c:1450
+#, c-format
+msgid "fflush: cannot flush standard output: %s"
+msgstr ""
+
+#: io.c:1451
+#, c-format
+msgid "fflush: cannot flush standard error: %s"
+msgstr ""
+
+#: io.c:1456 io.c:1545 main.c:719 main.c:764
+#, c-format
+msgid "error writing standard output: %s"
+msgstr "stdout)( ינקת טלפ ץורעל הביתכב )%1$s( האיגש"
+
+#: io.c:1457 io.c:1556 main.c:721
+#, c-format
+msgid "error writing standard error: %s"
+msgstr "ינקת תואיגש ץורעל הביתכב )%1$s( הלקת"
+
+#: io.c:1496
+#, c-format
+msgid "pipe flush of `%s' failed: %s"
+msgstr "%2$s :לשכנ `%1$s' קיפאה ץצוח ןוקיר"
+
+#: io.c:1499
+#, c-format
+msgid "co-process flush of pipe to `%s' failed: %s"
+msgstr "%2$s :לשכנ `%1$s' לא הנשמ ךילהת קיפא ץצוח ןוקיר"
+
+#: io.c:1502
+#, c-format
+msgid "file flush of `%s' failed: %s"
+msgstr "%2$s :לשכנ `%1$s' לש ץבוק ןוקיר"
+
+#: io.c:1645
+#, c-format
+msgid "local port %s invalid in `/inet': %s"
+msgstr "/inet':%2$s ` תחת היוגש %1$s תימוקמה החתפה"
+
+#: io.c:1648
+#, c-format
+msgid "local port %s invalid in `/inet'"
+msgstr "/inet'`־ב היוגש %1$s תימוקמה החתפה"
+
+#: io.c:1671
+#, c-format
+msgid "remote host and port information (%s, %s) invalid: %s"
+msgstr "%3$s :םייוגש )%2$s ,%1$s( םיקחורמה החתפהו חראמה יטרפ"
+
+#: io.c:1674
+#, c-format
+msgid "remote host and port information (%s, %s) invalid"
+msgstr ")%2$s ,%1$s( ידילו אל קחורמ בשחמל האיציו םשל עדמ"
+
+#: io.c:1916
+msgid "TCP/IP communications are not supported"
+msgstr "TCP/IP תרושקתב הכימת ןיא"
+
+#: io.c:2044 io.c:2087
+#, c-format
+msgid "could not open `%s', mode `%s'"
+msgstr "`%2$s' בצמ ,`%1$s' תא חותפל ןתינ אל"
+
+#: io.c:2052 io.c:2104
+#, c-format
+msgid "close of master pty failed: %s"
+msgstr "master pty תריגסב )%1$s( הלקת"
+
+#: io.c:2054 io.c:2106 io.c:2447 io.c:2685
+#, fuzzy, c-format
+msgid "close of stdout in child failed: %s"
+msgstr "stdout תב-תינכתב תריגסב )%1$s( הלקת"
+
+#: io.c:2057 io.c:2109
+#, c-format
+msgid "moving slave pty to stdout in child failed (dup: %s)"
+msgstr "slave pty stdout )%1$s :לופכש( לשכנ אצאצב־ל תרבעה"
+
+#: io.c:2059 io.c:2111 io.c:2452
+#, fuzzy, c-format
+msgid "close of stdin in child failed: %s"
+msgstr "stdin תב-תינכתב תריגסב )%1$s( הלקת"
+
+#: io.c:2062 io.c:2114
+#, c-format
+msgid "moving slave pty to stdin in child failed (dup: %s)"
+msgstr "pty stdin )%1$s :לופכש( הלשכנ אצאצב־ל ףופכ תרבעה"
+
+#: io.c:2064 io.c:2116 io.c:2138
+#, fuzzy, c-format
+msgid "close of slave pty failed: %s"
+msgstr "slave pty תריגסב )%1$s( הלקת"
+
+#: io.c:2300
+msgid "could not create child process or open pty"
+msgstr "pty חותפל וא יאצאצ ךילהת רוציל ןתינ אל"
+
+#: io.c:2386 io.c:2450 io.c:2660 io.c:2688
+#, c-format
+msgid "moving pipe to stdout in child failed (dup: %s)"
+msgstr "stdout )%1$s :לופכש( הלשכנ אצאצב־ל קיפא תרבעה"
+
+#: io.c:2393 io.c:2455
+#, c-format
+msgid "moving pipe to stdin in child failed (dup: %s)"
+msgstr "stdin )%1$s :לופכש( הלשכנ אצאצב־ל קיפאה תרבעה"
+
+#: io.c:2415 io.c:2678
+msgid "restoring stdout in parent process failed"
+msgstr "stdout לשכנ הרוה ךילהתב רוזחש"
+
+#: io.c:2423
+msgid "restoring stdin in parent process failed"
+msgstr "stdin הלשכנ הרוהה תינכותב רוזחש"
+
+#: io.c:2458 io.c:2690 io.c:2705
+#, fuzzy, c-format
+msgid "close of pipe failed: %s"
+msgstr "קיפא תריגסב )%1$s( הלקת"
+
+#: io.c:2517
+msgid "`|&' not supported"
+msgstr "'&|`-ב הכימת ןיא"
+
+#: io.c:2645
+#, c-format
+msgid "cannot open pipe `%s': %s"
+msgstr "%2$s :`%1$s' קיפאה תא חותפל ןתינ אל"
+
+#: io.c:2699
+#, c-format
+msgid "cannot create child process for `%s' (fork: %s)"
+msgstr ")%2$s :לוציפ( `%1$s' רובע יאצאצ ךילהת רוציל ןתינ אל"
+
+#: io.c:2838
+msgid "getline: attempt to read from closed read end of two-way pipe"
+msgstr ""
+
+#: io.c:3162
+msgid "register_input_parser: received NULL pointer"
+msgstr ""
+
+#: io.c:3190
+#, c-format
+msgid "input parser `%s' conflicts with previously installed input parser `%s'"
+msgstr ""
+
+#: io.c:3197
+#, c-format
+msgid "input parser `%s' failed to open `%s'"
+msgstr ""
+
+#: io.c:3217
+msgid "register_output_wrapper: received NULL pointer"
+msgstr ""
+
+#: io.c:3245
+#, c-format
+msgid "output wrapper `%s' conflicts with previously installed output wrapper `%s'"
+msgstr ""
+
+#: io.c:3252
+#, c-format
+msgid "output wrapper `%s' failed to open `%s'"
+msgstr ""
+
+#: io.c:3273
+msgid "register_output_processor: received NULL pointer"
+msgstr ""
+
+#: io.c:3302
+#, c-format
+msgid ""
+"two-way processor `%s' conflicts with previously installed two-way processor `%s'"
+msgstr ""
+
+#: io.c:3311
+#, c-format
+msgid "two way processor `%s' failed to open `%s'"
+msgstr ""
+
+#: io.c:3442
+#, c-format
+msgid "data file `%s' is empty"
+msgstr "קיר וניה `%1$s' םינותנ ץבוק"
+
+#: io.c:3484 io.c:3492
+msgid "could not allocate more input memory"
+msgstr "טלקל ןורכז רתוי תוצקהל לכי אל"
+
+#: io.c:4113
+msgid "multicharacter value of `RS' is a gawk extension"
+msgstr "RS' gawk-ל תיפיצפס הבחרה הניה` לש ךרעב םיות רפסמב הכימת"
+
+#: io.c:4267
+msgid "IPv6 communication is not supported"
+msgstr "IPv6 תרושקתב הכימת ןיא"
+
+#: main.c:245
+#, c-format
+msgid ""
+"%s: fatal: persistent memory allocator failed to initialize: return value %d, "
+"pma.c line: %d.\n"
+msgstr ""
+
+#: main.c:253
+msgid "persistent memory is not supported"
+msgstr "עובק ןורכיזב הכימת ןיא"
+
+#: main.c:366
+msgid "environment variable `POSIXLY_CORRECT' set: turning on `--posix'"
+msgstr "POSIXLY_CORRECT' posix'--` ליעפמ :רדגומ` הביבס הנתשמ"
+
+#: main.c:373
+msgid "`--posix' overrides `--traditional'"
+msgstr "`--posix' traditional'--` לע רבוג"
+
+#: main.c:384
+msgid "`--posix'/`--traditional' overrides `--non-decimal-data'"
+msgstr "--posix/--traditional' non-decimal-data'--` לע רבוג"
+
+#: main.c:389
+msgid "`--posix' overrides `--characters-as-bytes'"
+msgstr "`--posix' --characters-as-bytes'` לע רבוג"
+
+#: main.c:400
+#, c-format
+msgid "running %s setuid root may be a security problem"
+msgstr "setuid root עדימ תחטבאב עוגפל הלולע-כ %1$s תצרה"
+
+#: main.c:402
+msgid "The -r/--re-interval options no longer have any effect"
+msgstr ""
+
+#: main.c:456
+#, c-format
+msgid "cannot set binary mode on stdin: %s"
+msgstr "stdin): %1$s( ינקתה טלקה לע ירניב בצמ רידגהל ןתינ אל"
+
+#: main.c:459
+#, fuzzy, c-format
+msgid "cannot set binary mode on stdout: %s"
+msgstr "stdout תלועפ ןפוא תעיבקב )%1$s( הלקת"
+
+#: main.c:461
+#, fuzzy, c-format
+msgid "cannot set binary mode on stderr: %s"
+msgstr "stderr תלועפ ןפוא תעיבקב )%1$s( הלקת"
+
+#: main.c:526
+msgid "no program text at all!"
+msgstr "!ללכ אצמנב היה אל תינכת לש טסקט"
+
+#: main.c:628
+#, c-format
+msgid "Usage: %s [POSIX or GNU style options] -f progfile [--] file ...\n"
+msgstr ""
+"GNU POSIX] -f n\... ץבןק-םש ]--[ תינכת-םש וא ןונגב םינייפאמ[ %1$s :שומיש ןפוא"
+
+#: main.c:630
+#, c-format
+msgid "Usage: %s [POSIX or GNU style options] [--] %cprogram%c file ...\n"
+msgstr "GNU POSIX] %2$cn\... ץבןק-םש ]--[ %3$cתינכת וא ןונגב םינייפאמ[ %1$s :שומיש ןפוא"
+
+#: main.c:635
+msgid "POSIX options:\t\tGNU long options: (standard)\n"
+msgstr "POSIX:\t\tn\)תוליגר( :תוכורא ונג תויורשפא תויורשפא"
+
+#: main.c:636
+msgid "\t-f progfile\t\t--file=progfile\n"
+msgstr "\t-f t\t--file=n\תינכת-ץבור\תינכת-ץבוק"
+
+#: main.c:637
+msgid "\t-F fs\t\t\t--field-separator=fs\n"
+msgstr "\t-F t\t--field-separator=n\תודש-דירפמ\תודש-דירפמ"
+
+#: main.c:638
+msgid "\t-v var=val\t\t--assign=var=val\n"
+msgstr "\t-v t\t--assign=n\הנתשמ=ךרע\הנתשמ=ךרע"
+
+#: main.c:639
+msgid "Short options:\t\tGNU long options: (extensions)\n"
+msgstr "t\\n\)תובחרה( :תוחכורא ונג תויורשפא\:תורצק תויורשפא"
+
+#: main.c:640
+msgid "\t-b\t\t\t--characters-as-bytes\n"
+msgstr "\t-b\t\t\t--characters-as-bytes\n"
+
+#: main.c:641
+msgid "\t-c\t\t\t--traditional\n"
+msgstr "\t-c\t\t\t--traditional\n"
+
+#: main.c:642
+msgid "\t-C\t\t\t--copyright\n"
+msgstr "\t-C\t\t\t--copyright\n"
+
+#: main.c:643
+#, fuzzy
+msgid "\t-d[file]\t\t--dump-variables[=file]\n"
+msgstr "\t-d[=t--dump-variables[=n\]ץבוק-םש\]ץבוק-םש"
+
+#: main.c:644
+#, fuzzy
+msgid "\t-D[file]\t\t--debug[=file]\n"
+msgstr "\t-p [t--profile[=n\]ץבוק-םש\]ץבוק-םש"
+
+#: main.c:645
+msgid "\t-e 'program-text'\t--source='program-text'\n"
+msgstr "\t-e 't--source='n\'תינכות-טסקט\'תינכות-טסקט"
+
+#: main.c:646
+msgid "\t-E file\t\t\t--exec=file\n"
+msgstr "\t-E t\t--exec=n\ץבוק-םש\ץבוק-םש"
+
+#: main.c:647
+msgid "\t-g\t\t\t--gen-pot\n"
+msgstr "\t-g\t\t\t--gen-pot\n"
+
+#: main.c:648
+msgid "\t-h\t\t\t--help\n"
+msgstr "\t-h\t\t\t--help\n"
+
+#: main.c:649
+msgid "\t-i includefile\t\t--include=includefile\n"
+msgstr ""
+
+#: main.c:650
+#, fuzzy
+msgid "\t-I\t\t\t--trace\n"
+msgstr "\t-h\t\t\t--help\n"
+
+#: main.c:651
+msgid "\t-l library\t\t--load=library\n"
+msgstr ""
+
+#. TRANSLATORS: the "fatal", "invalid" and "no-ext" here are literal
+#. values, they should not be translated. Thanks.
+#.
+#: main.c:656
+#, fuzzy
+msgid "\t-L[fatal|invalid|no-ext]\t--lint[=fatal|invalid|no-ext]\n"
+msgstr "\t-L [fatal]\t\t--lint[=fatal]\n"
+
+#: main.c:657
+#, fuzzy
+msgid "\t-M\t\t\t--bignum\n"
+msgstr "\t-g\t\t\t--gen-pot\n"
+
+#: main.c:658
+msgid "\t-N\t\t\t--use-lc-numeric\n"
+msgstr "\t-N\t\t\t--use-lc-numeric\n"
+
+#: main.c:659
+msgid "\t-n\t\t\t--non-decimal-data\n"
+msgstr "\t-n\t\t\t--non-decimal-data\n"
+
+#: main.c:660
+#, fuzzy
+msgid "\t-o[file]\t\t--pretty-print[=file]\n"
+msgstr "\t-p [t--profile[=n\]ץבוק-םש\]ץבוק-םש"
+
+#: main.c:661
+msgid "\t-O\t\t\t--optimize\n"
+msgstr "\t-O\t\t\t--optimize\n"
+
+#: main.c:662
+#, fuzzy
+msgid "\t-p[file]\t\t--profile[=file]\n"
+msgstr "\t-p [t--profile[=n\]ץבוק-םש\]ץבוק-םש"
+
+#: main.c:663
+msgid "\t-P\t\t\t--posix\n"
+msgstr "\t-P\t\t\t--posix\n"
+
+#: main.c:664
+msgid "\t-r\t\t\t--re-interval\n"
+msgstr "\t-r\t\t\t--re-interval\n"
+
+#: main.c:665
+#, fuzzy
+msgid "\t-s\t\t\t--no-optimize\n"
+msgstr "\t-O\t\t\t--optimize\n"
+
+#: main.c:666
+msgid "\t-S\t\t\t--sandbox\n"
+msgstr "\t-S\t\t\t--sandbox\n"
+
+#: main.c:667
+msgid "\t-t\t\t\t--lint-old\n"
+msgstr "\t-t\t\t\t--lint-old\n"
+
+#: main.c:668
+msgid "\t-V\t\t\t--version\n"
+msgstr "\t-V\t\t\t--version\n"
+
+#: main.c:670
+msgid "\t-W nostalgia\t\t--nostalgia\n"
+msgstr "\t-W nostalgia\t\t--nostalgia\n"
+
+#: main.c:673
+#, fuzzy
+msgid "\t-Y\t\t\t--parsedebug\n"
+msgstr "\t-Y\t\t--parsedebug\n"
+
+#: main.c:676
+msgid "\t-Z locale-name\t\t--locale=locale-name\n"
+msgstr ""
+
+#. TRANSLATORS: --help output (end)
+#. no-wrap
+#: main.c:682
+msgid ""
+"\n"
+"To report bugs, use the `gawkbug' program.\n"
+"For full instructions, see the node `Bugs' in `gawk.info'\n"
+"which is section `Reporting Problems and Bugs' in the\n"
+"printed version.  This same information may be found at\n"
+"https://www.gnu.org/software/gawk/manual/html_node/Bugs.html.\n"
+"PLEASE do NOT try to report bugs by posting in comp.lang.awk,\n"
+"or by using a web forum such as Stack Overflow.\n"
+"\n"
+msgstr ""
+"\n"
+"gawkbug'.\n` תינכותב שמתשהל אנ ,תולקת לע חוודל ידכ"
+"Bugs' gawk.info'\n`־ב` ףיעסל תונפל בטומ תואלמ תויחנהל"
+"Reporting Problems and Bugs' n\הסרגב` ךותמ ףיעס־תת אוהש"
+"n\רתאב םג אוצמל רשפא עדימה ותוא תא  .תספדומה"
+"https://www.gnu.org/software/gawk/manual/html_node/Bugs.html.\n"
+"comp.lang.awk,\n־ב תולקת לע חוודל אל אנ"
+"Stack Overflow.\n תמגודכ םינווקמ םימורופב וא"
+"\n"
+
+#: main.c:698
+#, c-format
+msgid ""
+"Source code for gawk may be obtained from\n"
+"%s/gawk-%s.tar.gz\n"
+"\n"
+msgstr ""
+"gawk n\ךרד גישהל רשפא לש רוקמה דוק תא"
+"%1$s/gawk-%2$s.tar.gz\n"
+"\n"
+
+#: main.c:702
+msgid ""
+"gawk is a pattern scanning and processing language.\n"
+"By default it reads standard input and writes standard output.\n"
+"\n"
+msgstr ""
+"gawk n\.תוינבת לש דוביעו הקירסל הפש איה"
+"stdin) stdout).\n( ינקתה טלפל תבתוכו( ינקתה טלקהמ תארוק איה לדחמ תרירבכ"
+"\n"
+
+#: main.c:706
+#, c-format
+msgid ""
+"Examples:\n"
+"\t%s '{ sum += $1 }; END { print sum }' file\n"
+"\t%s -F: '{ print $1 }' /etc/passwd\n"
+msgstr ""
+"n\:תואמגוד"
+"\t%1$s '{ sum += $1 }; END { print sum }' file\n"
+"\t%1$s -F: '{ print $1 }' /etc/passwd\n"
+
+#: main.c:736
+#, c-format
+msgid ""
+"Copyright (C) 1989, 1991-%d Free Software Foundation.\n"
+"\n"
+"This program is free software; you can redistribute it and/or modify\n"
+"it under the terms of the GNU General Public License as published by\n"
+"the Free Software Foundation; either version 3 of the License, or\n"
+"(at your option) any later version.\n"
+"\n"
+msgstr ""
+"C) 1989,1991-%1$d n\.תישפוחה הנכותה ןרקל ( תורומש תויוכזה לכ"
+"\n"
+"n\ותוא תונשל וא/ו שדחמ התוא ץיפהל רשפא ,תישפוח הנכות וז"
+"n\הנכותה ןרק ידי לע םסרופמש יפכ ונג לש יללכה ירוביצה ןוישירל ףופכב"
+"3 n\תינכדע הסרג לכ )ךלוקישל( וא ןוישירה לש הסרגב תישפוחה"
+"n\.ולש רתוי"
+"\n"
+
+#: main.c:744
+msgid ""
+"This program is distributed in the hope that it will be useful,\n"
+"but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
+"MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
+"GNU General Public License for more details.\n"
+"\n"
+msgstr ""
+"n\ךא תלעות איבתש הווקתב תצפומ תאזה תינכותה"
+"n\שומישל תזמורמ אל וליפא ,תוירחא המע תאשונ הניא"
+"n\ירוביצה ןוישירב .תמיוסמ תילכתל המאתה וא ירחסמ"
+"n\.דוע ךכ לע דומלל רשפא ונג לש יללכה"
+"\n"
+
+#: main.c:750
+msgid ""
+"You should have received a copy of the GNU General Public License\n"
+"along with this program. If not, see http://www.gnu.org/licenses/.\n"
+msgstr ""
+"GNU General Public License;\n לש קתועב הוולמ תויהל הרומא וז תינכת"
+"see http://www.gnu.org/licenses/.\n ואר אנא ,ותוא םתלביק אל םא"
+
+#: main.c:789
+msgid "-Ft does not set FS to tab in POSIX awk"
+msgstr "-Ft FS TAB POSIX awk לש תסרגב תויהל־ל םרוג וניא"
+
+#: main.c:1214
+#, c-format
+msgid ""
+"%s: `%s' argument to `-v' not in `var=value' form\n"
+"\n"
+msgstr ""
+"%1$s: -v' var=value'\n` תרוצב וניא` תורשפאל `%2$s' טנמוגראה"
+"\n"
+
+#: main.c:1240
+#, c-format
+msgid "`%s' is not a legal variable name"
+msgstr "`%1$s' יקוח הנתשמ םש וניא"
+
+#: main.c:1243
+#, c-format
+msgid "`%s' is not a variable name, looking for file `%s=%s'"
+msgstr "`%1$s' `%2$s=%s' ץבוקה רחא שופיח עצבתמ ,הנתשמ םש אל אוה"
+
+#: main.c:1257
+#, c-format
+msgid "cannot use gawk builtin `%s' as variable name"
+msgstr "gawk הנתשמ םשכ־ב הנבומש `%1$s' םשב שמתשהל ןתינ אל"
+
+#: main.c:1262
+#, c-format
+msgid "cannot use function `%s' as variable name"
+msgstr "הנתשמ םשכ `%1$s' היצקנופב שמתשהל ןתינ אל"
+
+#: main.c:1341
+msgid "floating point exception"
+msgstr "הפצ הדוקנ יבושיחב הגירח"
+
+#: main.c:1351
+msgid "fatal error: internal error"
+msgstr "תימינפ האיגש :הרומח הלקת"
+
+#: main.c:1371
+msgid "fatal error: internal error: segfault"
+msgstr "segfault :תימינפ האיגש :הרומח הלקת"
+
+#: main.c:1384
+msgid "fatal error: internal error: stack overflow"
+msgstr "stack overflow :תימינפ האיגש :הרומח הלקת"
+
+#: main.c:1483
+#, c-format
+msgid "no pre-opened fd %d"
+msgstr "שארמ חותפ אל %1$d טלפ/טלק ץורע"
+
+# FIXME: /dev/null might not be known to all.
+#: main.c:1490
+#, c-format
+msgid "could not pre-open /dev/null for fd %d"
+msgstr "/dev/null %1$d ץבוקה ןייפאמ-ל טלפ/טלק ץורע חותפל ןתינ אל"
+
+#: main.c:1704
+msgid "empty argument to `-e/--source' ignored"
+msgstr "-e/--source' טמשוה`־ל קיר טנמוגרא"
+
+#: main.c:1769 main.c:1774
+msgid "`--profile' overrides `--pretty-print'"
+msgstr "`--profile' --pretty-print'` לע רבוג"
+
+#: main.c:1786
+msgid "-M ignored: MPFR/GMP support not compiled in"
+msgstr "-M MPFR/GMP־ב הכימת הרדוה אל :טמשוה"
+
+#: main.c:1812
+#, c-format
+msgid "Use `GAWK_PERSIST_FILE=%s gawk ...' instead of --persist."
+msgstr "GAWK_PERSIST_FILE=%1$s gawk ...' --persist. םוקמב`־ב שמתשהל שי"
+
+#: main.c:1814
+msgid "Persistent memory is not supported."
+msgstr ".עובק ןורכיזב הכימת ןיא"
+
+#: main.c:1823
+#, c-format
+msgid "%s: option `-W %s' unrecognized, ignored\n"
+msgstr "%1$s: -W %2$s' n\תחספנ ,תרכומ הניא` תורשפאה"
+
+#: main.c:1876
+#, c-format
+msgid "%s: option requires an argument -- %c\n"
+msgstr "%1$s n\%2$c -- טנמוגרא בייחמ ןייפאמ"
+
+#: main.c:1979
+#, c-format
+msgid "%s: fatal: cannot stat %s: %s\n"
+msgstr ""
+
+#: main.c:1983
+#, c-format
+msgid "%s: fatal: using persistent memory is not allowed when running as root.\n"
+msgstr ""
+
+#: main.c:1986
+#, c-format
+msgid "%s: warning: %s is not owned by euid %d.\n"
+msgstr ""
+
+#: mpfr.c:661
+#, c-format
+msgid "PREC value `%.*s' is invalid"
+msgstr "PRECיוגש `%1$.*s'  ־ה ךרע"
+
+#: mpfr.c:720
+#, c-format
+msgid "ROUNDMODE value `%.*s' is invalid"
+msgstr "ROUNDMODE `%1$.*s' יוגש־ה ךרע"
+
+#: mpfr.c:786
+msgid "atan2: received non-numeric first argument"
+msgstr "atan2: רפסמ וניא ןושאר טנמוגרא"
+
+#: mpfr.c:788
+msgid "atan2: received non-numeric second argument"
+msgstr "atan2: רפסמ וניא ינש טנמוגרא"
+
+#: mpfr.c:827
+#, c-format
+msgid "%s: received negative argument %.*s"
+msgstr "%1$s: %2$.*s ילילש טנמוגרא לביק"
+
+#: mpfr.c:894
+msgid "int: received non-numeric argument"
+msgstr "int: רפסמ וניא טנמוגרא"
+
+#: mpfr.c:926
+msgid "compl: received non-numeric argument"
+msgstr "compl: רפסמ וניא טנמוגרא"
+
+#: mpfr.c:938
+msgid "compl(%Rg): negative value is not allowed"
+msgstr "compl(%1$Rg): ילילש ךרע רוסא"
+
+#: mpfr.c:943
+msgid "comp(%Rg): fractional value will be truncated"
+msgstr "comp(%1$Rg): ץצוקי ינורשע רבש םע ךרע"
+
+#: mpfr.c:954
+#, c-format
+msgid "compl(%Zd): negative values are not allowed"
+msgstr "compl(%1$Zd): םיילילש םיכרע רוסא"
+
+#: mpfr.c:972
+#, c-format
+msgid "%s: received non-numeric argument #%d"
+msgstr "%1$s: %2$d ׳סמ ירפסמ וניאש טמוגרא לבקתה"
+
+#: mpfr.c:982
+msgid "%s: argument #%d has invalid value %Rg, using 0"
+msgstr "%1$s: 0־ב ףלחומ ,%3$Rg יוגשה ךרעה תא שי %2$d ׳סמ טנמוגראל"
+
+#: mpfr.c:993
+msgid "%s: argument #%d negative value %Rg is not allowed"
+msgstr "%1$s: רוסא הזש %3$Rg ילילשה ךרעה תא שי %2$d ׳סמ טנמוגראב"
+
+#: mpfr.c:1000
+#, fuzzy
+msgid "%s: argument #%d fractional value %Rg will be truncated"
+msgstr "and(%1$lf, %2$lf): וצצוקי םירובש םיכרע"
+
+#: mpfr.c:1014
+#, c-format
+msgid "%s: argument #%d negative value %Zd is not allowed"
+msgstr ""
+
+#: mpfr.c:1108
+msgid "and: called with less than two arguments"
+msgstr "and: םיטנמוגרא ינשמ תוחפ םע ארקנ"
+
+#: mpfr.c:1140
+msgid "or: called with less than two arguments"
+msgstr "or: םיטנמוגרא ינשמ תוחפ םע ארקנ"
+
+#: mpfr.c:1171
+msgid "xor: called with less than two arguments"
+msgstr "xor: םיטנמוגרא ינשמ תוחפ םע ארקנ"
+
+#: mpfr.c:1301
+msgid "srand: received non-numeric argument"
+msgstr "srand: רפסמ וניא טנמוגרא"
+
+#: mpfr.c:1345
+msgid "intdiv: received non-numeric first argument"
+msgstr "intdiv: ירפסמ וניאש ןושאר טנמוגרא לביק"
+
+#: mpfr.c:1347
+msgid "intdiv: received non-numeric second argument"
+msgstr "intdiv: ירפסמ וניאש ינש טנמוגרא לביק"
+
+# The next 4 strings are untranslated because msg.c prints the actual
+# message after "warning:", "error:", etc., which will look terribly
+# wrong if both these headings and the message text after them is in
+# Hebrew, due to changed directionality.
+#: msg.c:76
+#, c-format
+msgid "cmd. line:"
+msgstr "cmd. line:"
+
+#: node.c:488
+msgid "could not make typed regex"
+msgstr ""
+
+#: node.c:561
+#, c-format
+msgid "old awk does not support the `\\%c' escape sequence"
+msgstr "awk '%1$c\\` הרקב תורדסב ךמות וניא ןשי"
+
+#: node.c:612
+msgid "POSIX does not allow `\\x' escapes"
+msgstr "POSIX x'\\` גוסמ הרקב תורדס השרמ וניא ןקת"
+
+#: node.c:618
+msgid "no hex digits in `\\x' escape sequence"
+msgstr "x'\\` הרקב תרדסב תוילמיצדסקה תורפס ןיא"
+
+#: node.c:639
+#, c-format
+msgid ""
+"hex escape \\x%.*s of %d characters probably not interpreted the way you expect"
+msgstr "x%1$.*s' םיפצמ םתאש ומכ ןבומ היהי אל םיבת %2$d לש\\` הרקב תרדסש תויהל לוכי"
+
+#: node.c:654
+#, c-format
+msgid "escape sequence `\\%c' treated as plain `%c'"
+msgstr "\\%1$c' טושפ `%2$c' לש סחיל הכוז` טולימה ות"
+
+#: node.c:790
+msgid ""
+"Invalid multibyte data detected. There may be a mismatch between your data and "
+"your locale"
+msgstr ""
+" תורדגההו ךלש םינותנה ןיב המאתה יא שיש הארנכ .םייוגש םיתב יבורמ םינותנ והוז"
+"ךלש תוימוקמה"
+
+#: posix/gawkmisc.c:179
+#, c-format
+msgid "%s %s `%s': could not get fd flags: (fcntl F_GETFD: %s)"
+msgstr "%1$s %2$s `%3$s': fcntl F_GETFD: %4$s)( :ץבוק ןייפאמ לש היצפוא תאצוהב הלקת"
+
+#: posix/gawkmisc.c:191
+#, c-format
+msgid "%s %s `%s': could not set close-on-exec: (fcntl F_SETFD: %s)"
+msgstr ""
+"%1$s %2$s `%3$s': close-on-exec fcntl ( :ץבוק ןייפאמ לע לש היצפוא םישהל הלועפב הלקת"
+"F_GETFD: %1$s)"
+
+#: profile.c:73
+msgid "Program indentation level too deep. Consider refactoring your code"
+msgstr ""
+"ךלש דוקב םיינבמ םייוניש עצבל לוקשל יאדכ .ידמ הקומע תינכותה לש ןוניקה תמר"
+
+#: profile.c:112
+msgid "sending profile to standard error"
+msgstr "ינקת תואיגש ץורעל חלשנ עוציב ליפורפ"
+
+#: profile.c:270
+#, c-format
+msgid ""
+"\t# %s rule(s)\n"
+"\n"
+msgstr ""
+"\t# n\%1$s יללכ"
+"\n"
+
+#: profile.c:278
+#, c-format
+msgid ""
+"\t# Rule(s)\n"
+"\n"
+msgstr ""
+"\t# n\)םי(ללכ"
+"\n"
+
+#: profile.c:366
+#, c-format
+msgid "internal error: %s with null vname"
+msgstr "vname ספואמ ולש-הש %1$s :תימינפ הנכת תאיגש"
+
+#: profile.c:670
+msgid "internal error: builtin with null fname"
+msgstr "fname null)( קיר םע הנבומ :תימינפ האיגש"
+
+#: profile.c:1328
+#, c-format
+msgid ""
+"%s# Loaded extensions (-l and/or @load)\n"
+"\n"
+msgstr ""
+
+#: profile.c:1359
+#, c-format
+msgid ""
+"\n"
+"# Included files (-i and/or @include)\n"
+"\n"
+msgstr ""
+
+#: profile.c:1423
+#, c-format
+msgid "\t# gawk profile, created %s\n"
+msgstr "\t# gawk n\%1$s ךיראתמ לש ליפורפ"
+
+#: profile.c:1991
+#, c-format
+msgid ""
+"\n"
+"\t# Functions, listed alphabetically\n"
+msgstr ""
+"\n"
+"\t# n\תיב-ףלא רדסב ,תויצקנופ"
+
+#: profile.c:2052
+#, c-format
+msgid "redir2str: unknown redirection type %d"
+msgstr "redir2str: עודי אל %1$d הינפהה גוס"
+
+#: re.c:58 re.c:163
+msgid ""
+"behavior of matching a regexp containing NUL characters is not defined by POSIX"
+msgstr ""
+
+#: re.c:127
+msgid "invalid NUL byte in dynamic regexp"
+msgstr "NULL) ימניד ירלוגר יוטיבב( ספואמ תיב"
+
+#: re.c:174
+#, c-format
+msgid "regexp escape sequence `\\%c' treated as plain `%c'"
+msgstr "\\%1$c' טושפ `%2$c'־כ חנעופ ירלוגרה יוטיבה לש` טולימה ףצר"
+
+#: re.c:193
+#, c-format
+msgid "regexp escape sequence `\\%c' is not a known regexp operator"
+msgstr ""
+"\\%1$c' םיירלוגר םייוטיב לש תרכומ הלועפ ונניא` םיירלוגרה םייוטיבה טולימ ףצר"
+
+#: re.c:669
+#, c-format
+msgid "regexp component `%.*s' should probably be `[%.*s]'"
+msgstr "[%2$.*s]'` תויהל רומא הארנכ '%1$.*s` ירלוגרה יוטיבה ביכר"
+
+#: support/dfa.c:897
+msgid "unbalanced ["
+msgstr "] ןזואמ אל"
+
+#: support/dfa.c:1018
+msgid "invalid character class"
+msgstr "היוגש םיוות תקלחמ"
+
+#: support/dfa.c:1146
+msgid "character class syntax is [[:space:]], not [:space:]"
+msgstr "space:]], space:]:[ אל:[[ אוה םיוות תקלחמ ריבחת"
+
+#: support/dfa.c:1222
+msgid "unfinished \\ escape"
+msgstr "יקלח \\ טולימ"
+
+#: support/dfa.c:1332
+msgid "? at start of expression"
+msgstr "? יוטיב תליחתב"
+
+#: support/dfa.c:1344
+msgid "* at start of expression"
+msgstr "* יוטיב תליחתב"
+
+#: support/dfa.c:1358
+msgid "+ at start of expression"
+msgstr "+ יוטיב תליחתב"
+
+#: support/dfa.c:1413
+msgid "{...} at start of expression"
+msgstr "{...} יוטיבה תליחתב"
+
+#: support/dfa.c:1416
+msgid "invalid content of \\{\\}"
+msgstr "יוגש }\\{\\ ןכות"
+
+#: support/dfa.c:1418
+msgid "regular expression too big"
+msgstr "ידמ לודג ירלוגרה יוטיבה"
+
+#: support/dfa.c:1568
+msgid "stray \\ before unprintable character"
+msgstr "\\ הגצהל וניאש ות ינפל העות"
+
+#: support/dfa.c:1570
+msgid "stray \\ before white space"
+msgstr "\\ חוור ינפל העות"
+
+#: support/dfa.c:1574
+#, c-format
+msgid "stray \\ before %lc"
+msgstr "\\ %1$lc ינפל העות"
+
+#: support/dfa.c:1575
+msgid "stray \\"
+msgstr "\\ העות"
+
+#: support/dfa.c:1925
+msgid "unbalanced ("
+msgstr ") ןזואמ אל"
+
+#: support/dfa.c:2042
+msgid "no syntax specified"
+msgstr "ריבחת ןיוצ אל"
+
+#: support/dfa.c:2053
+msgid "unbalanced )"
+msgstr "( ןזואמ אל"
+
+#: support/getopt.c:605 support/getopt.c:634
+#, c-format
+msgid "%s: option '%s' is ambiguous; possibilities:"
+msgstr "%1$s: :תויורשפא ,תיעמשמ־דח הניא '%2$s' תורשפאה"
+
+#: support/getopt.c:680 support/getopt.c:684
+#, c-format
+msgid "%s: option '--%s' doesn't allow an argument\n"
+msgstr "%1$s: --%2$s' n\טנמוגראב שמתשהל השרמ אל' תורשפאה"
+
+#: support/getopt.c:693 support/getopt.c:698
+#, c-format
+msgid "%s: option '%c%s' doesn't allow an argument\n"
+msgstr "%1$s: n\טנמוגרא לבקמ וניא '%3$s%2$c' ןייפאמ"
+
+#: support/getopt.c:741 support/getopt.c:760
+#, c-format
+msgid "%s: option '--%s' requires an argument\n"
+msgstr "%1$s: n\טנמוגרא בייחמ '%2$s--' ןייפאמ"
+
+#: support/getopt.c:798 support/getopt.c:801
+#, c-format
+msgid "%s: unrecognized option '--%s'\n"
+msgstr "%1$s: n\'%2$s--' ההוזמ-יתלב ןייפאמ"
+
+#: support/getopt.c:809 support/getopt.c:812
+#, c-format
+msgid "%s: unrecognized option '%c%s'\n"
+msgstr "%1$s: n\'%3$s%2$c' ההוזמ-יתלב ןייפאמ"
+
+#: support/getopt.c:861 support/getopt.c:864
+#, c-format
+msgid "%s: invalid option -- '%c'\n"
+msgstr "%1$s: n\'%2$c' -- יוגש ןייפאמ"
+
+#: support/getopt.c:917 support/getopt.c:934 support/getopt.c:1144
+#: support/getopt.c:1162
+#, c-format
+msgid "%s: option requires an argument -- '%c'\n"
+msgstr "%1$s: n\'%2$c' -- טנמוגרא בייחמ ןייפאמ"
+
+#: support/getopt.c:990 support/getopt.c:1006
+#, c-format
+msgid "%s: option '-W %s' is ambiguous\n"
+msgstr "%1$s: W %2$s' n\יעמשמ-דח וניא-' ןייפאמ"
+
+#: support/getopt.c:1030 support/getopt.c:1048
+#, c-format
+msgid "%s: option '-W %s' doesn't allow an argument\n"
+msgstr "%1$s: -W %2$s' n\טנמוגרא השרמ אל' תורשפאה"
+
+#: support/getopt.c:1069 support/getopt.c:1087
+#, c-format
+msgid "%s: option '-W %s' requires an argument\n"
+msgstr "%1$s: W %2$s' n\טנמוגרא בייחמ-' ןייפאמ"
+
+#: support/regcomp.c:122
+msgid "Success"
+msgstr "החלצה"
+
+#: support/regcomp.c:125
+msgid "No match"
+msgstr "המיאתמ תזורחמ האצמנ אל"
+
+#: support/regcomp.c:128
+msgid "Invalid regular expression"
+msgstr "יוגש ירלוגר יוטיב"
+
+#: support/regcomp.c:131
+msgid "Invalid collation character"
+msgstr "רדגומ-יתלב רודיס ות"
+
+#: support/regcomp.c:134
+msgid "Invalid character class name"
+msgstr "םיות תצובק לש רדגומ-יתלב םש"
+
+#: support/regcomp.c:137
+msgid "Trailing backslash"
+msgstr "'\\` ירוחא ןסכולב םייתסמ ירלוגר יוטיב"
+
+#: support/regcomp.c:140
+msgid "Invalid back reference"
+msgstr "םדוק יוטיב-תתל היוגש היינפה"
+
+#: support/regcomp.c:143
+msgid "Unmatched [, [^, [:, [., or [="
+msgstr "[, [^, [:, [., גוז ינב םהל ןיאש =[ וא"
+
+#: support/regcomp.c:146
+msgid "Unmatched ( or \\("
+msgstr "( גוז-ןב ול ןיאש (\\ וא"
+
+#: support/regcomp.c:149
+msgid "Unmatched \\{"
+msgstr "\\{ גוז-ןב ול ןיאש"
+
+#: support/regcomp.c:152
+msgid "Invalid content of \\{\\}"
+msgstr "}\\{\\ ךותב יוגש הנבמ"
+
+#: support/regcomp.c:155
+msgid "Invalid range end"
+msgstr "םיות םוחת לש היוגש הרדגה"
+
+#: support/regcomp.c:158
+msgid "Memory exhausted"
+msgstr "ןורכזה רמגנ"
+
+#: support/regcomp.c:161
+msgid "Invalid preceding regular expression"
+msgstr "םייק וניא וא יוגש םדוק ירלוגר יוטיב"
+
+#: support/regcomp.c:164
+msgid "Premature end of regular expression"
+msgstr "ידמ םדקומ םייתסמ ירלוגר יוטיב"
+
+#: support/regcomp.c:167
+msgid "Regular expression too big"
+msgstr "ידמ בכרומ וא לודג ירלוגר יוטיב"
+
+#: support/regcomp.c:170
+msgid "Unmatched ) or \\)"
+msgstr ") גוז-ןב ול ןיאש )\\ וא"
+
+#: support/regcomp.c:650
+msgid "No previous regular expression"
+msgstr "םדוק ירלוגר יוטיב ןיא"
+
+#: symbol.c:137
+msgid ""
+"current setting of -M/--bignum does not match saved setting in PMA backing file"
+msgstr "-M/--bignum PMA־ה יוביג ץבוקב הרמשנש הרדגהל תמאות אל לש תיחכונה הרדגהה"
+
+#: symbol.c:780
+#, c-format
+msgid "function `%s': cannot use function `%s' as a parameter name"
+msgstr "רטמרפ םשכ `%2$s' היצקנופב שמתשהל ןתינ אל :`%1$s' היצקנופה"
+
+#: symbol.c:910
+msgid "cannot pop main context"
+msgstr "pop) ישארה ןכותה תא( ףולשל ןתינ אל"
