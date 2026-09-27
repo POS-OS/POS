@@ -1,0 +1,245 @@
+# See bash-completion's _comp_ltrim_colon_completions
+_setpriv_ltrim_colon_completions()
+{
+	local cur="$1"
+	local colon_word i
+	if [[ $cur == *:* && $COMP_WORDBREAKS == *:* ]]; then
+		colon_word=${cur%"${cur##*:}"}
+		for i in "${!COMPREPLY[@]}"; do
+			COMPREPLY[i]=${COMPREPLY[i]#"$colon_word"}
+		done
+	fi
+}
+
+_setpriv_landlock_rights()
+{
+	local cmd="$1" access="$2" prefix="$3" cur="$4"
+	local realcur RIGHTS RIGHTS_ALL WORD
+	RIGHTS_ALL=$("$cmd" --list-landlock-rights "$access" 2>/dev/null) || return 1
+	realcur="${cur##*,}"
+	prefix+="${cur%"$realcur"}"
+	for WORD in $RIGHTS_ALL; do
+		if ! [[ $prefix == *"$WORD"* ]]; then
+			RIGHTS="$WORD ${RIGHTS:-""}"
+		fi
+	done
+	COMPREPLY=( $(compgen -P "$prefix" -W "$RIGHTS" -- "$realcur") )
+	_setpriv_ltrim_colon_completions "$prefix$realcur"
+}
+
+_setpriv_module()
+{
+	local cur prev OPTS
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
+	# ':' is a field separator for landlock options, but it is also a default
+	# COMP_WORDBREAKS character. If it's still one here, COMP_WORDS may have
+	# been split on it, so glue any nonempty run of ":"s -- and the real word
+	# before it -- back onto $cur.
+	if [[ $COMP_WORDBREAKS == *:* ]]; then
+		local i=$COMP_CWORD
+		# $cur itself may be the lone ":" (e.g. a trailing "fs:"); absorb
+		# the word before it first so the loop below sees a real word in
+		# $cur to keep extending.
+		if (( i > 0 )) && [[ -n ${COMP_WORDS[i]} && -z ${COMP_WORDS[i]//:/} ]]; then
+			cur="${COMP_WORDS[i-1]}$cur"
+			((i--))
+		fi
+		while (( i > 1 )) && [[ -n ${COMP_WORDS[i-1]} && -z ${COMP_WORDS[i-1]//:/} ]]; do
+			cur="${COMP_WORDS[i-2]}${COMP_WORDS[i-1]}$cur"
+			(( i -= 2 ))
+		done
+		prev="${COMP_WORDS[i-1]}"
+	fi
+	case $prev in
+		'--ambient-caps'|'--inh-caps'|'--bounding-set')
+			local prefix realcur INHERIT_ALL INHERIT
+			realcur="${cur##*,}"
+			prefix="${cur%$realcur}"
+			INHERIT_ALL=$($1 --list-caps| command awk '{print $1, "-" $1}')
+			for WORD in $INHERIT_ALL; do
+				if ! [[ $prefix == *"$WORD"* ]]; then
+					INHERIT="$WORD ${INHERIT:-""}"
+				fi
+			done
+			compopt -o nospace
+			COMPREPLY=( $(compgen -P "$prefix" -W "$INHERIT" -S ',' -- $realcur) )
+			return 0
+			;;
+		'--ruid'|'--euid'|'--reuid')
+			local UIDS
+			UIDS=$(command getent passwd | command awk -F: '{print $1}')
+			COMPREPLY=( $(compgen -W "$UIDS" -- $cur) )
+			return 0
+			;;
+		'--rgid'|'--egid'|'--regid')
+			local GIDS
+			GIDS=$(command getent group | command awk -F: '{print $1}')
+			COMPREPLY=( $(compgen -W "$GIDS" -- $cur) )
+			return 0
+			;;
+		'--groups')
+			local prefix realcur GIDS_ALL GIDS
+			realcur="${cur##*,}"
+			prefix="${cur%$realcur}"
+			GIDS_ALL=$(command getent group | command awk -F: '{print $3}')
+			for WORD in $GIDS_ALL; do
+				if ! [[ $prefix == *"$WORD"* ]]; then
+					GIDS="$WORD ${GIDS:-""}"
+				fi
+			done
+			compopt -o nospace
+			COMPREPLY=( $(compgen -P "$prefix" -W "$GIDS" -S ',' -- $realcur) )
+			return 0
+			;;
+		'--securebits')
+			local prefix realcur SBITS_ALL SBITS WORD
+			realcur="${cur##*,}"
+			prefix="${cur%$realcur}"
+			SBITS_ALL="
+				{+,-}keep_caps_locked
+				{+,-}noroot
+				{+,-}noroot_locked
+				{+,-}no_setuid_fixup
+				{+,-}no_setuid_fixup_locked
+				{+,-}no_cap_ambient_raise
+				{+,-}no_cap_ambient_raise_locked
+				{+,-}exec_restrict_file
+				{+,-}exec_restrict_file_locked
+				{+,-}exec_deny_interactive
+				{+,-}exec_deny_interactive_locked
+			"
+			for WORD in $SBITS_ALL; do
+				if ! [[ $prefix == *"$WORD"* ]]; then
+					SBITS="$WORD ${SBITS:-""}"
+				fi
+			done
+			compopt -o nospace
+			COMPREPLY=( $(compgen -P "$prefix" -W "$SBITS" -S ',' -- $realcur) )
+			return 0
+			;;
+		'--pdeathsig')
+			local i signals
+			for i in $(kill -l); do
+				case $i in
+					SIG*)
+						signals+="$i "
+					;;
+				esac
+			done
+			COMPREPLY=( $(compgen -W "keep clear $signals" -- $cur) )
+			return 0
+			;;
+		'--selinux-label')
+			# FIXME: how to list selinux labels?
+			COMPREPLY=( $(compgen -W "label" -- $cur) )
+			return 0
+			;;
+		'--apparmor-profile')
+			# FIXME: how to list apparmor profiles?
+			COMPREPLY=( $(compgen -W "profile" -- $cur) )
+			return 0
+			;;
+		'--landlock-access')
+			case $cur in
+				*:*)
+					_setpriv_landlock_rights "$1" "${cur%%:*}" "${cur%%:*}:" "${cur#*:}"
+					;;
+				*)
+					local WORD OPTS_ACCESS
+					for WORD in $($1 --list-landlock-access); do
+						OPTS_ACCESS="$OPTS_ACCESS $WORD $WORD:"
+					done
+					compopt -o nospace
+					COMPREPLY=( $(compgen -W "$OPTS_ACCESS" -- $cur) )
+					;;
+			esac
+			return 0
+			;;
+		'--landlock-rule')
+			case $cur in
+				path-beneath:*:*)
+					# path-beneath:<rights>:<path>
+					local rest="${cur#path-beneath:}" i
+					local prefix="path-beneath:${rest%%:*}:"
+					local path="${cur#"$prefix"}"
+					compopt -o filenames
+					mapfile -t COMPREPLY < <(compgen -f -- "$path")
+					for i in "${!COMPREPLY[@]}"; do
+						COMPREPLY[i]="$prefix${COMPREPLY[i]}"
+					done
+					_setpriv_ltrim_colon_completions "$cur"
+					;;
+				path-beneath:*)
+					compopt -o nospace
+					_setpriv_landlock_rights "$1" fs 'path-beneath:' "${cur#path-beneath:}"
+					;;
+				net-port:*:*)
+					;;
+				net-port:*)
+					compopt -o nospace
+					_setpriv_landlock_rights "$1" net 'net-port:' "${cur#net-port:}"
+					;;
+				*)
+					compopt -o nospace
+					COMPREPLY=( $(compgen -W "path-beneath: net-port:" -- $cur) )
+					;;
+			esac
+			return 0
+			;;
+        '--list-landlock-rights')
+            local access=$("$1" --list-landlock-access 2>/dev/null || true)
+            COMPREPLY=( $(compgen -W "$access" -- $cur) )
+            return 0
+            ;;
+		'--seccomp-filter')
+			COMPREPLY=( $(compgen -f -- $cur) )
+			return 0
+			;;
+		'-h'|'--help'|'-V'|'--version')
+			return 0
+			;;
+	esac
+	case $cur in
+		-*)
+			OPTS="--dump
+				--no-new-privs
+				--ambient-caps
+				--inh-caps
+				--bounding-set
+				--ruid
+				--euid
+				--rgid
+				--egid
+				--reuid
+				--regid
+				--clear-groups
+				--keep-groups
+				--groups
+				--securebits
+				--pdeathsig
+				--reset-env
+				--init-groups
+				--nnp
+				--ptracer
+				--selinux-label
+				--apparmor-profile
+				--landlock-access
+				--landlock-rule
+				--landlock-support
+				--seccomp-filter
+                --list-caps
+                --list-landlock-access
+                --list-landlock-rights
+				--help
+				--version"
+			COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
+			return 0
+			;;
+	esac
+	compopt -o bashdefault
+	COMPREPLY=( $(compgen -c -- $cur) )
+	return 0
+}
+complete -F _setpriv_module setpriv

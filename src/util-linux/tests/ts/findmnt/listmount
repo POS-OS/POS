@@ -1,0 +1,149 @@
+#!/usr/bin/env bash
+
+# This file is part of util-linux.
+#
+# This file is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This file is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+TS_TOPDIR="${0%/*}/../.."
+TS_DESC="listmount & statmount"
+
+. "$TS_TOPDIR"/functions.sh
+ts_init "$*"
+
+ts_check_test_command "$TS_CMD_FINDMNT"
+
+[ "$("$TS_HELPER_SYSINFO" statmount-ok)" = "1" ] || ts_skip "no statmount"
+[ "$("$TS_HELPER_SYSINFO" listmount-ok)" = "1" ] || ts_skip "no listmount"
+
+function check_field {
+	local name="$1"
+
+	data=$( $TS_CMD_FINDMNT --noheadings --kernel=listmount --output "$name" --target /proc )
+	[ -n "$data" ] || echo "$name empty"
+}
+
+# Compares one column between the two backends, keyed on the mount ID. A mount can be added or
+# removed between the two reads, and an ID can even be reused by a different mount, so a single
+# disagreement is not yet a failure: only one that survives a fresh pair of reads is reported.
+# Both reads must also return something, or an empty listmount table would compare clean.
+function compare_backends {
+	local desc="$1" mnt_cols="$2" lsmnt_cols="$3" prog="$4"
+	local out
+
+	for _ in 1 2 3; do
+		$TS_CMD_FINDMNT --noheadings --kernel=mountinfo --raw --output "$mnt_cols" \
+			2>> "$TS_ERRLOG" | sort > "$TS_OUTDIR/$desc-mountinfo"
+		$TS_CMD_FINDMNT --noheadings --kernel=listmount --raw --output "$lsmnt_cols" \
+			2>> "$TS_ERRLOG" | sed 's/^[^ ]* //' | sort > "$TS_OUTDIR/$desc-listmount"
+
+		if [ ! -s "$TS_OUTDIR/$desc-mountinfo" ] || [ ! -s "$TS_OUTDIR/$desc-listmount" ]; then
+			echo "$desc: a backend returned no mounts"
+			return
+		fi
+
+		out=$(awk "$prog" "$TS_OUTDIR/$desc-mountinfo" "$TS_OUTDIR/$desc-listmount" \
+			2>> "$TS_ERRLOG")
+		[ -n "$out" ] || return
+	done
+
+	echo "$out"
+}
+
+
+ts_init_subtest "target"
+check_field "TARGET" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "vfs-options"
+check_field "VFS-OPTIONS" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "fs-options"
+check_field "FS-OPTIONS" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "options"
+check_field "OPTIONS" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "fstype"
+check_field "FSTYPE" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "propagation"
+check_field "PROPAGATION" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "fsroot"
+check_field "FSROOT" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "parent"
+check_field "PARENT" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+ts_init_subtest "id"
+check_field "ID" >> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+ts_finalize_subtest
+
+# Both backends have to name a filesystem the same way, subtype included, or a caller gets a
+# different answer depending on how the table was built. Key on the mount ID rather than the
+# mount point, which is not unique, and compare only the IDs both reads saw, since the table
+# can gain or lose a mount between them. MAJ:MIN is read first on the listmount side on purpose:
+# it needs only STATMOUNT_SB_BASIC, so the read also covers a fetch that asked for that alone.
+ts_init_subtest "fstype-parity"
+if ts_kernel_ver_lt 6 13 0; then
+	# STATMOUNT_FS_SUBTYPE: kernel commit ed9d95f691c2
+	ts_skip "statmount() cannot report the filesystem subtype before Linux 6.13"
+else
+	# shellcheck disable=SC2016 # $1 and $2 are awk fields, not shell parameters
+	compare_backends fstype ID,FSTYPE MAJ:MIN,ID,FSTYPE \
+		'NR==FNR { seen[$1] = $2; next }
+		 ($1 in seen) && seen[$1] != $2 { print "fstype for " $1 ": mountinfo " seen[$1] ", listmount " $2 }' \
+		>> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+fi
+ts_finalize_subtest
+
+# mountinfo's super-options field is the superblock flags followed by the filesystem's own
+# options, and both backends have to produce it. MAJ:MIN is read first on purpose: it needs
+# only STATMOUNT_SB_BASIC, and fetching that without the mount options used to leave
+# fs_optstr holding nothing but "rw".
+ts_init_subtest "fs-options-parity"
+if ts_kernel_ver_lt 6 11 0; then
+	# STATMOUNT_MNT_OPTS: kernel commit f9af549d1fd3
+	ts_skip "statmount() cannot report filesystem options before Linux 6.11"
+else
+	# Two shapes are excluded from the comparison because the kernel, not libmount, makes
+	# them differ:
+	# - statmount() reports only SB_{RDONLY,SYNCHRONOUS,DIRSYNC,LAZYTIME}, so a mount
+	#   carrying SB_MANDLOCK differs by that one token. The kernel ignores -o mand anyway;
+	#   the bit is kept so that old fstab entries still mount.
+	# - LSM-supplied options: the plain "seclabel" token is dropped from both sides, and
+	#   rows carrying a value-bearing LSM option are skipped, because kernels take them
+	#   out of statmount's reach before Linux 6.15 (commits 056d33137bf9, 5eb987105357;
+	#   the fix was backported to stable kernels down to 6.11, so a version check cannot
+	#   identify the affected ones).
+	# shellcheck disable=SC2016 # $1 and $2 are awk fields, not shell parameters
+	compare_backends fsopts ID,FS-OPTIONS MAJ:MIN,ID,FS-OPTIONS \
+		'function canon(s) {
+	         s = "," s ","
+	         while (gsub(/,seclabel,/, ",", s)) continue;
+	         sub(/^,/, "", s); sub(/,$/, "", s)
+	         return s
+	     }
+	     /(^|,)(context|fscontext|defcontext|rootcontext|smackfsdef|smackfsroot|smackfshat|smackfsfloor|smackfstransmute)=/ { next }
+	     NR==FNR { if ($2 !~ /(^|,)mand(,|$)/) seen[$1] = canon($2); next }
+	     ($1 in seen) && seen[$1] != canon($2) { print "fs-options for " $1 ": mountinfo " seen[$1] ", listmount " $2 }' \
+		>> "$TS_OUTPUT" 2>> "$TS_ERRLOG"
+fi
+ts_finalize_subtest
+
+ts_finalize
