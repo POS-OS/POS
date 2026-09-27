@@ -1,0 +1,7 @@
+/*/*.log
+/*/*.trs
+/init.sh
+/test-suite.log
+/xargs/.dirstamp
+/xargs/test-sigusr
+/xargs/test-sigusr.o

@@ -1,0 +1,66 @@
+# This file is expected to be used via gitlog-to-changelog's --amend=FILE
+# option.  It specifies what changes to make to each given SHA1's commit
+# log and metadata, using Perl-eval'able expressions.
+
+# Fix bug reference URL:
+# https://debbugs.gnu.org/?57291 -> https://sv.gnu.org/bugs/?57291
+6e55ad98b1d8c66b524fb415f08cd2a599c7e654
+s,bugs.gnu.org,sv.gnu.org/bugs,
+
+# Suppress a merge log message.
+3e94355b192ffd647ec22031c61c5df61b27f334
+s,Merge branch 'master'.*,IGNORE_THIS,
+
+# Suppress a badly-formatted checkin message (a later checkin contains
+# the correct message, so the ChangeLog will still reflect the actual
+# changes).
+5e56fe96bc5cf5c0b616dc0251dddebb7e480074
+s,2017-07-23.*,IGNORE_THIS,
+
+dd7c9c6ee7fea07759e0a52716d4096598375638
+s,fixing Savannah bug,applying Savannah patch,
+
+# Remove a spurious blank line.
+f4d77401d08cfb4aa90143f1b5905546f7912992
+s,Permission denied\n\n,Permission denied\n,
+
+# Ignore the revert message (since it reverts a commit which just had an incorrect
+# log message)
+4bce720c01367736e101f484b0939f5e0e56debb
+s,Revert change.*,,m;
+s,This reverts.*,,m
+
+# Ignore the log message resulting from a spurious merge.
+f05ecf7731f6107f68979876643f5d7adc20227d
+s,Merge branch.*,,m
+
+# This is a commit with a badly-formatted commit log message.  Change
+# e7a2c8f67b9af8a32f035bc41c074a547ec44fae has a correctly formatted
+# version of the message, which is why this change was reverted.
+db79379e3bae8d3dbdad1400c34a65820bac8cb7
+s,\t.*,,mg;
+s,2015-12-18.*,,mg;
+
+# Remove a spurious date header and leading tabs (i.e. fix up following
+# the use of ChangeLog-formatted string as a git log message).
+0734748302f5a09e225784e953c469217dfa2d85
+s,2015-02-22  James Youngman  <jay.gnu.org>,Update some translations; add Norwegian Bokmaal.,;
+s,\t,,g
+
+# Remove superfluous "Conflicts:" marker.
+718bde657248dfc2270f6e0ed16cfb38e2510c2c
+s/Conflicts:$//m;
+s/ChangeLog$//m
+
+# Insert "* " before file name.
+68e2b1d6fd420787903142c02ce1a5e3ea2a7754
+s,(doc/find.texi),* $1,
+
+# Insert "* " before file name.
+603ccd84db3b4b8d6476b9217adeecaa77337781
+s,(find),* $1,
+
+# Insert name of changed file.
+1d6d1afa52f40ad7c776e3ff0d4415409377e6fb
+s/Mark/* po\/POTFILES.in: mark/;
+s/(translation)/$1./

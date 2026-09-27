@@ -1,0 +1,9 @@
+/configured-testfiles.txt
+/dbg.log
+/find.log
+/find.sum
+/*.log
+/Makefile
+/Makefile.in
+/site.exp
+/*.trs

@@ -1,0 +1,10 @@
+/*.log
+/*.o
+/*.trs
+/Makefile
+/Makefile.in
+/check-regexprops
+/libfind.a
+/regexprops
+/regexprops.texi.new
+/test_splitstring
