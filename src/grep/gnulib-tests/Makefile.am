@@ -1,0 +1,3 @@
+AM_CFLAGS = $(GNULIB_TEST_WARN_CFLAGS) $(WERROR_CFLAGS)
+
+include gnulib.mk

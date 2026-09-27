@@ -1,0 +1,27 @@
+#! /bin/sh
+# Test for two backref+anchor-related bugs.
+#
+# Copyright 2026 Free Software Foundation, Inc.
+#
+# Copying and distribution of this file, with or without modification,
+# are permitted in any medium without royalty provided the copyright
+# notice and this notice are preserved.
+
+. "${srcdir=.}/init.sh"; path_prepend_ ../src
+
+echo ab > in || framework_failure_
+echo a > exp || framework_failure_
+
+fail=0
+
+# Match "a"
+grep -Eo '^(.?)(.?).?\2\1' in > out 2> err || fail=1
+compare exp out || fail=1
+compare /dev/null err || fail=1
+
+# Expect no match.
+returns_ 1 grep -Eo '^(.?)(.?).?\2\1$' in > out 2> err || fail=1
+compare /dev/null out || fail=1
+compare /dev/null err || fail=1
+
+Exit $fail
