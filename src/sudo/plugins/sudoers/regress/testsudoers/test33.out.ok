@@ -1,0 +1,132 @@
+Parses OK
+
+Entries for user admin:
+
+ALL = (ALL, !root) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (ALL, !root, operator) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (ALL, operator, !root) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (root, !root) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (root, !root, operator) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (root, operator, !root) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : ALL, !wheel) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : ALL, !wheel, operator) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : ALL, operator, !wheel) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : wheel, !wheel) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : wheel, operator, !wheel) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
+Parses OK
+
+Entries for user admin:
+
+ALL = (admin : wheel, !wheel, operator) /bin/ls
+	host  allowed
+	runas denied
+
+Password required
+
+Command unmatched
