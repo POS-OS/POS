@@ -1,0 +1,13 @@
+{
+   ignore-leaked-dlopen-handles 1
+   Memcheck:Leak
+   ...
+   fun:dlopen@@GLIBC_2.34
+}
+{
+   ignore-leaked-dlopen-handles 2
+   Memcheck:Leak
+   ...
+   fun:_dl_open
+}
+

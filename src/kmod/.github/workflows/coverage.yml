@@ -1,0 +1,56 @@
+# SPDX-FileCopyrightText: 2024 Emil Velikov <emil.l.velikov@gmail.com>
+# SPDX-FileCopyrightText: 2024 Lucas De Marchi <lucas.de.marchi@gmail.com>
+#
+# SPDX-License-Identifier: LGPL-2.1-or-later
+
+name: Code Coverage
+
+on:
+  push:
+    branches: [master, ci-test]
+  pull_request:
+    branches: [master]
+  schedule:
+    - cron: "30 2 * * 0"
+
+permissions:
+  contents: read
+
+env:
+  KDIR: 'any'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-26.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - container: 'ubuntu:26.04'
+            meson_setup: '-D b_sanitize=none -D b_coverage=true -Dmbedtls=disabled'
+
+    container:
+      image: ${{ matrix.container }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup OS
+        uses: ./.github/actions/setup-os
+
+      - name: Build
+        run: |
+          meson setup --native-file build-dev.ini ${{ matrix.meson_setup }} builddir/
+          meson compile -C builddir/
+          meson test -C builddir/
+          ninja -C builddir/ coverage-xml
+
+      - name: Upload Coverage
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: builddir/meson-logs/coverage.xml
+          plugins: gcov
