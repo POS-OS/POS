@@ -1,0 +1,45 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      security-events: write
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938
+      with:
+        languages: cpp
+
+    - name: Update apt metadata cache
+      run: sudo apt-get update
+
+    - name: Install Dependencies
+      run: sudo apt-get install -y automake libacl1-dev libpopt-dev libselinux1-dev
+
+    - name: Bootstrap
+      run: ./autogen.sh
+
+    - name: Configure
+      run: ./configure --disable-silent-rules
+
+    - name: Build
+      run: make
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938
