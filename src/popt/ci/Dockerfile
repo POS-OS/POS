@@ -1,0 +1,22 @@
+FROM registry.fedoraproject.org/fedora:39
+MAINTAINER rpm-maint@lists.rpm.org
+
+WORKDIR /srv/popt
+
+RUN echo -e "deltarpm=0\ninstall_weak_deps=0\ntsflags=nodocs" >> /etc/dnf/dnf.conf
+RUN rm -f /etc/yum.repos.d/*modular.repo
+RUN dnf -y update
+RUN dnf -y install \
+  cmake \
+  gettext-devel \
+  make \
+  gcc \
+  binutils \
+  libasan \
+  libubsan \
+  && dnf clean all
+
+COPY . .
+
+RUN cmake -S . -B ./build -DENABLE_WERROR=ON -DENABLE_ASAN=ON -DENABLE_UBSAN=ON
+CMD cd build && ctest --output-on-failure --force-new-ctest-process
