@@ -1,3 +1,127 @@
+2026-10-07  Bruno Haible  <bruno@clisp.org>
+
+	all: Update URLs to msdn.microsoft.com or docs.microsoft.com.
+	* lib/stat-w32.c et al.: Update URLs after docs.microsoft.com was moved
+	to learn.microsoft.com.
+
+2026-10-06  Bruno Haible  <bruno@clisp.org>
+
+	getdomainname: Document situation on Solaris 11.4.
+	* doc/glibc-functions/getdomainname.texi: Update regarding Solaris 11.4.
+
+2026-10-06  Bruno Haible  <bruno@clisp.org>
+
+	tzsanitize: Make it work on recent versions of mingw+UCRT.
+	* lib/tzsanitize.c (tzsanitize): Call SetEnvironmentVariable also on
+	mingw+UCRT.
+
+2026-10-05  Bruno Haible  <bruno@clisp.org>
+
+	strftime-fixes: Fix compilation error on mingw (regr. 2026-10-01).
+	* lib/strftime-fixes.c: Really include tzsanitize.h.
+
+2026-10-04  Bruno Haible  <bruno@clisp.org>
+
+	wcswidth, c32swidth, mbswidth: Improve yesterday's patch.
+	* lib/wcswidth-impl.h (FUNC): Make assertion more effective.
+	* lib/mbswidth.c (mbsnwidth): Likewise.
+
+2026-10-03  Bruno Haible  <bruno@clisp.org>
+
+	mbswidth: Fix overflow handling.
+	* lib/mbswidth.c: Include <stdint.h>.
+	(mbsnwidth): When the width accumulator becomes > INT_MAX before an
+	unprintable character is seen, return -1, not INT_MAX.
+	* modules/mbswidth (Depends-on): Add stdint-h, assert-h.
+
+2026-10-03  Bruno Haible  <bruno@clisp.org>
+
+	wcswidth, c32swidth: Simplify.
+	* lib/wcswidth.c: Include <stdint.h>.
+	* lib/c32swidth.c: Likewise.
+	* lib/wcswidth-impl.h (FUNC): Simplify by using a large-enough 'count'
+	variable.
+	* modules/wcswidth (Depends-on): Add stdint-h, assert-h.
+	* modules/c32swidth (Depends-on): Likewise.
+
+2026-10-02  Bruno Haible  <bruno@clisp.org>
+
+	tzsanitize: Add more comments.
+	* lib/tzsanitize.h: Explain why applications need to call tzsanitize()
+	explicitly.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	mktime tests: Simplify.
+	* tests/test-mktime-w32.c (main): Do a single mktime() invocation
+	instead of two.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	tzsanitize: Fix test failures on MSVC.
+	* lib/tzsanitize.c: Include <windows.h>.
+	(tzsanitize): Except on mingw, sanitize also the environment variable
+	in the process environment block.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	tzsanitize: New module.
+	* lib/tzsanitize.h: New file, extracted from lib/localtime.c.
+	* lib/tzsanitize.c: New file, extracted from lib/localtime.c.
+	* lib/ctime.c: Include tzsanitize.h instead of <stdlib.h>, <string.h>,
+	<wchar.h>.
+	(rpl_ctime): Call tzsanitize.
+	* lib/localtime.c: Include tzsanitize.h instead of <stdlib.h>,
+	<string.h>, <wchar.h>.
+	(rpl_localtime): Call tzsanitize.
+	* lib/mktime.c: Include tzsanitize.h, <stddef.h> instead of <stdlib.h>,
+	<string.h>.
+	(my_tzset): Call tzsanitize.
+	* lib/strftime-fixes.c: Include tzsanitize.h instead of <stdlib.h>,
+	<string.h>.
+	(rpl_strftime): Call tzsanitize.
+	* lib/tzset.c: Include tzsanitize.h instead of <stdlib.h>, <string.h>,
+	<wchar.h>.
+	(rpl_tzset): Call tzsanitize.
+	* lib/wcsftime.c: Include tzsanitize.h instead of <stdlib.h>,
+	<string.h>.
+	(rpl_wcsftime): Call tzsanitize.
+	* modules/tzsanitize: New file.
+	* modules/ctime (Depends-on): Add tzsanitize.
+	* modules/localtime (Depends-on): Likewise.
+	* modules/mktime (Depends-on): Likewise.
+	* modules/strftime-fixes (Depends-on): Likewise.
+	* modules/tzset (Depends-on): Likewise.
+	* modules/wcsftime (Depends-on): Likewise.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	mktime: Add tests.
+	* tests/test-mktime-w32.c: New file.
+	* modules/mktime-tests: New file.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	time_r tests: Add more tests.
+	* tests/test-localtime_r-w32.c: New file.
+	* modules/time_r-tests (Files): Add it.
+	(Depends-on): Add test-xfail.
+	(Makefile.am): Arrange to build and run test-localtime_r-w32.
+
+	time_r: Work around localtime_r problem on native Windows.
+	* m4/time_r.m4 (gl_TIME_R): On native Windows, set REPLACE_LOCALTIME_R
+	to 1 always.
+	* modules/time_r (Depends-on): Add localtime.
+	* doc/posix-functions/localtime_r.texi: Mention localtime_r problem on
+	native Windows.
+	* doc/posix-functions/gmtime_r.texi: Update.
+
+2026-10-01  Bruno Haible  <bruno@clisp.org>
+
+	localtime: Add tests.
+	* tests/test-localtime-w32.c: New file.
+	* modules/localtime-tests: New file.
+
 2026-09-25  Collin Funk  <collin.funk1@gmail.com>
 
 	canonicalize: Fix a missing check for symlink loops.
