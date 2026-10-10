@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML LANG="en">
+<HEAD>
+	<META name="Author" content="Carlo Wood">
+	<META http-equiv="content-type" content="text/html; charset=iso-8859-1">
+	<TITLE>Which</TITLE>
+</HEAD>
+
+<BODY BGCOLOR="#c8ccc8">
+<CENTER>
+<IMG SRC="../images/which.jpg"><BR CLEAR=ALL>
+</CENTER>
+
+<H2>Downloading</H2>
+
+<P>
+<LI><A HREF="which-!VERSION!.tar.gz">which-!VERSION!.tar.gz</A>
+</P>
+
+<H2>What is new?</H2>
+
+<A HREF=NEWS>NEWS</A>
+
+<H2>ChangeLog</H2>
+
+<A HREF="https://github.com/CarloWood/which/compare/!OLD_TAG!...!NEW_TAG!?diff=unified&w=">See github</A>
+
+<H2>Manual page</H2>
+
+<PRE>
+MANPAGE
+</PRE>
+
+<H2>Examples</H2>
+
+<PRE>
+EXAMPLES
+</PRE>
+
+</BODY>
+</HTML>

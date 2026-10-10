@@ -1,0 +1,97 @@
+#! /bin/bash
+
+TOP_SRCDIR=${TOP_SRCDIR:-$REPOROOT}
+TOP_BUILDDIR=${TOP_BUILDDIR:-$BUILDDIR}
+
+if [ -z "$TOP_SRCDIR" ]; then
+  printf "REPOROOT is not set.\n" >&2
+  exit 1
+fi
+if [ -z "$TOP_BUILDDIR" ]; then
+  printf "BUILDDIR is not set.\n" >&2
+  exit 1
+fi
+
+perform_test () {
+  (
+    cd "$TOP_BUILDDIR"
+    mkdir -p test
+    umask 022
+    export PATH=".:~/bin:/bin:/usr/bin"
+    export HOME=`(cd ~; pwd)`
+    unset which
+    rm -f alias.list
+    awk --assign is_root=0 --assign use_alias=0 --assign pathtowhich="$PWD/which" '{
+      sub("whichtest", pathtowhich);
+      if ($$0 == "")
+        print;
+      else if ($$0~/^(export|umask|#|alias \/)/)
+        printf(">%s\n", $$0);
+      else if ($$0~/^\/usr\/bin\/sudo \/bin\//)
+      {
+	system($$0" 2>&1");
+	if (is_root == 0)
+	{
+	  printf(">su\n");
+	  is_root=1;
+	}
+	sub("^/usr/bin/sudo /bin/", "");
+	printf(">%s\n", $$0);
+      }
+      else if ($$0~/^alias which/)
+      {
+        printf(">%s\n", $$0);
+	use_alias=1;
+	system("echo \""$$0"\" >> alias.list");
+      }
+      else if ($$0~/^alias /)
+      {
+        printf(">%s\n", $$0);
+	system("echo \""$$0"\" >> alias.list");
+      }
+      else
+      {
+	if (is_root == 1)
+	{
+	  printf(">exit\n");
+	  is_root=0;
+	}
+	printf(">%s\n", $$0);
+	if (use_alias == 1)
+	{
+	  if ($$0~/^which /)
+	    sub("^which ", "/bin/cat alias.list | which --read-alias --show-tilde --show-dot ");
+	}
+	system($$0" 2>&1");
+      }
+    }' "$TOP_SRCDIR/test/commands" > "$TOP_BUILDDIR/test/.testout";
+    /usr/bin/sudo /bin/rm -f cat xxx alias.list b/test;
+    /bin/rmdir a b;
+  )
+}
+
+case "$1" in
+check)
+ perform_test;
+ if diff -u --ignore-matching-lines='-rwx------' --ignore-matching-lines='GNU which v2.[0-9]+,' --ignore-matching-lines='uid=1000(carlo) gid=1000(carlo)' "$TOP_SRCDIR/test/.reference" "$TOP_BUILDDIR/test/.testout" ; then
+   rm "$TOP_BUILDDIR/test/.testout";
+   echo "Check successful!"
+   exit 0;
+ else
+   echo "Check failed!";
+   exit -1;
+ fi
+ ;;
+generate)
+  perform_test;
+  cat "$TOP_BUILDDIR/test/.testout" | sed -e 's%/home/[^ ]*/which%which%g' > "$TOP_SRCDIR/EXAMPLES";
+  mv "$TOP_BUILDDIR/test/.testout" "$TOP_SRCDIR/test/.reference";
+ exit 0;
+ ;;
+*)
+  echo "Usage:"
+  echo "  $0 check   : Run a test"
+  echo "  $0 generate: Generates the reference to run the check against"
+  exit 0;
+  ;;
+esac

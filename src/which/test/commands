@@ -1,0 +1,105 @@
+#! /bin/bash
+umask 022
+export PATH=".:~/bin:/bin:/usr/bin"
+alias whichtest="$BUILDDIR/which"
+
+touch cat; chmod 755 cat; pwd
+alias
+
+whichtest
+
+whichtest --version
+
+whichtest -- --version
+
+whichtest cat
+
+whichtest --show-tilde cat
+
+whichtest --show-dot cat
+
+whichtest --show-tilde --show-dot cat
+
+whichtest --skip-dot cat
+
+(cd /bin; whichtest cat)
+
+(cd /bin; whichtest --show-dot cat)
+
+(cd /bin; PATH=".:/bin:/usr/bin" whichtest --show-dot cat)
+
+(cd /bin; PATH="/bin:.:/usr/bin" whichtest --show-dot cat)
+
+(cd /bin; PATH=".:/bin:/usr/bin" whichtest --skip-dot --show-dot cat)
+
+whichtest ls
+
+whichtest xxx
+
+whichtest ./ls
+
+(cd /; whichtest bin/ls)
+
+(cd /; whichtest --show-dot bin/ls)
+
+(cd /; whichtest --show-dot /bin/ls)
+
+(cd /; whichtest --show-dot bin/xxx)
+
+(cd /; whichtest --show-dot /bin/xxx)
+
+whichtest --all cat
+
+touch xxx
+whichtest ./xxx
+
+chmod 711 xxx
+whichtest ./xxx
+
+chmod 655 cat
+whichtest cat
+
+/usr/bin/sudo /bin/chown root cat
+whichtest cat
+
+/usr/bin/sudo /bin/chmod 545 cat
+whichtest cat
+
+/usr/bin/sudo /bin/chgrp bin cat
+whichtest cat
+
+/usr/bin/sudo /bin/chmod 541 cat
+whichtest cat
+/usr/bin/sudo /bin/rm -f cat
+
+/usr/bin/sudo /bin/chown root xxx
+whichtest ./xxx
+
+/usr/bin/sudo /bin/chmod 700 xxx
+whichtest ./xxx
+
+id
+ls -l xxx
+/usr/bin/sudo /bin/chmod 750 xxx
+/usr/bin/sudo /bin/chgrp carlo xxx
+whichtest ./xxx
+
+/usr/bin/sudo /bin/chgrp bin xxx
+whichtest ./xxx
+
+mkdir -p {a,b}
+touch b/test
+chmod 755 b/test
+(cd a; whichtest ../b/test)
+
+alias which='alias | whichtest --tty-only --read-alias --show-tilde --show-dot'
+alias test1='test1'
+alias test2='echo "test2" | cat | sort'
+alias test3='  echo "test2"|cat&sort'
+alias test4='	ls &&sort ||/usr/bin/which || exit'
+
+which which
+which test1
+which test2
+which test3
+which test4

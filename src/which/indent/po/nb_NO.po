@@ -1,0 +1,276 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Free Software Foundation, Inc.
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: GNU indent 2.2.12\n"
+"Report-Msgid-Bugs-To: bug-indent@gnu.org\n"
+"POT-Creation-Date: 2015-08-25 09:36+0200\n"
+"PO-Revision-Date: 2018-04-24 03:38+0000\n"
+"Last-Translator: Allan Nordhøy <epost@anotheragency.no>\n"
+"Language-Team: none\n"
+"Language: nb_NO\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 3.0-dev\n"
+
+#: src/args.c:673
+msgid ""
+"usage: indent file [-o outfile ] [ options ]\n"
+"       indent file1 file2 ... fileN [ options ]\n"
+msgstr ""
+"bruk: indent fil [-o utdatafil ] [ valg ]\n"
+"       indent fil1 fil2 ... filN [ valg ]\n"
+
+#: src/args.c:740
+#, c-format
+msgid "%s: missing argument to parameter %s\n"
+msgstr "%s: manglende argument til parameteret %s\n"
+
+#: src/args.c:864
+#, c-format
+msgid "%s: unknown option \"%s\"\n"
+msgstr "%s: ukjent valg \"%s\"\n"
+
+#: src/args.c:877
+#, c-format
+msgid "option: %s\n"
+msgstr "valg: %s\n"
+
+#: src/args.c:892
+#, c-format, fuzzy
+msgid "GNU indent %s\n"
+msgstr "GNU indent %s\n"
+
+#: src/args.c:959
+#, c-format
+msgid "%s: option ``%s'' requires a numeric parameter\n"
+msgstr "%s: valget ``%s'' krever numerisk parameter\n"
+
+#: src/args.c:966
+#, c-format
+msgid "set_option: internal error: p_type %d\n"
+msgstr "set_option: Intern feil: p_type %d\n"
+
+#: src/args.c:1022
+#, fuzzy
+msgid "Profile contains an unterminated comment"
+msgstr "Profilen inneholder en uterminert kommentar"
+
+#: src/args.c:1060
+msgid "Profile contains unpalatable characters"
+msgstr "Profilen inneholder uspiselige tegn"
+
+#: src/args.c:1228
+#, c-format
+msgid "File named by environment variable %s does not exist or is not readable"
+msgstr ""
+"Fil navngitt av miljøvariabelen %s ser ikke ut til å finnes eller å være "
+"lesbar"
+
+#: src/backup.c:463
+#, c-format
+msgid "indent:  Strange version-control value\n"
+msgstr "indent:  Rar versjonskontrollverdi\n"
+
+#: src/backup.c:464
+#, c-format
+msgid "indent:  Using numbered-existing\n"
+msgstr "indent:  Bruker \"numbered-existing\"\n"
+
+#: src/backup.c:495
+#, c-format, fuzzy
+msgid "indent: Can't make backup filename of %s\n"
+msgstr "indent: Kan ikke skape filnavn for sikkerhetskopi av %s\n"
+
+#: src/backup.c:503
+#, c-format, fuzzy
+msgid "Can't open backup file %s"
+msgstr "Kan ikke åpne sikkerhetskopifilen %s"
+
+#: src/backup.c:510
+#, c-format
+msgid "Can't write to backup file %s"
+msgstr "Kan ikke skrive til sikkerhetskopifil %s"
+
+#: src/backup.c:523
+#, c-format
+msgid "Can't preserve modification time on backup file %s"
+msgstr "Kan ikke bevare endringstid for sikkerhetskopifilen %s"
+
+#: src/globs.c:46 src/globs.c:68
+#, c-format
+msgid "indent: Virtual memory exhausted.\n"
+msgstr "indent: Slapp opp for virtuelt minne.\n"
+
+#: src/globs.c:103
+#, c-format
+msgid "indent: %s:%d: %s:"
+msgstr "indent: %s:%d: %s:"
+
+#: src/globs.c:130
+#, c-format
+msgid "indent: Fatal Error: "
+msgstr "indent: Uopprettelig feil: "
+
+#: src/globs.c:140
+#, c-format
+msgid "indent: System Error: "
+msgstr "indent: Systemfeil: "
+
+#: src/globs.h:26
+msgid "Warning"
+msgstr "Advarsel"
+
+#: src/globs.h:30
+msgid "Error"
+msgstr "Feil"
+
+#: src/indent.c:291
+msgid "EOF encountered in comment"
+msgstr "Kom over filslutt i kommentar"
+
+#: src/indent.c:354
+msgid "Line broken"
+msgstr "Delt linje"
+
+#: src/indent.c:564
+msgid "Unexpected end of file"
+msgstr "Uventet slutt på fil"
+
+#: src/indent.c:570
+#, c-format
+msgid "There were %d non-blank output lines and %d comments\n"
+msgstr "Det ble funnet %d ikke-tomme utdatalinjer og %d kommentarer\n"
+
+#: src/indent.c:574
+#, c-format
+msgid "(Lines with comments)/(Lines with code): %6.3f\n"
+msgstr "(Linjer med kommentarer)/(Linjer med kode): %6.3f\n"
+
+#: src/indent.c:598
+msgid "Line broken 2"
+msgstr "Brutt linje 2"
+
+#: src/indent.c:820
+#, c-format
+msgid "indent: only one output file (2nd was %s)\n"
+msgstr "indent: Kun én utdatafil (nr. 2 var %s)\n"
+
+#: src/indent.c:829 src/indent.c:855
+#, c-format
+msgid "indent: only one input file when output file is specified\n"
+msgstr "indent: Kun én inndatafil når utdatafil er angitt\n"
+
+#: src/indent.c:843 src/indent.c:889
+#, c-format, fuzzy
+msgid "indent: can't have filenames when specifying standard input\n"
+msgstr "indent: Filnavn er ikke tillatt når standard inndata brukes\n"
+
+#: src/indent.c:863
+#, c-format, fuzzy
+msgid "indent: only one input file when stdout is used\n"
+msgstr "indent: Kun én inndatafil når stdout brukes\n"
+
+#: src/indent.c:898
+msgid "command line"
+msgstr "kommandolinje"
+
+#: src/indent.c:1116
+#, c-format
+msgid "Read profile %s\n"
+msgstr "Leste profilen %s\n"
+
+#: src/code_io.c:217
+#, c-format
+msgid "Can't open input file %s"
+msgstr "Kan ikke åpne inndatafilen %s"
+
+#: src/code_io.c:222
+#, c-format, fuzzy
+msgid "Can't stat input file %s"
+msgstr "Kan ikke oppgi status for inndatafil %s"
+
+#: src/code_io.c:227
+#, c-format, fuzzy
+msgid "Zero-length file %s"
+msgstr "Filen %s har ingen lengde"
+
+#: src/code_io.c:235 src/code_io.c:249
+#, c-format
+msgid "File %s is too big to read"
+msgstr "Filen %s er for stor å lese"
+
+#: src/code_io.c:243
+#, c-format
+msgid "System problem reading file %s"
+msgstr "Systemproblem ved lesing av filen %s"
+
+#: src/code_io.c:285
+#, c-format
+msgid "Error reading input file %s"
+msgstr "Feil ved lesing av inndatafilen %s"
+
+#: src/code_io.c:293
+#, c-format
+msgid "Error closing input file %s"
+msgstr "Feil ved lukking av inndatafilen %s"
+
+#: src/code_io.c:482
+#, c-format
+msgid "File %s contains NULL-characters: cannot proceed\n"
+msgstr "Filen %s inneholder NULL-tegn: Kan ikke fortsette\n"
+
+#: src/lexi.c:834
+#, fuzzy
+msgid "Unterminated character constant"
+msgstr "Uavsluttet tegnkonstant"
+
+#: src/lexi.c:835 src/lexi.c:854
+#, fuzzy
+msgid "Unterminated string constant"
+msgstr "Uavsluttet strengkonstant"
+
+#: src/lexi.c:1113
+#, c-format, fuzzy
+msgid "old style assignment ambiguity in \"=%s\". Assuming \"= %s\"\n"
+msgstr "tildelingen i gammel stil er tvetydig \"=%s\". Antar \"= %s\"\n"
+
+#: src/output.c:1339
+#, c-format
+msgid "indent: can't create %s\n"
+msgstr "indent: Kan ikke opprette %s\n"
+
+#: src/output.c:1377
+#, c-format, fuzzy
+msgid "Can't close output file %s"
+msgstr "Kan ikke lukke utdatafilen %s"
+
+#: src/output.c:1390
+#, c-format
+msgid "Can't preserve modification time on output file %s"
+msgstr "Kan ikke bevare endringstid for utdatafilen %s"
+
+#: src/parse.c:474
+#, fuzzy
+msgid "Unmatched 'else'"
+msgstr "Ubalansert 'else'"
+
+#: src/parse.c:500
+#, fuzzy
+msgid "Stmt nesting error."
+msgstr "Feil i innkapsling av uttrykk."
+
+#: src/parse.c:542
+#, fuzzy
+msgid "Unknown code to parser"
+msgstr "Fortolker støtte på ukjent kode"
+
+#: src/wildexp.c:128
+#, fuzzy
+msgid "CANNOT FIND '@' FILE!"
+msgstr "KAN IKKE FINNE \"@\"-FIL!"

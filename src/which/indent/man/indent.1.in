@@ -1,0 +1,55 @@
+.TH INDENT 1
+.SH "NAME"
+indent \- @NAME@
+.SH "SYNOPSIS"
+.B "indent "
+[options] [input\-files]
+.sp
+.B "indent "
+[options] [single\-input\-file] [\-o output\-file]
+.sp
+.B "indent "
+\-\-version
+.SH "DESCRIPTION"
+This man page is generated from the file \fIindent.texinfo\fR.
+@INTRO@
+
+@DESCRIPTION@
+.SH "OPTIONS"
+@OPTIONS@
+@THEREST@
+@CROSSREF@
+.SH "RETURN VALUE"
+.IP \(bu 2
+0 means no errors or warnings were found during a successful invocation of
+the program.
+.br
+.IP \(bu 2
+2 is returned if errors occur during formatting which do not prevent completion
+of the formatting, but which appear to be  manifested by incorrect code (i.e. code
+which wouldn't compile).
+.br
+.IP \(bu 2
+3 is returned if formatting of a file is halted because of an error with the file
+which prevents completion of formatting. If more than one input file was specified,
+indent continues to the next file.
+.br
+.IP \(bu 2
+4 is returned if a serious internal problem occurs and the entire indent process
+is terminated, even if all specified files have not been processed.
+.br
+.IP \(bu 2
+64 is returned if an invocation problem (like an incorrect option) prevents
+any formatting to occur.
+.SH FILES
+.br
+.nf
+.\" set tabstop to longest possible filename, plus a wee bit
+.ta \w'$HOME/.indent.pro   'u
+\fI$HOME/.indent.pro\fR	holds default options for indent.
+.SH "AUTHORS"
+@AUTHORS@
+.SH "HISTORY"
+Derived from the UCB program "indent".
+.SH "COPYING"
+@COPYING@
