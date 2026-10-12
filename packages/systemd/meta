@@ -1,0 +1,5 @@
+build-requires gcc pos-link
+# util-linux links libsystemd, so systemd is built against util-linux-bootstrap.
+requires glibc util-linux-bootstrap libseccomp kmod pam acl libcap libxcrypt
+requires openssl elfutils pcre2 zlib bzip2 xz zstd
+host-requires meson ninja-build python3-jinja2 python3-pyyaml

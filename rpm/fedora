@@ -1,0 +1,76 @@
+# Fedora packages that POS replaces in an RPM-based system: pos-fedora
+# provides them and conflicts with them, so dnf resolves their dependents
+# against /pos. BUILD.md "RPM packages".
+#
+#   <POS package> <Fedora package>...
+#
+# A line counts when its POS package is in the stages packaged. A Fedora
+# package is listed when POS has its programs and libraries, with the same
+# sonames and symbol versions (buildsys/rpm.sh drops a claim where they
+# differ, and says so). What it has beyond those (Fedora configuration in
+# /etc, FIPS .hmac files, SELinux tools) is noted where something is
+# missing. Development packages and the compiler are not listed: the POS
+# compiler searches /pos/include, not the /usr/include Fedora -devel
+# packages install into.
+
+glibc glibc glibc-common glibc-gconv-extra glibc-minimal-langpack libnsl nss_db nss_hesiod
+# glibc: C.UTF-8 is the only compiled locale (/pos/lib/locale/C.utf8), as
+# with glibc-minimal-langpack. Fedora's langpacks install into
+# /usr/lib/locale, which POS glibc does not read.
+zlib zlib-ng-compat
+bzip2 bzip2 bzip2-libs
+xz xz xz-libs xz-lzma-compat
+zstd zstd libzstd
+# zstd: no pzstd.
+libffi libffi
+expat expat
+libxcrypt libxcrypt
+attr attr libattr
+acl acl libacl
+libcap libcap
+# libcap: no pam_cap.so.
+pcre2 pcre2 pcre2-utf16 pcre2-utf32 pcre2-tools
+ncurses ncurses ncurses-base
+# Not ncurses-libs: POS ncurses is wide-character only, without libform,
+# libmenu and libpanel; Fedora's comes in for programs that need those.
+readline readline
+sqlite sqlite sqlite-libs
+libunistring libunistring
+gcc-runtime libgcc libstdc++ libatomic libgomp
+gmp gmp gmp-c++
+mpfr mpfr
+# Not icu: POS has ICU 79, Fedora libicu 77.
+# Not openssl: POS has OpenSSL 4 (libcrypto.so.4), Fedora 3 (libcrypto.so.3).
+elfutils elfutils elfutils-libelf elfutils-libs elfutils-debuginfod-client
+pam pam pam-libs
+libseccomp libseccomp
+util-linux util-linux util-linux-core util-linux-script libblkid libmount libsmartcols libuuid libfdisk liblastlog2 uuidd
+# util-linux: no setpriv, write, fdformat.
+kmod kmod kmod-libs
+popt popt
+bash bash
+# bash: no /usr/bin wrappers for builtins (cd, alias, ...), no bashbug.
+coreutils coreutils coreutils-common
+# coreutils: no SELinux chcon and runcon, no arch.
+findutils findutils
+grep grep
+sed sed
+gawk gawk
+tar tar
+gzip gzip
+less less
+# less: no lesskey, lesspipe.sh.
+gettext gettext-runtime gettext-envsubst
+systemd systemd systemd-libs systemd-pam systemd-udev systemd-networkd systemd-resolved systemd-container systemd-sysusers
+# systemd: no homed, cryptsetup, importctl, vmspawn.
+dbus dbus dbus-common dbus-daemon dbus-libs dbus-tools
+shadow shadow-utils
+# shadow: no libsubid (shadow-utils-subid).
+sudo sudo
+cronie cronie cronie-anacron
+logrotate logrotate
+file file file-libs
+which which
+procps procps-ng
+diffutils diffutils
+patch patch

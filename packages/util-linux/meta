@@ -1,0 +1,5 @@
+build-requires gcc pos-link
+requires glibc ncurses readline libcap libxcrypt pam sqlite systemd
+provides util-linux-bootstrap
+obsoletes util-linux-bootstrap
+host-requires rubygem-asciidoctor po4a

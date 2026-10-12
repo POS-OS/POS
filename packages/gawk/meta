@@ -1,0 +1,3 @@
+build-requires gcc pos-link
+# gawk -M uses gmp and mpfr.
+requires glibc gmp mpfr readline ncurses

@@ -1,0 +1,8 @@
+build-requires gcc pos-link
+requires glibc libunistring ncurses
+host-requires groff
+# The bundled help2man (man pages from --help) loads Locale::gettext. Without
+# it the man pages are skipped and make install fails on the missing files.
+host-requires perl-Locale-gettext
+# autogen.sh needs autoconf-archive, bison, gperf, groff and texinfo.
+prepare-requires groff

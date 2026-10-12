@@ -1,0 +1,12 @@
+# Container image with POS as the base of an RPM system: the build's pos,
+# pos-sdk and pos-fedora packages, and dnf, so Fedora packages install on
+# top and use POS for what it has. BUILD.md "Images".
+#
+# One RPM package per line. A name the build made an RPM of (pos,
+# pos-sdk, pos-fedora, pos-debuginfo) is installed from that file, anything
+# else from Fedora's repositories.
+
+pos
+pos-sdk
+pos-fedora
+dnf

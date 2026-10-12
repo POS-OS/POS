@@ -1,0 +1,7 @@
+# The first POS compiler: built by the Fedora compiler against the bootstrap
+# packages. It builds the libraries gcc runs on, and then gcc, which
+# obsoletes it.
+source gcc
+build-requires pos-link-host
+requires glibc-bootstrap gcc-runtime-bootstrap binutils-bootstrap linux-headers
+requires gmp-bootstrap mpfr-bootstrap mpc-bootstrap zlib-bootstrap zstd-bootstrap

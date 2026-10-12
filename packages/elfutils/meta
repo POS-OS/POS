@@ -1,0 +1,2 @@
+build-requires gcc pos-link
+requires glibc zlib bzip2 xz zstd

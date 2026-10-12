@@ -1,0 +1,27 @@
+# C library, POSIX, and core shared libraries.
+# Members of the stage archive; build order comes from packages/*/meta.
+glibc
+zlib
+bzip2
+xz
+zstd
+libffi
+expat
+libxcrypt
+attr
+acl
+libcap
+pcre2
+ncurses
+readline
+sqlite
+libunistring
+# libgcc_s and libstdc++ (BUILD.md "SDK").
+gcc-runtime
+# expr, factor, and gawk -M link these.
+gmp
+mpfr
+icu
+openssl
+elfutils
+pam

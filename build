@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Build POS: ./build <command>. See buildsys/build.sh and BUILD.md.
+exec "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/buildsys/build.sh" "$@"

@@ -1,0 +1,36 @@
+# Container image: a root filesystem around /pos, for podman import or
+# docker import. BUILD.md "Images".
+#
+#   stage <stage>            stage archive extracted into /pos
+#   dir <path> <mode>        directory
+#   link <path> <target>     symlink; relative targets keep the tree
+#                            usable when inspected from outside
+
+stage core-libs
+stage system
+#
+stage sdk
+
+dir /dev 0755
+dir /proc 0555
+dir /sys 0555
+dir /run 0755
+dir /tmp 1777
+dir /root 0700
+dir /home 0755
+dir /etc 0755
+dir /var 0755
+dir /var/tmp 1777
+dir /var/lib 0755
+dir /var/log 0755
+dir /var/cache 0755
+
+# Paths outside /pos that programs and the kernel assume (BUILD.md
+# "Prefix"). A container has no /usr of its own to keep, so it gets them.
+# /usr otherwise stays empty for third-party software.
+link /bin/sh ../pos/bin/sh
+link /bin/bash ../pos/bin/bash
+link /sbin/init ../pos/sbin/init
+link /usr/bin/env ../../pos/bin/env
+link /lib64/ld-linux-x86-64.so.2 ../pos/lib/ld-linux-x86-64.so.2
+link /usr/share/factory ../../pos/share/factory

@@ -1,0 +1,37 @@
+# System services and init.
+# Decisions on overlapping binaries and scope are in BUILD.md "System stage".
+libseccomp
+util-linux
+kmod
+popt
+bash
+coreutils
+findutils
+grep
+sed
+gawk
+tar
+gzip
+less
+gettext
+systemd
+dbus
+shadow
+sudo
+cronie
+logrotate
+# User utilities: libmagic file type detection, command lookup.
+file
+which
+# Process tools: ps, top, free, pgrep, sysctl, watch, w, uptime.
+procps
+# Moved to stages/sdk (developer material): diffutils, patch, man-pages.
+# Deferred for later:
+#man-db       page viewer; needs groff, gdbm, libpipeline for that alone
+#groff
+#gdbm
+#libpipeline
+# Deferred for technical reasons, see BUILD.md:
+#glib         only needed by polkit so far
+#duktape      git tree needs Python 2 to generate sources
+#polkit       needs glib and duktape

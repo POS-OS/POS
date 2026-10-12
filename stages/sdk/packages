@@ -1,0 +1,16 @@
+# Compiler, assembler, linker, and kernel UAPI headers.
+# Installed in build toolboxes. Not part of a base system image:
+# end-user installs can omit this stage.
+# linux-headers are required while compiling (glibc headers include <linux/errno.h>),
+# not to run the finished libraries.
+# gcc-runtime (libgcc_s, libstdc++), gmp, and mpfr are core-libs: programs
+# in the base link them. mpc is only needed to build gcc.
+linux-headers
+binutils
+mpc
+gcc
+# Developer tools and documentation, moved here from the system stage
+# (BUILD.md "System stage", OS boundary).
+diffutils
+patch
+#man-pages

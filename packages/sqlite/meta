@@ -1,0 +1,3 @@
+build-requires gcc pos-link
+# The sqlite3 shell uses readline and zlib when present.
+requires glibc zlib readline

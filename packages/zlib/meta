@@ -1,0 +1,4 @@
+build-requires pos-link
+requires glibc
+provides zlib-bootstrap
+obsoletes zlib-bootstrap

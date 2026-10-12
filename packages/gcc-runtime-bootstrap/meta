@@ -1,0 +1,6 @@
+# No pos-link-host: the scratch xgcc is built by the Fedora compiler
+# against Fedora's libraries, which the /pos search path would replace.
+source gcc
+build-requires host-gcc linux-headers
+requires glibc-bootstrap
+host-requires gmp-devel mpfr-devel libmpc-devel zlib-devel

@@ -1,0 +1,4 @@
+build-requires pos-link
+requires glibc gmp mpfr
+provides mpc-bootstrap
+obsoletes mpc-bootstrap

@@ -1,0 +1,2 @@
+build-requires gcc pos-link
+requires glibc gdbm libpipeline groff less zlib

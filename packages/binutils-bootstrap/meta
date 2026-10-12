@@ -1,0 +1,3 @@
+source binutils
+build-requires pos-link-host
+requires glibc-bootstrap zlib-bootstrap zstd-bootstrap

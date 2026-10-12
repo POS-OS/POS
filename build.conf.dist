@@ -1,0 +1,22 @@
+# Settings of ./build. Copy to ~/.config/pos/build.conf, or another file
+# named by POS_BUILD_CONFIG, and edit. Lines are "<key> <value>"; the
+# environment variable named with each setting overrides it. Only new
+# builds read settings: a build records what it uses in its info.
+
+# Fedora release of the build tools, and so of the RPM packages
+# (POS_FEDORA_RELEASE).
+#fedora-release 44
+
+# Image the build tools are installed on (POS_TOOLS_IMAGE). Default:
+# registry.fedoraproject.org/fedora:<release>.
+#tools-image registry.fedoraproject.org/fedora:44
+
+# Directory of reference builds (POS_REFERENCE_DIR), which ./build
+# reference stores builds in. No default: without it, builds start from
+# nothing (the bootstrap packages).
+#reference-dir /path/to/pos-references
+
+# Reference build a new build takes what it does not build from
+# (POS_REFERENCE): a build ID in reference-dir, or none to build from
+# nothing. Default: the one ./build reference marked last.
+#reference none

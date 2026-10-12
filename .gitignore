@@ -1,16 +1,21 @@
+# Editor and patch leftovers, anywhere.
 *~
-*.gz
-*.Z
-*.tar
-*.tgz
-*.bz2
 *.rej
 *.orig
-=*
-TAGS
-TODO
-AUTHORS
-copyr-*
-copying.*
+
+# Archives and notes at the top of the checkout. Anchored so they do not
+# match upstream files in src/ (AUTHORS, TODO, test data archives).
+/*.gz
+/*.Z
+/*.tar
+/*.tgz
+/*.bz2
+/=*
+/TAGS
+/TODO
+/AUTHORS
+/copyr-*
+/copying.*
 
 /work
+.idea

@@ -1,0 +1,4 @@
+build-requires gcc pos-link
+requires glibc ncurses pcre2
+# Makefile.aut generates the help text with nroff.
+prepare-requires groff

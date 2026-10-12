@@ -1,0 +1,5 @@
+# util-linux without libsystemd, for building systemd.
+source util-linux
+build-requires gcc pos-link
+requires glibc ncurses readline libcap libxcrypt pam sqlite
+host-requires rubygem-asciidoctor po4a

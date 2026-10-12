@@ -1,0 +1,4 @@
+build-requires pos-link
+requires glibc zlib zstd
+provides binutils-bootstrap
+obsoletes binutils-bootstrap

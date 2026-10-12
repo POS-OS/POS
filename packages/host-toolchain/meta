@@ -1,0 +1,4 @@
+# The Fedora compiler. Builds the bootstrap packages and gcc-bootstrap.
+kind host
+provides host-gcc
+host-requires gcc gcc-c++

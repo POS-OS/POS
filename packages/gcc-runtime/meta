@@ -1,0 +1,7 @@
+# libgcc_s, libstdc++, libatomic and libgomp: what C and C++ programs need
+# at run time. Produced by the gcc build (packages/gcc/build.sh).
+kind output
+output-of gcc
+requires glibc
+provides gcc-runtime-bootstrap
+obsoletes gcc-runtime-bootstrap

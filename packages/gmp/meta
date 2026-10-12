@@ -1,0 +1,6 @@
+build-requires pos-link
+# --enable-cxx: libgmpxx links libstdc++. gcc runs on gmp, so gmp is built
+# before gcc and its gcc-runtime output; gcc-runtime provides this name too.
+requires glibc gcc-runtime-bootstrap
+provides gmp-bootstrap
+obsoletes gmp-bootstrap
