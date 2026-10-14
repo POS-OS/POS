@@ -5,7 +5,7 @@
 :description: Discussion of the just-in-time optimization support
 :manvolnum: 3
 :manmanual: PCRE2
-:mansource: PCRE2 10.49-DEV
+:mansource: PCRE2 10.50-DEV
 :docdate: 08 August 2026
 :revdate: 08 August 2026
 :toc: right
@@ -116,8 +116,7 @@ At present, it is not possible to free JIT compiled code except when the entire
 compiled pattern is freed by calling func:pcre2_code_free().
 
 In some circumstances you may need to call additional functions. These are
-described in the section entitled
-"Controlling the JIT stack"
+described in the section <<controlling-the-jit-stack>>
 below.
 
 There are some func:pcre2_match() options that are not supported by JIT, and
@@ -126,8 +125,7 @@ below.
 In both cases, matching automatically falls back to the interpretive code. If
 you want to know whether JIT was actually used for a particular match, you
 should arrange for a JIT callback function to be set up as described in the
-section entitled
-"Controlling the JIT stack"
+section <<controlling-the-jit-stack>>
 below, even if you do not need to supply a non-default JIT stack. Such a
 callback function is called whenever JIT code is about to be obeyed. If the
 match-time options are not right for JIT execution, the callback function is
@@ -188,8 +186,7 @@ in a conditional group.
 When a pattern is matched using JIT, the return values are the same as those
 given by the interpretive func:pcre2_match() code, with the addition of one
 new error code: const:PCRE2_ERROR_JIT_STACKLIMIT. This means that the memory used for
-the JIT stack was insufficient. See
-"Controlling the JIT stack"
+the JIT stack was insufficient. See the section <<controlling-the-jit-stack>>
 below for a discussion of JIT stack usage.
 
 The error code const:PCRE2_ERROR_MATCHLIMIT is returned by the JIT code if searching
@@ -198,15 +195,15 @@ circumstance when JIT is not used, but the details of exactly what is counted
 are not the same. The const:PCRE2_ERROR_DEPTHLIMIT error code is never returned
 when JIT matching is used.
 
+[[controlling-the-jit-stack]]
 == Controlling the JIT stack
 
 When the compiled JIT code runs, it needs a block of memory to use as a stack.
-By default, it uses 32KiB on the machine stack. However, some large or
+By default, it uses macroval:bytes,MACHINE_STACK_SIZE on the machine stack. However, some large or
 complicated patterns need more than this. The error const:PCRE2_ERROR_JIT_STACKLIMIT
 is given when there is not enough stack. Three functions are provided for
 managing blocks of memory for use as JIT stacks. There is further discussion
-about the use of JIT stacks in the section entitled
-"JIT stack FAQ"
+about the use of JIT stacks in the section <<jit-stack-faq>>
 below.
 
 The func:pcre2_jit_stack_create() function creates a JIT stack. Its arguments
@@ -234,7 +231,7 @@ passed to a matching function, its information determines which JIT stack is
 used. If this argument is const:NULL, the function returns immediately, without doing
 anything. There are three cases for the values of the other two options:
 
-. If arg:callback is const:NULL and arg:data is const:NULL, an internal 32KiB block
+. If arg:callback is const:NULL and arg:data is const:NULL, an internal block of macroval:bytes,MACHINE_STACK_SIZE
     on the machine stack is used. This is the default when a match
     context is created.
 
@@ -245,7 +242,7 @@ anything. There are three cases for the values of the other two options:
 . If arg:callback is not const:NULL, it must point to a function that is
     called with arg:data as an argument at the start of matching, in
     order to set up a JIT stack. If the return from the callback
-    function is const:NULL, the internal 32KiB stack is used; otherwise the
+    function is const:NULL, the internal stack of macroval:bytes,MACHINE_STACK_SIZE is used; otherwise the
     return value must be a valid JIT stack, the result of calling
     func:pcre2_jit_stack_create().
 
@@ -291,6 +288,7 @@ return thread_local_var;
 
 All the functions described in this section do nothing if JIT is not available.
 
+[[jit-stack-faq]]
 == JIT stack FAQ
 
 . **Why do we need JIT stacks?**
@@ -431,6 +429,10 @@ set for func:pcre2_compile(), the result is undefined. The program may crash
 or loop or give wrong results. In the absence of const:PCRE2_MATCH_INVALID_UTF you
 should call func:pcre2_jit_match() in UTF mode only if you are sure the
 subject is valid.
+
+Similarly, a non-default offset limit must not exceed the subject length.
+func:pcre2_match() checks this condition before dispatching to JIT, but callers
+of func:pcre2_jit_match() must ensure it themselves.
 
 Bypassing the sanity checks and the func:pcre2_match() wrapping can give
 speedups of more than 10%.

@@ -17,7 +17,6 @@ PHONY_TARGETS=
 
 dist_doc_DATA = \
   AUTHORS.md \
-  COPYING \
   ChangeLog \
   LICENCE.md \
   NEWS \
@@ -447,7 +446,8 @@ EXTRA_DIST += \
   patches/pcre2-10.48-Fix-repeated-substitute-escapes.patch \
   patches/pcre2-10.48-Fix-scan-prefix-repeat-reset.patch \
   patches/pcre2-10.48-Keep-escape-error-offset-in-pattern.patch \
-  patches/pcre2-10.48-Write-serialization-padding.patch
+  patches/pcre2-10.48-Write-serialization-padding.patch \
+  patches/pcre2-10.49-Fix-large-stack-allocation.patch
 
 # These are support files for building with Bazel or Zig
 
@@ -883,6 +883,10 @@ endif # WITH_GCOV
 TESTS += RunTest
 dist_noinst_SCRIPTS += RunTest RunTest.py
 
+## The Perl-comparison tests.
+
+dist_noinst_SCRIPTS += PerlTest.sh RunPerlTest
+
 ## When the 8-bit library is configured, pcre2grep will have been built.
 
 if WITH_PCRE2_8
@@ -1002,8 +1006,7 @@ EXTRA_DIST += \
   testdata/testoutputheap-16 \
   testdata/testoutputheap-32 \
   testdata/testoutputheap-8 \
-  testdata/valgrind-jit.supp \
-  perltest.sh
+  testdata/valgrind-jit.supp
 
 # RunTest and RunGrepTest should clean up after themselves, but just in case
 # they don't, add their working files to CLEANFILES.
@@ -1184,6 +1187,19 @@ EXTRA_DIST += \
   cmake/PCRE2WarningAsError.cmake \
   src/config-cmake.h.in \
   CMakeLists.txt
+
+## Meson support
+
+EXTRA_DIST += \
+  meson/FindBZip2/meson.build \
+  meson/FindEditline/meson.build \
+  meson/FindReadline/meson.build \
+  meson/PCRE2CheckVscript/meson.build \
+  meson/PCRE2CheckVscript/test-map-file.sym.in \
+  meson/PCRE2UseSystemExtensions/meson.build \
+  src/config-meson.h.in \
+  meson.build \
+  meson.options
 
 ## Set the special make and Automake targets. We could very easily simply
 ## redefine these targets to append prerequisites to them, rather than

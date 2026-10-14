@@ -84,6 +84,8 @@ there will be many irrelevant consequential errors. */
 #include <stdlib.h>
 #include <string.h>
 
+#include "pcre2_util.h"
+
 /* Macros to make boolean values more obvious. The #ifndef is to pacify
 compiler warnings in environments where these macros are defined elsewhere.
 Unfortunately, there is no way to do the same for the typedef. */
@@ -93,12 +95,6 @@ typedef int BOOL;
 #define FALSE 0
 #define TRUE  1
 #endif
-
-/* Helper macro for static (compile-time) assertions. Can be used inside
-functions, or at the top-level of a file. */
-#define STATIC_ASSERT_JOIN(a, b) a##b
-#define STATIC_ASSERT(cond, msg) \
-  typedef int STATIC_ASSERT_JOIN(static_assertion_, msg)[(cond) ? 1 : -1]
 
 /* Valgrind (memcheck) support */
 
@@ -217,14 +213,22 @@ not rely on this. */
 
 #define COMPILE_ERROR_BASE 100
 
-/* The initial frames vector for remembering pcre2_match() backtracking points
-is allocated on the heap, of this size (bytes) or ten times the frame size if
-larger, unless the heap limit is smaller. Typical frame sizes are a few hundred
-bytes (it depends on the number of capturing parentheses) so 20KiB handles
-quite a few frames. A larger vector on the heap is obtained for matches that
-need more frames, subject to the heap limit. */
+/* Some non-configurable limits, based on the current implementation. The field
+sizes used do not currently allow higher values. */
 
-#define START_FRAMES_SIZE 20480
+#define MAX_CALLOUT_NUMBER 255
+#define MAX_OVECTOR_COUNT  65535u
+
+/* The initial frames vector for remembering pcre2_match() backtracking points
+is allocated on the heap, of size START_FRAMES_SIZE (bytes), or,
+START_FRAMES_COUNT times the frame size if larger, unless the heap limit is
+smaller. Typical frame sizes are a few hundred bytes (it depends on the number
+of capturing parentheses) so 20KiB handles quite a few frames. A larger vector
+on the heap is obtained for matches that need more frames, subject to the heap
+limit. */
+
+#define START_FRAMES_SIZE  20480
+#define START_FRAMES_COUNT 10
 
 /* For DFA matching, an initial internal workspace vector is allocated on the
 stack. The heap is used only if this turns out to be too small. */
@@ -582,7 +586,12 @@ total length of the tables. */
 #define fcc_offset    256                          /* Flip case */
 #define cbits_offset  512                          /* Character classes */
 #define ctypes_offset (cbits_offset + cbit_length) /* Character types */
-#define TABLES_LENGTH (ctypes_offset + 256)
+#define ctypes_end    (ctypes_offset + 256)
+
+#define TABLES_LENGTH 1088
+#if TABLES_LENGTH != ctypes_end
+#error "TABLES_LENGTH must be updated to match ctypes_end"
+#endif
 
 /* Private flags used in compile_context.optimization_flags */
 
@@ -2348,8 +2357,6 @@ extern BOOL _pcre2_xclass(uint32_t, PCRE2_SPTR, const uint8_t *, BOOL);
 extern BOOL _pcre2_eclass(uint32_t, PCRE2_SPTR, PCRE2_SPTR, const uint8_t *, BOOL);
 
 #endif /* PCRE2_CODE_UNIT_WIDTH */
-
-#include "pcre2_util.h"
 
 #endif /* PCRE2_INTERNAL_H_IDEMPOTENT_GUARD */
 

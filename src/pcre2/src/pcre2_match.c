@@ -7807,6 +7807,9 @@ pcre2_match(const pcre2_code *code, PCRE2_SPTR subject, PCRE2_SIZE length, PCRE2
 
   if (start_offset > length)
     return match_data->rc = PCRE2_ERROR_BADOFFSET;
+  if (mcontext != NULL && mcontext->offset_limit != PCRE2_UNSET &&
+      mcontext->offset_limit > length)
+    return match_data->rc = PCRE2_ERROR_BADOFFSETLIMITVALUE;
 
   /* Check that the first field in the block is the magic number. */
 
@@ -8256,7 +8259,7 @@ pcre2_match(const pcre2_code *code, PCRE2_SPTR subject, PCRE2_SIZE length, PCRE2
   available frames, but enforce a minimum of START_FRAMES_SIZE. If this is
   greater than the heap limit, get as large a vector as possible. */
 
-  heapframes_size = frame_size * 10;
+  heapframes_size = frame_size * START_FRAMES_COUNT;
   if (heapframes_size < START_FRAMES_SIZE)
     heapframes_size = START_FRAMES_SIZE;
   if (heapframes_size / 1024 > mb->heap_limit)

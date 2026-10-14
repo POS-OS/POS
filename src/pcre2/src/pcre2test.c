@@ -209,20 +209,21 @@ claim to be C99 don't support it (hence DISABLE_PERCENT_ZT). */
 #endif
 #endif
 
+#define PCRE2TEST_DEFAULT_OVECCOUNT   15         /* Default ovector count */
+#define PCRE2TEST_LOOPREPEAT          500000     /* Default loop count for timing */
+#define PCRE2TEST_PARENS_NEST_DEFAULT 220        /* Default parentheses nest limit */
+#define PCRE2TEST_REPLACE_BUFFSIZE    256        /* Code units for replacement buffer */
+
 #define CFORE_UNSET                UINT32_MAX /* Unset value for startend/cfail/cerror fields */
 #define CONVERT_UNSET              UINT32_MAX /* Unset value for convert_type/convert_length fields */
 #define MOD_STR_UNSET              UINT8_MAX  /* Sentinel length for unset string options */
 #define DFA_WS_DIMENSION           1000       /* Size of DFA workspace */
-#define DEFAULT_OVECCOUNT          15         /* Default ovector count */
 #define JUNK_OFFSET                0xdeadbeef /* For initializing ovector */
 #define LOCALESIZE                 32         /* Size of locale name */
-#define LOOPREPEAT                 500000     /* Default loop count for timing */
 #define MALLOCLISTSIZE             20         /* For remembering mallocs */
-#define PARENS_NEST_DEFAULT        220        /* Default parentheses nest limit */
 #define PATSTACKSIZE               20         /* Pattern stack for save/restore testing */
 #define REPLACE_MODSIZE            100        /* Field for reading 8-bit replacement */
 #define SUBSTITUTE_SUBJECT_MODSIZE 100        /* Field for reading 8-bit subject for substitute */
-#define REPLACE_BUFFSIZE           256        /* Code units for replacement buffer */
 
 /* Default JIT compile options */
 
@@ -306,6 +307,7 @@ needs to be when compiling one of the libraries). */
 #include "pcre2.h"
 #include "pcre2posix.h"
 #include "pcre2_internal.h"
+#include "pcre2_util.h"
 
 /* We need access to some of the data tables that PCRE2 uses. The previous
 definition of PCRE2_PCRE2TEST makes some minor changes in the files. The
@@ -674,7 +676,7 @@ datctl_zero(datctl *d)
   memset(d, 0, sizeof(datctl));
   d->replacement[0] = MOD_STR_UNSET;
   d->substitute_subject[0] = MOD_STR_UNSET;
-  d->oveccount = DEFAULT_OVECCOUNT;
+  d->oveccount = PCRE2TEST_DEFAULT_OVECCOUNT;
   d->copy_numbers[0] = -1;
   d->get_numbers[0] = -1;
   d->startend[0] = d->startend[1] = CFORE_UNSET;
@@ -1201,6 +1203,8 @@ colour_end(FILE *f)
 }
 
 /* cfprintf is like fprintf but takes a colour to wrap its output. */
+
+PCRE2_FORMAT_PRINTF(3, 4)
 static int
 cfprintf(int clr, FILE *file, const char *fmt, ...)
 {
@@ -2459,7 +2463,7 @@ show_controls(int clr, uint32_t controls, uint32_t controls2, const char *before
   cfprintf(
       clr, outfile,
       "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%"
-      "s%s%s%s%s%s%s",
+      "s%s%s%s%s%s%s%s",
       before, ((controls & CTL_AFTERTEXT) != 0) ? " aftertext" : "",
       ((controls & CTL_ALLAFTERTEXT) != 0) ? " allaftertext" : "",
       ((controls & CTL_ALLCAPTURES) != 0) ? " allcaptures" : "",
@@ -3418,17 +3422,17 @@ c_option(const char *arg)
   printf("  \\C is %ssupported\n", optval ? "not " : "");
   printf("  Internal link size\n");
   (void)pcre2_config(PCRE2_CONFIG_LINKSIZE, &optval);
-  printf("    Requested = %d\n", optval);
+  printf("    Requested = %lu\n", (unsigned long)optval);
   (void)pcre2_config(PCRE2_CONFIG_EFFECTIVE_LINKSIZE, &optval);
-  printf("    Effective = %d\n", optval);
+  printf("    Effective = %lu\n", (unsigned long)optval);
   (void)pcre2_config(PCRE2_CONFIG_PARENSLIMIT, &optval);
-  printf("  Parentheses nest limit = %d\n", optval);
+  printf("  Parentheses nest limit = %lu\n", (unsigned long)optval);
   (void)pcre2_config(PCRE2_CONFIG_HEAPLIMIT, &optval);
-  printf("  Default heap limit = %d kibibytes\n", optval);
+  printf("  Default heap limit = %lu kibibytes\n", (unsigned long)optval);
   (void)pcre2_config(PCRE2_CONFIG_MATCHLIMIT, &optval);
-  printf("  Default match limit = %d\n", optval);
+  printf("  Default match limit = %lu\n", (unsigned long)optval);
   (void)pcre2_config(PCRE2_CONFIG_DEPTHLIMIT, &optval);
-  printf("  Default depth limit = %d\n", optval);
+  printf("  Default depth limit = %lu\n", (unsigned long)optval);
 
 #if defined SUPPORT_LIBREADLINE
   printf("  pcre2test has libreadline support\n");
@@ -4004,7 +4008,7 @@ main(int argc, char **argv)
       }
       else
       {
-        timeitm = LOOPREPEAT;
+        timeitm = PCRE2TEST_LOOPREPEAT;
       }
 
       if (both)
@@ -4143,7 +4147,7 @@ main(int argc, char **argv)
   /* Initialize things that cannot be done until we know which test mode we are
   running in. */
 
-  max_oveccount = DEFAULT_OVECCOUNT;
+  max_oveccount = PCRE2TEST_DEFAULT_OVECCOUNT;
 
   /* Initialise the globals for the current mode. */
 

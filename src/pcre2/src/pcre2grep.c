@@ -137,12 +137,15 @@ be C99 don't support it (hence DISABLE_PERCENT_ZT). */
 
 typedef int BOOL;
 
-#define DEFAULT_CAPTURE_MAX 50
+#define PCRE2GREP_DEFAULT_CAPTURE_MAX 50
+#define PCRE2GREP_MAXPATLEN_MIN       8192
+#define PCRE2GREP_MAX_ERRORS          20
+#define PCRE2GREP_BINARY_CHECK_SIZE   1024
 
-#if BUFSIZ > 8192
+#if BUFSIZ > PCRE2GREP_MAXPATLEN_MIN
 #define MAXPATLEN BUFSIZ
 #else
-#define MAXPATLEN 8192
+#define MAXPATLEN PCRE2GREP_MAXPATLEN_MIN
 #endif
 
 #define FNBUFSIZ  2048
@@ -276,7 +279,7 @@ static pcre2_match_data *match_data, *match_data_pair[2];
 static PCRE2_SIZE *offsets, *offsets_pair[2];
 static int match_data_toggle;
 static uint32_t offset_size;
-static uint32_t capture_max = DEFAULT_CAPTURE_MAX;
+static uint32_t capture_max = PCRE2GREP_DEFAULT_CAPTURE_MAX;
 
 static BOOL all_matches = FALSE;
 static BOOL case_restrict = FALSE;
@@ -2039,7 +2042,7 @@ match_patterns(char *matchptr, PCRE2_SIZE length, unsigned int options, PCRE2_SI
     if (rc == PCRE2_ERROR_MATCHLIMIT || rc == PCRE2_ERROR_DEPTHLIMIT ||
         rc == PCRE2_ERROR_HEAPLIMIT || rc == PCRE2_ERROR_JIT_STACKLIMIT)
       resource_error = TRUE;
-    if (error_count++ > 20)
+    if (error_count++ > PCRE2GREP_MAX_ERRORS)
     {
       fprintf(stderr, "pcre2grep: Too many errors - abandoned.\n");
       pcre2grep_exit(2);
@@ -2856,7 +2859,7 @@ static int
 pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
 {
   int rc = 1;
-  int filepos = 0;
+  int64_t filepos = 0;
   unsigned long int linenumber = 1;
   unsigned long int lastmatchnumber = 0;
   unsigned long int count = 0;
@@ -2919,7 +2922,8 @@ pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
   if (binary_files != BIN_TEXT)
   {
     if (endlinetype != PCRE2_NEWLINE_NUL)
-      binary = memchr(main_buffer, 0, (bufflength > 1024) ? 1024 : bufflength) != NULL;
+      binary = memchr(main_buffer, 0,
+        (bufflength > PCRE2GREP_BINARY_CHECK_SIZE) ? PCRE2GREP_BINARY_CHECK_SIZE : bufflength) != NULL;
     if (binary && binary_files == BIN_NOMATCH)
       return 1;
   }
@@ -3136,9 +3140,10 @@ pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
             }
 
             if (line_offsets)
-              fprintf(stdout, "%d,%d%s", (int)start, (int)(end - start), stdout_nl);
+              fprintf(stdout, "%lld,%llu%s", (long long)start, (unsigned long long)(end - start), stdout_nl);
             else
-              fprintf(stdout, "%d,%d%s", (int)(filepos + start), (int)(end - start), stdout_nl);
+              fprintf(stdout, "%lld,%llu%s", (long long)(filepos + start),
+                  (unsigned long long)(end - start), stdout_nl);
           }
 
           /* Handle --output (which has already been syntax checked) */
@@ -3223,7 +3228,7 @@ pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
           while (endlinelength != 0 && startoffset >= linelength + endlinelength)
           {
             ptr += linelength + endlinelength;
-            filepos += (int)(linelength + endlinelength);
+            filepos += linelength + endlinelength;
             linenumber++;
             startoffset -= (int)(linelength + endlinelength);
             t = end_of_line(ptr, endptr, &endlinelength);
@@ -3413,7 +3418,7 @@ pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
               }
 
               ptr += lineadvance;
-              filepos += (int)lineadvance;
+              filepos += lineadvance;
               linenumber++;
               startoffset -= lineadvance;
               t = end_of_line(ptr, endptr, &endlinelength);
@@ -3510,7 +3515,7 @@ pcre2grep(void *handle, int frtype, const char *filename, const char *printname)
 
   END_ONE_MATCH:
     ptr += linelength + endlinelength;
-    filepos += (int)(linelength + endlinelength);
+    filepos += linelength + endlinelength;
     linenumber++;
 
     /* If there was at least one match (or a non-match, as required) in the line,
@@ -4787,6 +4792,14 @@ main(int argc, char **argv)
   match_context = pcre2_match_context_create(NULL);
   match_data_pair[0] = pcre2_match_data_create(offset_size, NULL);
   match_data_pair[1] = pcre2_match_data_create(offset_size, NULL);
+  if (compile_context == NULL || match_context == NULL ||
+      match_data_pair[0] == NULL || match_data_pair[1] == NULL)
+  {
+    /* LCOV_EXCL_START */
+    fprintf(stderr, "pcre2grep: malloc failed\n");
+    goto EXIT2;
+    /* LCOV_EXCL_STOP */
+  }
   offsets_pair[0] = pcre2_get_ovector_pointer(match_data_pair[0]);
   offsets_pair[1] = pcre2_get_ovector_pointer(match_data_pair[1]);
   match_data = match_data_pair[0];

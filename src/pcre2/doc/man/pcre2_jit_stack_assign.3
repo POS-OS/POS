@@ -4,10 +4,10 @@
 .\" Generator: Asciidoctor 2.0.26
 .\"      Date: 13 August 2018
 .\"    Manual: PCRE2
-.\"    Source: PCRE2 10.49-DEV
+.\"    Source: PCRE2 10.50-DEV
 .\"  Language: English
 .\"
-.TH "PCRE2_JIT_STACK_ASSIGN" "3" "13 August 2018" "PCRE2 10.49\-DEV" "PCRE2"
+.TH "PCRE2_JIT_STACK_ASSIGN" "3" "13 August 2018" "PCRE2 10.50\-DEV" "PCRE2"
 .ie \n(.g .ds Aq \(aq
 .el       .ds Aq '
 .ss \n[.ss] 0
@@ -72,8 +72,8 @@ a JIT stack or a value to be passed to the callback
 If \fImcontext\fP is \fBNULL\fP, the function returns immediately, without doing
 anything.
 .sp
-If \fIcallback\fP is \fBNULL\fP and \fIcallback_data\fP is \fBNULL\fP, an internal 32KiB
-block on the machine stack is used.
+If \fIcallback\fP is \fBNULL\fP and \fIcallback_data\fP is \fBNULL\fP, an internal block of 32KiB
+on the machine stack is used.
 .sp
 If \fIcallback\fP is \fBNULL\fP and \fIcallback_data\fP is not \fBNULL\fP,
 \fIcallback_data\fP must be a valid JIT stack, the result of calling
@@ -81,7 +81,7 @@ pcre2_jit_stack_create().
 .sp
 If \fIcallback\fP not \fBNULL\fP, it is called with \fIcallback_data\fP as an
 argument at the start of matching, in order to set up a JIT stack. If the
-result is \fBNULL\fP, the internal 32KiB stack is used; otherwise the return value
+result is \fBNULL\fP, the internal stack of 32KiB is used; otherwise the return value
 must be a valid JIT stack, the result of calling
 pcre2_jit_stack_create().
 .sp

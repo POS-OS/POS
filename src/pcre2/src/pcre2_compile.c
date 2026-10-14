@@ -1276,6 +1276,7 @@ pcre2_code_copy(const pcre2_code *code)
 
   if ((code->flags & PCRE2_DEREF_TABLES) != 0)
   {
+    PCRE2_ASSERT(code->tables != NULL);
     ref_count = (PCRE2_SIZE *)(code->tables + TABLES_LENGTH);
     (*ref_count)++;
   }
@@ -1302,6 +1303,7 @@ pcre2_code_copy_with_tables(const pcre2_code *code)
 
   if (code == NULL)
     return NULL;
+  PCRE2_ASSERT(code->tables != NULL);
   newcode = code->memctl.malloc(code->blocksize, code->memctl.memory_data);
   if (newcode == NULL)
     return NULL;
@@ -1348,6 +1350,7 @@ pcre2_code_free(pcre2_code *code)
       be freed when there are no more references to them. The *ref_count should
       always be > 0. */
 
+      PCRE2_ASSERT(code->tables != NULL);
       ref_count = (PCRE2_SIZE *)(code->tables + TABLES_LENGTH);
       if (*ref_count > 0)
       {
@@ -3151,13 +3154,13 @@ manage_callouts(PCRE2_SPTR ptr, uint32_t **pcalloutptr, BOOL auto_callout, uint3
   else
   {
     if (previous_callout == NULL || previous_callout != parsed_pattern - 4 ||
-        previous_callout[3] != 255)
+        previous_callout[3] != MAX_CALLOUT_NUMBER)
     {
       previous_callout = parsed_pattern; // Set up new automatic callout
       parsed_pattern += 4;
       previous_callout[0] = META_CALLOUT_NUMBER;
       previous_callout[2] = 0;
-      previous_callout[3] = 255;
+      previous_callout[3] = MAX_CALLOUT_NUMBER;
     }
 
     previous_callout[1] = (uint32_t)(ptr - cb->start_pattern);
@@ -5716,7 +5719,7 @@ parse_regex(PCRE2_SPTR ptr, uint32_t options, uint32_t xoptions, BOOL *has_lookb
         callout, abolish it. */
 
         if (previous_callout != NULL && (options & PCRE2_AUTO_CALLOUT) != 0 &&
-            previous_callout == parsed_pattern - 4 && parsed_pattern[-1] == 255)
+            previous_callout == parsed_pattern - 4 && parsed_pattern[-1] == MAX_CALLOUT_NUMBER)
           parsed_pattern = previous_callout;
 
         /* Save for updating next pattern item length, and skip one item before
@@ -5777,7 +5780,7 @@ parse_regex(PCRE2_SPTR ptr, uint32_t options, uint32_t xoptions, BOOL *has_lookb
         }
 
         /* Handle a callout with an optional numerical argument, which must be
-        less than or equal to 255. A missing argument gives 0. */
+        less than or equal to MAX_CALLOUT_NUMBER. A missing argument gives 0. */
 
         else
         {
@@ -5787,7 +5790,7 @@ parse_regex(PCRE2_SPTR ptr, uint32_t options, uint32_t xoptions, BOOL *has_lookb
           while (ptr < ptrend && IS_DIGIT(*ptr))
           {
             n = n * 10 + (*ptr++ - CHAR_0);
-            if (n > 255)
+            if (n > MAX_CALLOUT_NUMBER)
             {
               errorcode = ERR38;
               goto FAILED;
@@ -11559,7 +11562,9 @@ pcre2_compile(PCRE2_SPTR pattern, PCRE2_SIZE patlen, uint32_t options, int *erro
   no longer be possible because nowadays we limit the maximum value of
   cb.names_found and cb.name_entry_size. */
 
-  re_blocksize = CU2BYTES((PCRE2_SIZE)cb.names_found * (PCRE2_SIZE)cb.name_entry_size);
+  PCRE2_SIZE name_table_size = CU2BYTES((PCRE2_SIZE)cb.names_found * (PCRE2_SIZE)cb.name_entry_size);
+  PCRE2_SIZE name_table_padding = 0;
+  re_blocksize = name_table_size;
 
 #if defined SUPPORT_WIDE_CHARS
   if (cb.char_lists_size != 0)
@@ -11568,6 +11573,7 @@ pcre2_compile(PCRE2_SPTR pattern, PCRE2_SIZE patlen, uint32_t options, int *erro
     /* Align to 32 bit first. This ensures the
     allocated area will also be 32 bit aligned. */
     re_blocksize = (PCRE2_SIZE)CLIST_ALIGN_TO(re_blocksize, sizeof(uint32_t));
+    name_table_padding = re_blocksize - name_table_size;
 #else
     /* Already 32 bit aligned. */
 #endif
@@ -11624,13 +11630,6 @@ pcre2_compile(PCRE2_SPTR pattern, PCRE2_SIZE patlen, uint32_t options, int *erro
     goto HAD_CB_ERROR;
   }
 
-  /* The compiler may put padding at the end of the pcre2_real_code structure in
-  order to round it up to a multiple of 4 or 8 bytes. This means that when a
-  compiled pattern is copied (for example, when serialized) undefined bytes are
-  read, and this annoys debuggers such as valgrind. To avoid this, we explicitly
-  write to the last 8 bytes of the structure before setting the fields. */
-
-  memset((char *)re + sizeof(pcre2_real_code) - 8, 0, 8);
   re->memctl = ccontext->memctl;
   re->tables = tables;
   re->executable_jit = NULL;
@@ -11656,6 +11655,13 @@ pcre2_compile(PCRE2_SPTR pattern, PCRE2_SIZE patlen, uint32_t options, int *erro
   re->name_entry_size = cb.name_entry_size;
   re->name_count = cb.names_found;
   re->optimization_flags = optim_flags;
+
+  /* Also initializve the padding after the last field, optimization_flags, so
+  serialized patterns do not contain undefined bytes. */
+
+  size_t re_padding_offset =
+      offsetof(pcre2_real_code, optimization_flags) + sizeof(re->optimization_flags);
+  memset((char *)re + re_padding_offset, 0xcd, sizeof(pcre2_real_code) - re_padding_offset);
 
   /* The basic block is immediately followed by the name table, and the compiled
   code follows after that. */
@@ -11695,6 +11701,11 @@ pcre2_compile(PCRE2_SPTR pattern, PCRE2_SIZE patlen, uint32_t options, int *erro
 
     PCRE2_ASSERT(tablecount == cb.names_found);
   }
+
+  /* The padding bytes (if any) after the name table must be initialized, as they are
+  visible via serialisation. */
+
+  memset((char *)re + sizeof(pcre2_real_code) + name_table_size, 0xcd, name_table_padding);
 
   /* Set up a starting, non-extracting bracket, then compile the expression. On
   error, errorcode will be set non-zero, so we don't need to look at the result

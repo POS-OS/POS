@@ -1,21 +1,35 @@
+#!/usr/bin/env ruby
 # frozen_string_literal: true
 
 # PCRE2's Asciidoctor extension defines a small semantic inline vocabulary and
-# backend-specific presentation for manpage output. Keep the extension
+# backend-specific presentation for HTML and manpage output. Keep the extension
 # backend-neutral until conversion so all outputs consume the same AST.
+require 'asciidoctor'
 require 'asciidoctor/converter/manpage'
 require 'asciidoctor/extensions'
+require 'asciidoctor-html5s'
 # Decode Asciidoctor's special-character substitutions before Rouge lexing.
 require 'cgi'
 # Supply lexical tokens for terminal highlighting of C source blocks.
 require 'rouge'
+
+class Pcre2DocumentDefaults < Asciidoctor::Extensions::Preprocessor
+  def process(document, reader)
+    document.set_attribute 'lang', 'en' unless document.attr? 'lang'
+    document.set_attribute 'source-highlighter', 'rouge' unless document.attr? 'source-highlighter'
+    if document.basebackend? 'html'
+      document.set_attribute 'nofooter' unless document.attr? 'nofooter'
+    end
+    reader
+  end
+end
 
 # Base processor for short API macros such as `func:pcre2_match()`. Each macro
 # becomes a monospaced quoted node with a semantic role; converters decide how
 # that role is presented instead of the macro injecting backend-specific text.
 class Pcre2ApiInlineMacro < Asciidoctor::Extensions::InlineMacroProcessor
   use_dsl
-  using_format :short
+  format :short
 
   def process(parent, target, _attributes)
     create_inline parent, :quoted, target,
@@ -78,13 +92,90 @@ class Pcre2CharacterInlineMacro < Pcre2ApiInlineMacro
   end
 end
 
-# Install the API macros globally for documents loaded with this extension.
+class Pcre2MacroValueInlineMacro < Asciidoctor::Extensions::InlineMacroProcessor
+  use_dsl
+  named :macroval
+  format :short
+  match /macroval:((?:bytes,)?[A-Za-z0-9_]+)/
+
+  DEFINITIONS = {
+    'config.h.generic' => %w[
+      HEAP_LIMIT MATCH_LIMIT MAX_NAME_COUNT MAX_NAME_SIZE
+      MAX_VARLOOKBEHIND PARENS_NEST_LIMIT PCRE2GREP_BUFSIZE PCRE2GREP_MAX_BUFSIZE
+    ],
+    'pcre2_compile.c' => %w[MAX_GROUP_NUMBER MAX_REPEAT_COUNT],
+    'pcre2_dfa_match.c' => %w[DFA_RECURSE_OVECTOR DFA_WORKSPACE_MIN],
+    'pcre2_internal.h' => %w[
+      MAX_CALLOUT_NUMBER MAX_OVECTOR_COUNT START_FRAMES_COUNT START_FRAMES_SIZE TABLES_LENGTH
+    ],
+    'pcre2_intmodedep.h' => %w[
+      DEFAULT_MAX_PATTERN_SIZE_8_16 LOOKBEHIND_MAX MAX_MARK_8 MAX_MARK_16_32
+    ],
+    'pcre2_jit_compile.c' => %w[MACHINE_STACK_SIZE],
+    'pcre2grep.c' => %w[
+      PCRE2GREP_BINARY_CHECK_SIZE PCRE2GREP_DEFAULT_CAPTURE_MAX
+      PCRE2GREP_MAX_ERRORS PCRE2GREP_MAXPATLEN_MIN
+    ],
+    'pcre2test.c' => %w[PCRE2TEST_DEFAULT_OVECCOUNT PCRE2TEST_LOOPREPEAT PCRE2TEST_PARENS_NEST_DEFAULT PCRE2TEST_REPLACE_BUFFSIZE]
+  }.freeze
+
+  def self.read_integers(file, names)
+    source = File.read(File.expand_path("../src/#{file}", __dir__), encoding: Encoding::UTF_8)
+    names.to_h do |name|
+      pattern = /^#define #{name}\s+(\d+)[uU]?(?=\s|$)/
+      matches = source.scan(pattern)
+      raise "Expected one definition for #{name} in #{file}" unless matches.length == 1
+      [name, Integer(matches.first.first, 0)]
+    end
+  end
+
+  def self.format_integer(value)
+    value.to_s.gsub(/(?<=\d)(?=(?:\d{3})+\z)/, ',')
+  end
+
+  def self.format_value(value, unit)
+    return format_integer(value) if unit.nil?
+
+    prefixes = ['', 'Ki', 'Mi', 'Gi']
+    prefix_index = 0
+    while value.positive? && prefix_index < prefixes.length - 1 && (value % 1024).zero?
+      value /= 1024
+      prefix_index += 1
+    end
+    suffix = prefix_index.zero? ? ' bytes' : "#{prefixes[prefix_index]}B"
+    "#{format_integer(value)}#{suffix}"
+  end
+
+  def self.values
+    @values ||= begin
+      values = {}
+      DEFINITIONS.each do |file, names|
+        values.merge! read_integers(file, names)
+      end
+      values.freeze
+    end
+  end
+
+  def process(parent, target, _attributes)
+    unit, name = target.start_with?('bytes,') ? target.split(',', 2) : [nil, target]
+    value = self.class.values.fetch(name) { raise "Unknown macroval:#{name}" }
+    create_inline parent, :quoted, self.class.format_value(value, unit)
+  end
+end
+
+# Install defaults and API macros for documents loaded with this extension.
 Asciidoctor::Extensions.register do
+  preprocessor Pcre2DocumentDefaults
   inline_macro Pcre2FunctionInlineMacro
   inline_macro Pcre2TypeInlineMacro
   inline_macro Pcre2ConstantInlineMacro
   inline_macro Pcre2ArgumentInlineMacro
   inline_macro Pcre2CharacterInlineMacro
+  inline_macro Pcre2MacroValueInlineMacro
+end
+
+class Pcre2HtmlConverter < Asciidoctor::Html5s::Converter
+  register_for 'html5'
 end
 
 # Preserve PCRE2's established terminal layout while adding description-list,
@@ -412,4 +503,39 @@ class Pcre2ManpageConverter < Asciidoctor::Converter::ManPageConverter
     following = tokens.drop(index + 1).find {|token, text| token.qualname != 'Text' || !text.strip.empty? }
     following && following[1].start_with?('(')
   end
+end
+
+module Pcre2AsciidocConverter
+  module_function
+
+  # Convert AsciiDoc sources into their HTML and manpage outputs.
+  def run(inputs)
+    logger = Asciidoctor::LoggerManager.logger
+    logger.level = Logger::Severity::DEBUG
+
+    inputs.each do |input|
+      base = File.basename(input, '.adoc')
+      directory = File.dirname(input)
+      if base == 'index'
+        Asciidoctor.convert_file input, backend: 'html5', safe: :unsafe, mkdirs: true,
+          to_file: File.join(directory, 'html', "#{base}.html")
+        next
+      end
+
+      section = File.read(input, encoding: Encoding::UTF_8)[/^:manvolnum: (.+)$/, 1]
+      raise "Invalid manpage section in #{input}" unless section
+
+      Asciidoctor.convert_file input, backend: 'manpage', safe: :unsafe, mkdirs: true,
+        to_file: File.join(directory, 'man', "#{base}.#{section}")
+      Asciidoctor.convert_file input, backend: 'html5', safe: :unsafe, mkdirs: true,
+        to_file: File.join(directory, 'html', "#{base}.html")
+    end
+
+    raise 'Asciidoctor generated warnings' if logger.max_severity && logger.max_severity >= Logger::Severity::WARN
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  inputs = ARGV.empty? ? Dir.glob('*.adoc').sort : ARGV
+  Pcre2AsciidocConverter.run(inputs)
 end
