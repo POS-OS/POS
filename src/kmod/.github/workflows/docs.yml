@@ -30,8 +30,12 @@ jobs:
     runs-on: ubuntu-26.04
     container:
       image: 'ubuntu:26.04'
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Validate trigger
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         env:
           INPUT_TAG: ${{ inputs.tag }}
         run: |
@@ -40,18 +44,39 @@ jobs:
             exit 1
           fi
 
-      - name: Checkout
+      - name: Ref for setup
+        id: ref_for_setup
+        run: |
+          if [[ "${GITHUB_REF}" == refs/heads/ci-test-docs ]]; then
+            echo ref="ci-test-docs" >> $GITHUB_OUTPUT
+          else
+            echo ref="master" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout for setup-os
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.tag }}
+          ref: ${{ steps.ref_for_setup.outputs.ref }}
 
       - name: Setup OS
         uses: ./.github/actions/setup-os
 
+      - name: Checkout target ref for workflow_dispatch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        with:
+          ref: ${{ inputs.tag }}
+
+      - name: Checkout target ref for normal triggers
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+
       - name: Build docs
         run: |
           meson setup --native-file build-dev.ini -Ddocs=true build-docs/
-          meson compile -C build-docs docs
+          # XXX: change this to `meson compile -C build-docs docs` once only
+          # v35+ is supported
+          ninja -C build-docs libkmod-3-doc
 
       - name: Extract docs version
         shell: bash
@@ -81,6 +106,12 @@ jobs:
           if [[ "$PUBLISH" == "false" ]]; then
             echo "publish=false" >> $GITHUB_OUTPUT
           elif [[ "$PUBLISH" == "true" ]]; then
+            # this is a manual workflow, only allow to publish if being executed from master branch
+            # or a tag. We don't want a build from ci-test-docs to end up publishing anything
+            if [[ "${GITHUB_REF}" != refs/heads/master && "${GITHUB_REF}" != refs/tags/* ]]; then
+              echo "::error::Can't publish from branch != master or a valid tag (ref=${GITHUB_REF}"
+              exit 1
+            fi
             echo "publish=true" >> $GITHUB_OUTPUT
           elif [[ "${GITHUB_REF}" == refs/heads/master || "${GITHUB_REF}" == refs/tags/* ]]; then
             echo "publish=true" >> $GITHUB_OUTPUT
