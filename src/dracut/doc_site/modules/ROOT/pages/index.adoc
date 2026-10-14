@@ -1,0 +1,214 @@
+= dracut {mainversion}
+:author: Harald Hoyer
+:email: harald@profian.com
+:revnumber: {version}
+:language: bash
+
+dracut is a modular tool which generates an initial image capable of loading
+necessary drivers and performing other configuration during early Linux boot.
+
+== The early boot environment
+
+Most Linux distributions ship a single, generic kernel image that is intended
+to boot a wide variety of hardware. The device drivers for this generic kernel
+image are included as loadable modules, as it is not practical to statically
+compile them all into the one kernel without making it excessively large.
+However, this then raises the problem of detecting and loading the device
+driver modules necessary to mount the root file system at boot time (or, for
+that matter, deducing where or what the root file system is).
+
+To further complicate matters, the root file system may be on a software RAID
+volume, LVM, NFS (on diskless workstations), or on an encrypted partition. All
+of these require special preparations to mount.  Another complication is kernel
+support for hibernation, which suspends the computer to disk by dumping an
+image of the entire system to a swap partition or a regular file, then
+powering off. On next boot, this image has to be made accessible before it can
+be loaded back into memory.
+
+To avoid having to hardcode many special cases into the kernel, an initial boot
+stage with a temporary root file system — now dubbed early user space — is
+used.  This root file system contains user-space helpers that do the hardware
+detection, module loading and device discovery necessary to get the "real" root
+file system mounted, which the kernel then "pivots" onto to continue the boot
+process.
+
+An image of this initial root file system (along with the kernel image) must be
+stored somewhere accessible by the Linux bootloader or the boot firmware of the
+computer.  This is usally partition on a local disk (a _boot partition_) or
+perhaps remotely via a TFTP server (on systems that can boot from Ethernet).
+The bootloader will load the kernel and initial root file system image into
+memory and then start the kernel, passing in the memory address of the image.
+
+== initrd and initramfs
+
+_initrd_ and _initramfs_ are two related but different methods of creating the
+early user space environment.  Both achieve similar goals of allowing the
+kernel to find the main root device, but operate differently.
+
+In short, _initrd_ is a block device image, while an _initramfs_ is a
+link:https://en.wikipedia.org/wiki/Cpio[cpio] archive that the kernel extracts
+to a link:https://www.kernel.org/doc/html/v6.6/filesystems/tmpfs.html[temporary
+file system] created at boot.  The difference is subtle but important to many
+of the internal operations of kernel initalization; for more details see
+link:https://kernel.org/doc/Documentation/filesystems/ramfs-rootfs-initramfs.txt[kernel
+rootfs documentation].
+
+While the _initrd_ approach is essentially obsolete, you may still see
+references to it; confusingly the terms are sometimes used interchangeably.
+
+dracut creates _initramfs_ archives.
+
+== dracut's approach
+
+dracut creates an initramfs archive by copying tools and files from an installed
+system and combining it with dracut modules, usually found on an installed
+system in `/usr/lib/dracut/modules.d`.
+
+Unlike other implementations, dracut hard-codes as little as possible into the
+initramfs.  To keep the time required in the initramfs as little as possible,
+instead of scripts hard-coded to do various things, dracut depends on on `udev`
+to create device nodes.  When the rootfs's device node is available, we mount
+and carry on.
+
+Most of the initramfs generation functionality in dracut is provided by
+generator modules that are sourced by the main dracut script to install
+specific functionality into the initramfs.  They live in the `modules.d`
+subdirectory, and use functionality provided by dracut-functions to do their
+work.
+
+== Mount preparations
+
+dracut's initramfs starts only with the device name of the root file system (or
+its UUID) and must discover everything else at boot time. A complex cascade of
+tasks must be performed to get the root file system mounted:
+
+* Any hardware drivers that the boot process depends on must be loaded. All
+kernel modules for common storage devices are packed onto the initramfs and then
+udev pulls in modules matching the computer's detected hardware.
+
+* On systems which display a boot `rd.splash` screen, the video hardware must
+be initialized and a user-space helper started to paint animations onto the
+display in lockstep with the boot process.
+
+* If the root file system is on NFS, dracut does then:
+** Bring up the primary network interface.
+** Invoke a DHCP client, with which it can obtain a DHCP lease.
+** Extract the name of the NFS share and the address of the NFS server from the
+lease.
+** Mount the NFS share.
+
+* If the root file system appears to be on a software RAID device, there is no
+way of knowing which devices the RAID volume spans; the standard MD utilities
+must be invoked to scan all available block devices with a raid signature and
+bring the required ones online.
+
+* If the root file system appears to be on a logical volume, the LVM utilities
+must be invoked to scan for and activate the volume group containing it.
+
+* If the root file system is on an encrypted block device:
+** Invoke a helper script to prompt the user to type in a passphrase and/or
+insert a hardware token (such as a smart card or a USB security dongle).
+
+* Create a decryption target with the device mapper.
+
+dracut uses link:https://en.wikipedia.org/wiki/Udev[udev], an event-driven
+hotplug agent, which invokes helper programs as hardware devices, disk
+partitions and storage volumes matching certain rules come online. This allows
+discovery to run in parallel, and to progressively cascade into arbitrary
+nestings of LVM, RAID or encryption to get at the root file system.
+
+When the root file system finally becomes visible:
+
+* Any maintenance tasks which cannot run on a mounted root file system
+are done.
+* The root file system is mounted read-only.
+* Any processes which must continue running (such as the `rd.splash` screen helper
+and its command FIFO) are hoisted into the newly-mounted root file system.
+
+The final root file system cannot simply be mounted over /, since that would
+make the scripts and tools on the initial root file system inaccessible for any
+final cleanup tasks. On an initramfs, the initial root file system cannot be
+rotated away. Instead, it is simply emptied and the final root file system
+mounted over the top.
+
+If the systemd module is used in the initramfs, the ordering of the services
+started looks like xref:man/dracut.bootup.7.adoc[].
+
+== Host-only versus generic mode
+
+Dracut can operate in two modes
+
+host-only mode:: dracut will generate a smaller customized initramfs image
+which contains only whatever is necessary to boot based on examining the
+running system.
+
+generic mode:: dracut will generate a larger, but more generic, initramfs
+image.  This is important for generic kernels, or if you are switching hardware
+for an installed system.
+
+== Dracut on shutdown
+
+On a systemd driven system, the dracut initramfs is also used for the shutdown
+procedure.  See xref:man/dracut-shutdown.service.8.adoc[] for details.
+
+== Development
+
+Issues and merge requests can be found at the GitHub development page at
+link:https://github.com/dracut-ng/dracut[].
+
+== History
+
+dracut (pronounced: /ˈdreɪkət/) was the initial brainchild born out of late
+night scheme of Farce Majeure, link:https://github.com/katzj[Jeremy Katz] and
+link:https://lwn.net/Articles/317874/[Dave Jones] who also did the initial
+implementation until link:https://github.com/haraldh[Harald Hoyer] took it
+under his care in 2009 and continued its development from there
+link:https://github.com/dracut-ng/dracut/commit/9371dcaba3c58377428eee44bd702fae7b2ab20e[on].
+
+The project
+link:https://github.com/dracut-ng/dracut/commit/ec9315e56222d38fdbfca5f8e47f05c156ce4927[started]
+and was link:https://lkml.org/lkml/2008/12/17/318[announced] in 2008.
+
+Some people inside Red Hat started to name their projects after cities and
+villages around the developer headquarters of Red Hat in Westford,
+Massachusetts.
+
+So, dracut is named after the town
+link:https://www.google.com/maps/place/Dracut,+MA,+USA[Dracut], similar to
+link:https://www.google.com/maps/place/Wayland,+MA,+USA[Wayland] and
+link:https://www.google.com/maps/place/Weston,+MA,+USA[Weston].
+
+== Presentations
+
+* link:https://blog.linuxplumbersconf.org/2009/slides/Harald-Hoyer-dracut.pdf[Plumbers 2009 slides]
+* link:http://laotzu.ftp.acc.umu.se/pub/debian-meetings/2010/fosdem10/high/Dracut_a_generic_modular_initramfs_generation_tool.ogv[Talk at FOSDEM 2010]
+
+== Resources
+
+=== Manual pages
+
+Documentation is most in the form of manual pages for the various dracut
+components.
+
+==== User Manual Pages
+
+* xref:man/dracut.8.adoc[]
+* xref:man/dracut.conf.5.adoc[]
+* xref:man/dracut.cmdline.7.adoc[]
+* xref:man/lsinitrd.1.adoc[]
+
+==== Developer Manual Pages
+
+* xref:man/dracut.modules.7.adoc[]
+* xref:man/dracut.bootup.7.adoc[]
+
+== License
+
+dracut is licensed under the GNU General Public License (GPL) v2; see
+link:https://github.com/dracut-ng/dracut/blob/main/COPYING[COPYING]
+
+Parts of this documentation site are taken from work licensed under the
+Creative Commons Attribution/Share-Alike License. To view a copy of this
+license, visit link:http://creativecommons.org/licenses/by-sa/3.0/[] or send a
+letter to Creative Commons, 559 Nathan Abbott Way, Stanford, California
+94305, USA.

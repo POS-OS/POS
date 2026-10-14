@@ -1,0 +1,213 @@
+= Dracut Developer Guidelines
+
+Please make sure to follow our xref:developer/contributing.adoc[Contribution Guidelines].
+
+== Source
+
+Currently dracut lives on github.com.
+
+* https://github.com/dracut-ng/dracut.git
+
+Pull requests should be filed in this project
+
+== Code Format
+
+It is recommended, that you install a plugin for your editor, which reads in `.editorconfig`.
+Additionally `emacs` and `vim` config files are provided for convenience.
+
+To reformat C files use `astyle`:
+
+[,console]
+----
+$ astyle --options=.astylerc <FILE>
+----
+
+For convenience there is also a Makefile `indent-c` target `make indent-c`.
+
+To reformat shell files use `shfmt`:
+
+[,console]
+----
+$ shfmt_version=3.2.4
+$ wget "https://github.com/mvdan/sh/releases/download/v${shfmt_version}/shfmt_v${shfmt_version}_linux_amd64" -O shfmt
+$ chmod u+x shfmt
+$ ./shfmt -w -s .
+----
+
+or
+
+[,console]
+----
+$ GO111MODULE=on go get mvdan.cc/sh/v3/cmd/shfmt
+$ $GOPATH/bin/shfmt -w -s .
+----
+
+or if `shfmt` is already in your `PATH`, use `make indent`.
+
+Some IDEs already have support for shfmt.
+
+For convenience the `make indent` Makefile target also calls shfmt, if it is in `$PATH`.
+
+== Commit Messages
+
+Commit messages should answer these questions:
+
+What?::
+  a short summary of what you changed in the subject line.
+Why?::
+  what the intended outcome of the change is (arguably the most important
+  piece of information that should go into a message).
+How?::
+  if multiple approaches for achieving your goal were available, you also
+  want to explain why you chose the used implementation strategy.  Note that
+  you should not explain how your change achieves your goal in your commit
+  message.  That should be obvious from the code itself.  If you cannot achieve
+  that clarity with the used programming language, use comments within the code
+  instead.
+
+The commit message is primarily the place for documenting the why.
+
+Commit message titles should follow https://www.conventionalcommits.org/en/v1.0.0/[Conventional Commits].
+
+Format is `<type>[optional scope]: <description>`, where `type` is one of:
+
+* *fix*: A bug fix
+* *feat*: A new feature
+* *perf*: A code change that improves performance
+* *refactor*: A code change that neither fixes a bug nor adds a feature
+* *style*: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+* *test*: Adding missing tests or correcting existing tests
+* *docs*: Documentation only changes
+* *revert*: Reverts a previous commit
+* *chore*: Other changes that don't modify src or test files
+* *build*: Changes that affect the build system or external dependencies (example scopes: gulp, broccoli, npm)
+* *ci*: Changes to our CI configuration files and scripts (example scopes: Travis, Circle, BrowserStack, SauceLabs)
+
+`scope` should be the module name (without numbers) or:
+
+* *cli*: for the dracut command line interface
+* *rt*: for the dracut initramfs runtime logic
+* *functions*: for general purpose dracut functions
+
+Commit messages are checked with https://github.com/tomtom-international/commisery[Commisery].
+
+== Testsuite
+
+=== In a container
+
+[,console]
+----
+$ cd <DRACUT_SOURCE>
+$ test/test.sh [CONTAINER] [TESTS]
+----
+
+with `[CONTAINER]` being one of the
+https://github.com/orgs/dracut-ng/packages[github `dracut-ng` containers].
+Default container is `fedora`.
+
+If the container supports arm64, and the test.sh script is run on an arm64
+environment, the test would also run using an arm64 container.
+
+Run only specific test::
+e.g. only runs the 10, 20 tests inside the default container.
++
+[,console]
+----
+$ TESTS="10 11" test/test.sh
+----
+
+Run all tests on `ubuntu:rolling` in quiet mode (V=0):: {empty}
++
+[,console]
+----
+$ V=0 test/test.sh ubuntu:rolling
+----
+
+Run test in verbose mode (enabled for GitHub Actions):: {empty}
++
+[,console]
+----
+$ V=1 test/test.sh
+----
+
+Run test in extra verbose mode (enabled for debug logging):: {empty}
++
+[,console]
+----
+$ V=2 test/test.sh
+----
+
+Run test 20 with `btrfs` omitting `systemd` dracut module on `debian` :: {empty}
++
+[,console]
+----
+$ TESTS="20" TEST_FSTYPE=btrfs TEST_DRACUT_ARGS="--omit systemd" test/test.sh debian
+----
+
+Run test 10 with `rdma` package installed on `fedora` :: {empty}
++
+[,console]
+----
+$ TESTS="10" TEST_CONTAINER_COMMAND="dnf -y install rdma" test/test.sh fedora
+----
+
+=== On bare metal
+
+For the testsuite to pass, you will have to install at least the software packages
+mentioned in the `test/container` Dockerfiles.
+
+Run tests:: {empty}
++
+[,console]
+----
+$ make clean check
+----
+
+Run only specific test::
+e.g. only runs the 10, 11 tests.
++
+[,console]
+----
+$ make TESTS="10 11" clean check
+----
+
+Debug a specific test case:: {empty}
++
+[,console]
+----
+$ cd TEST-01-BASIC
+$ make clean setup run
+----
+
+Run the test without doing the setup::
+_change some kernel parameters in `test.sh`_
++
+[,console]
+----
+$ make run
+----
+
+== Documentation
+
+=== Man pages
+
+Runtime documentation is largely in `man` pages shipped by distributions.  The
+man pages are built from link:https://asciidoc.org/[AsciiDoc] sources by
+link:https://asciidoctor.org/[Asciidoctor].
+
+To disable man page generation run `configure` with `--disable-documentation`.
+
+WARNING: The flag `--disable-asciidoctor` is provided to build the manual pages
+with the `asciidoc` and `docbook` toolchain.  As the documentation site
+generator Antora is based on Asciidoctor, this flag is deprecated to enable a
+single Asciidoctor-based toolchain for manual pages and the generated site in a
+future release.
+
+=== Documentation site
+
+To build this documentation site run `make doc_site`.  The site is built and
+published by CI on commits.
+
+The documentation site is based on https://antora.org/[Antora].  By default
+it will build via `npx` (install `nodejs`) or if you have Antora installed in
+some other way, you can set `ANTORA_BIN`.

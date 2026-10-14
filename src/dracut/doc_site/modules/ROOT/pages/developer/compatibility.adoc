@@ -1,0 +1,45 @@
+= Compatibility
+
+Expect compatibility preserved for
+
+* dracut command line options
+* kernel command line options
+* dracut module names
+* dracut module interface
+
+Do not expect compatibility preserved for
+
+* undocumented filenames and function names for dracut module implementations
+* very old dependent binary versions (including udev and systemd)
+
+Changes impacting compatibility are explained in commit messages and in the
+NEWS file.
+
+When possible dracut will follow a depreciation process, whereby for one
+releases (and one releases only) dracut will preserve compatibility to allow
+for migration.
+
+The compatibility promise is primary towards end users and not towards Linux
+distributions packaging dracut. Distribution packaging will need changes
+time-to-time between dracut releases (e.g. as files gets added and removed).
+
+== Dependencies
+
+Dependencies for the generated initramfs:
+
+* glibc or musl
+* shell (bash, dash, busybox). Some features are only supported with bash.
+* udev or eudev
+* systemd is an optional (not required) dependency
+
+== Minimal versions of important dependencies in test containers
+
+[cols="1,1"]
+|===
+|udev/systemd (Debian 13)       | 257
+|linux-kernel (Debian 13)       | 6.12
+|bash (Debian 13)               | 5.2
+|qemu (Debian 13)               | 10.0
+|busybox (Alpine)               | 1.37
+|eudev (Alpine/Void)            | 3.2.14
+|===

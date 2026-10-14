@@ -1,0 +1,111 @@
+---
+# Containers that takes longer to build or mainline, development, non-stable
+# version of CI containers
+name: Container (extra)
+
+on:  # yamllint disable-line rule:truthy
+    schedule:
+        - cron: '00 12 * * *'   # every day at 12:00 UTC
+    push:
+        branches: [main]
+        paths:
+            - 'test/container/**'
+            - '.github/workflows/container-extra.yml'
+    pull_request:
+        branches: [main]
+        paths:
+            - 'test/container/**'
+            - '.github/workflows/container-extra.yml'
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+permissions:
+    packages: write
+    contents: read
+
+jobs:
+    container-extra:
+        if: github.repository == 'dracut-ng/dracut' || vars.CONTAINER == 'enabled'
+        name: ${{ matrix.config.tag }}-${{ matrix.architecture.tag }}
+        runs-on: ${{ matrix.architecture.runner }}
+        concurrency:
+            group: >
+                container-extra-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.config.tag }}-${{ matrix.architecture.tag }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                architecture:
+                    - platform: linux/amd64
+                      runner: ubuntu-24.04
+                      tag: amd
+                    - platform: linux/arm64
+                      runner: ubuntu-24.04-arm
+                      tag: arm
+                config:
+                    - dockerfile: Dockerfile-azurelinux
+                      tag: azurelinux:latest
+                      registry: mcr.microsoft.com
+                      platforms: ['amd', 'arm']
+                    - dockerfile: Dockerfile-fedora
+                      tag: centos:latest
+                      registry: quay.io/centos
+                      platforms: ['amd', 'arm']
+                    - dockerfile: Dockerfile-debian
+                      tag: debian:sid
+                      platforms: ['amd', 'arm']
+                    - dockerfile: Dockerfile-fedora
+                      tag: fedora:rawhide
+                      registry: registry.fedoraproject.org
+                      platforms: ['amd', 'arm']
+                    - dockerfile: Dockerfile-gentoo
+                      tag: gentoo:amd64-openrc
+                      option: amd64-openrc
+                      platforms: ['amd']
+                    - dockerfile: Dockerfile-gentoo
+                      tag: gentoo:arm64-openrc
+                      option: arm64-openrc
+                      platforms: ['arm']
+                    - dockerfile: Dockerfile-gentoo
+                      tag: gentoo:latest
+                      option: systemd
+                      platforms: ['amd', 'arm']
+                exclude:
+                    # arch container does not support arm
+                    - config: {tag: 'arch:latest'}
+                      architecture: {platform: 'linux/arm64'}
+                    - config: {tag: 'gentoo:amd64-openrc'}
+                      architecture: {platform: 'linux/arm64'}
+                    - config: {tag: 'gentoo:arm64-openrc'}
+                      architecture: {tag: 'amd'}
+        steps:
+            - name: Check out the repo
+              uses: actions/checkout@v7
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v4
+            - name: Login to GitHub Container Registry
+              uses: docker/login-action@v4
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.repository_owner }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Set up env
+              run: echo "repository_owner=${GITHUB_REPOSITORY_OWNER,,}" >>${GITHUB_ENV}
+            - name: Build and Push Container
+              uses: docker/build-push-action@v7
+              with:
+                  file: test/container/${{ matrix.config.dockerfile }}
+                  tags: ghcr.io/${{env.repository_owner}}/${{ matrix.config.tag }}-${{ matrix.architecture.tag }}
+                  push: ${{ github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
+                  platforms: ${{ matrix.architecture.platform }}
+                  build-args: |
+                      DISTRIBUTION=${{ matrix.config.tag }}
+                      REGISTRY=${{ matrix.config.registry }}
+                      OPTION=${{ matrix.config.option }}
+            - name: Create and Push Multi-Arch Manifest
+              if: github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+              run: |
+                  tag="ghcr.io/${{env.repository_owner}}/${{ matrix.config.tag }}"
+                  images="$(printf "${tag}-%s " ${{ join(matrix.config.platforms, ' ') }})"
+                  docker buildx imagetools create -t ${tag} ${images}

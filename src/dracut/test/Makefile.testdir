@@ -1,0 +1,10 @@
+.PHONY: all setup clean run
+
+all:
+	@V=$(V) testdir="$(realpath ../)" ./test.sh --all
+setup:
+	@testdir="$(realpath ../)" ./test.sh --setup
+clean:
+	@testdir="$(realpath ../)" ./test.sh --clean
+run:
+	@testdir="$(realpath ../)" ./test.sh --run

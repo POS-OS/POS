@@ -1,0 +1,299 @@
+---
+name: Integration Test
+
+on:  # yamllint disable-line rule:truthy
+    pull_request:
+        branches: [main]
+        paths-ignore:
+            - antora-playbook.yaml
+            - 'doc_site/**'
+            - 'man/**'
+
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+env:
+    # set V to 2 when re-running jobs with debug logging enabled
+    # see https://docs.github.com/en/actions/monitoring-and-troubleshooting-workflows/troubleshooting-workflows/enabling-debug-logging
+    V: "${{ secrets.ACTIONS_STEP_DEBUG && '2' }}"
+
+jobs:
+    basic:
+        # run this test on all containers
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                basic-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - alpine:edge
+                    - alpine:busybox-edge
+                    - arch:latest
+                    - debian:latest
+                    - fedora:latest
+                    - opensuse:latest
+                    - ubuntu:rolling
+                    - void:latest
+                test:
+                    - "10"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+
+    # syncheck
+    syncheck:
+        needs: basic
+        name: syncheck
+        runs-on: ubuntu-24.04
+        container:
+            image: ubuntu:rolling
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: Install dependencies
+              run: apt-get update && apt-get -y install make shellcheck shfmt
+            - run: make syncheck
+
+    extended:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                extended-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - arch:latest
+                    - fedora:latest
+                    - opensuse:latest
+                    - ubuntu:rolling
+                    - void:latest
+                test:
+                    - "11"
+                    - "12"
+                    - "13"
+                    - "14"
+                    - "15"
+                    - "20"
+                    - "21"
+                    - "26"
+                    - "30"
+                    - "50"
+                    - "80"
+                    - "83"
+                exclude:
+                    # https://github.com/void-linux/void-packages/issues/62317
+                    - container: void:latest
+                      test: "15"
+                    # cpio is not installed on Debian/Ubuntu
+                    - container: ubuntu:rolling
+                      test: "83"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+
+    extended-systemd:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                extended-systemd-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - arch:latest
+                    - fedora:latest
+                    - opensuse:latest
+                    - ubuntu:rolling
+                test:
+                    - "40"
+                    - "41"
+                    - "42"
+                    - "43"
+                    - "44"
+                    - "45"
+                    - "46"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm --privileged'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+
+    dracut-cpio:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                dracut-cpio-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - opensuse:latest
+                test:
+                    - "82"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+    network:
+        needs: basic
+        # all nfs based on default networking
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 20
+        concurrency:
+            group: >
+                network-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}-${{ matrix.network }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - arch:latest
+                    - fedora:latest
+                    - opensuse:latest
+                    - ubuntu:rolling
+                test:
+                    - "31"
+                    - "60"
+                    - "61"
+                exclude:
+                    # https://github.com/dracut-ng/dracut/issues/2541
+                    - container: ubuntu:rolling
+                      test: "61"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: >
+                USE_NETWORK=${{ matrix.network }}
+                ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+    network-iscsi:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                network-iscsi-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}-${{ matrix.network }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                network:
+                    - network-manager
+                container:
+                    - debian:latest
+                    - ubuntu:rolling
+                test:
+                    - "70"
+                    - "71"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: >
+                USE_NETWORK=${{ matrix.network }}
+                ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+    network-nbd:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }}
+        runs-on: ubuntu-24.04
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                network-nbd-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}-${{ matrix.network }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - debian:latest
+                    - opensuse:latest
+                test:
+                    - "72"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: >
+                USE_NETWORK=${{ matrix.network }}
+                ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
+    arm64:
+        needs: basic
+        name: ${{ matrix.test }} on ${{ matrix.container }} on arm64
+        runs-on: ubuntu-24.04-arm
+        timeout-minutes: 10
+        concurrency:
+            group: >
+                arm64-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                container:
+                    - debian:latest
+                    - opensuse:latest
+                    - ubuntu:rolling
+                    - void:latest
+                test:
+                    - "10"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm --privileged'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}

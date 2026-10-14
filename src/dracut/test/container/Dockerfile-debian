@@ -1,0 +1,107 @@
+# Test coverage provided by this container:
+# - 3cpio
+# - arm64
+# - dash default shell (instead of bash)
+# - curl (url-lib)
+# - mawk (instead of gawk)
+# - zstd compression
+# - verbose logging for tests
+# - dbus-daemon
+# - network: network-manager, systemd-networkd
+
+ARG DISTRIBUTION=debian
+FROM docker.io/${DISTRIBUTION}
+
+# export ARG
+ARG DISTRIBUTION
+
+# Install dracut as a linux-initramfs-tool provider so that the default initramfs-tool package does not get installed
+# Install 3cpio where available
+RUN case $(dpkg --print-architecture) in \
+        amd64) arch_pkgs="qemu-system-x86" ;; \
+        arm64) arch_pkgs="qemu-efi-aarch64 qemu-system-arm" ;; \
+    esac; \
+    if [ "$DISTRIBUTION" != "debian:latest" ]; then cpio=3cpio; else cpio=cpio; fi; \
+    if [ "$DISTRIBUTION" != "debian:latest" ] && [ "$DISTRIBUTION" != "ubuntu:rolling" ]; then \
+        systemd_pkgs="systemd-tpm"; \
+    fi; \
+    apt-get update && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends -o Dpkg::Use-Pty=0 \
+    $arch_pkgs \
+    $cpio \
+    $systemd_pkgs \
+    asciidoctor \
+    bluez \
+    btrfs-progs \
+    busybox \
+    ca-certificates \
+    cargo \
+    chrony \
+    console-data \
+    cryptsetup \
+    curl \
+    dmsetup \
+    dnsmasq \
+    docbook \
+    docbook-xml \
+    docbook-xsl \
+    dracut \
+    dracut-network \
+    dracut-test \
+    erofs-utils \
+    fdisk \
+    file \
+    gcc \
+    gpg \
+    gpg-agent \
+    iproute2 \
+    iputils-arping \
+    iputils-ping \
+    ipxe-qemu \
+    iscsiuio \
+    jq \
+    kbd \
+    kmod \
+    libfido2-1 \
+    libkmod-dev \
+    libsystemd-dev \
+    linux-image-generic \
+    lvm2 \
+    make \
+    mdadm \
+    multipath-tools \
+    nbd-client \
+    nbd-server \
+    network-manager \
+    nfs-kernel-server \
+    ntfs-3g \
+    nvme-cli \
+    open-iscsi \
+    openssl \
+    ovmf \
+    parted \
+    pcscd \
+    pkg-config \
+    plymouth-themes \
+    procps \
+    python3 \
+    rng-tools5 \
+    squashfs-tools \
+    swtpm \
+    systemd-boot-efi \
+    systemd-container \
+    systemd-coredump \
+    systemd-cryptsetup \
+    systemd-repart \
+    systemd-resolved \
+    systemd-sysv \
+    systemd-ukify \
+    tcpdump \
+    tgt \
+    thin-provisioning-tools \
+    tpm2-tools \
+    util-linux-extra \
+    xfsprogs \
+    xorriso \
+    zstd \
+    && apt-get clean

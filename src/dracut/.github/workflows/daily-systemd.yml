@@ -1,0 +1,92 @@
+---
+name: Daily Tests - systemd
+
+on:  # yamllint disable-line rule:truthy
+    schedule:
+        - cron: '30 20 * * *'   # every day at 20:30 UTC
+
+    # Allows you to run this workflow manually from the Actions tab
+    workflow_dispatch:
+
+    pull_request:
+        paths:
+            - '.github/workflows/daily-systemd.yml'
+
+jobs:
+    systemd:
+        name: ${{ matrix.test }} on ${{ matrix.container }} on ${{ matrix.architecture.tag }}
+        runs-on: ${{ matrix.architecture.runner }}
+        timeout-minutes: ${{ matrix.architecture.timeout }}
+        concurrency:
+            group: >
+                daily-systemd-${{ github.workflow }}-${{ github.ref }}
+                -${{ matrix.container }}-${{ matrix.test }}-${{ matrix.architecture.tag }}
+            cancel-in-progress: true
+        strategy:
+            fail-fast: false
+            matrix:
+                architecture:
+                    - runner: ubuntu-24.04
+                      tag: amd
+                      timeout: 10
+                    - runner: ubuntu-24.04-arm
+                      tag: arm
+                      timeout: 20
+                container:
+                    - arch:latest
+                    - azurelinux:latest
+                    - debian:latest
+                    - debian:sid
+                    - fedora:latest
+                    - fedora:rawhide
+                    - centos:latest
+                    - gentoo:latest
+                    - opensuse:latest
+                    - ubuntu:devel
+                    - ubuntu:rolling
+                test:
+                    - "40"
+                    - "41"
+                    - "42"
+                    - "43"
+                    - "44"
+                    - "45"
+                    - "46"
+                exclude:
+                    # arch container does not support arm
+                    - container: arch:latest
+                      architecture: {runner: 'ubuntu-24.04-arm', tag: 'arm'}
+                    - container: azurelinux:latest
+                      architecture: {runner: 'ubuntu-24.04-arm', tag: 'arm'}
+                    # https://github.com/dracut-ng/dracut/issues/2612
+                    - container: fedora:latest
+                      architecture: {runner: 'ubuntu-24.04-arm', tag: 'arm'}
+                    # https://github.com/dracut-ng/dracut/issues/2612
+                    - container: fedora:rawhide
+                      architecture: {runner: 'ubuntu-24.04-arm', tag: 'arm'}
+                    # https://github.com/dracut-ng/dracut/issues/2612
+                    - container: centos:latest
+                      architecture: {runner: 'ubuntu-24.04-arm', tag: 'arm'}
+                    # intentionally skipped
+                    - container: centos:latest
+                      test: "41"
+                    # TEST-45-SYSTEMD-IMPORT requires systemd >= v258
+                    - container: centos:latest
+                      test: "45"
+                    # TEST-45-SYSTEMD-IMPORT requires systemd >= v258
+                    - container: debian:latest
+                      test: "45"
+                    # TEST-46-SYSTEMD-SYSEXT requires systemd >= v258
+                    - container: centos:latest
+                      test: "46"
+                    # TEST-46-SYSTEMD-SYSEXT requires systemd >= v258
+                    - container: debian:latest
+                      test: "46"
+        container:
+            image: ghcr.io/dracut-ng/${{ matrix.container }}
+            options: '--device=/dev/kvm --privileged'
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v7
+            - name: "${{ matrix.container }} TEST-${{ matrix.test }}"
+              run: ./test/test-container.sh "TEST-${{ matrix.test }}" ${{ matrix.test }}
