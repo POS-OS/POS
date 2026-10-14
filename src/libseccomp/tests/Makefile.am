@@ -164,7 +164,7 @@ EXTRA_DIST_TESTPYTHON = \
 	61-sim-transactions.py \
 	62-sim-arch_transactions.py \
 	63-live-notify_addfd.py \
-	64-live-trapx
+	64-live-trapx.py
 
 EXTRA_DIST_TESTCFGS = \
 	01-sim-allow.tests \
