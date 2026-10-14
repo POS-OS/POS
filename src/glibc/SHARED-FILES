@@ -277,6 +277,8 @@ core-math:
   sysdeps/ieee754/dbl-64/e_sinh.c
   # src/binary64/asinh/asinh.c, revision cd653cf7
   sysdeps/ieee754/dbl-64/s_asinh.c
+  # src/binary64/cbrt/cbrt.c, revision 2863c7f2
+  sysdeps/ieee754/dbl-64/s_cbrt.c
   # src/binary64/erf/erf.c, revision 384ed01d
   sysdeps/ieee754/dbl-64/s_erf.c
   # src/binary64/erfc/erfc.c, revision 55e9869e
@@ -829,6 +831,8 @@ arm-optimized-routines:
   # string/aarch64/memset-sve.S, revision 0f71101
   sysdeps/aarch64/multiarch/memset_sve_zva64.S
   # string/aarch64/memset.S, revision 098df8c
+  sysdeps/aarch64/multiarch/strlen_sve2.S
+  # string/aarch64/strlen-sve2.S, revision 375f32e
   sysdeps/aarch64/memset.S
   # string/aarch64/stpcpy.S, revision 189dfef
   sysdeps/aarch64/stpcpy.S

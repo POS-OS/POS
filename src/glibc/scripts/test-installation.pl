@@ -109,25 +109,33 @@ open SOVERSIONS, $soversions
 $link_libs = "";
 %versions = ();
 
+# Some libraries we don't want to link:
+@skip = (
+  # contains unresolved references
+  "thread_db",
+  # is just a test NSS module
+  "nss_test1",
+  # is not provided by glibc
+  "gcc_s", "unwind",
+  # are dummy SONAMEs for compatibility, unavailable for -l
+  "nss_dns", "nss_files",
+  # conflicts with the libnsl package
+  "nsl",
+  # are empty static libraries, so ldd will not report them
+  "anl", "dl", "pthread", "rt", "util",
+);
+
 while (<SOVERSIONS>) {
   next if (/^all-sonames/);
   chop;
   if (/^lib/) {
     ($name, $version)= /^lib(.*)\.so-version=\.(.*)$/;
-    # Filter out some libraries we don't want to link:
-    # - nss_ldap since it's not yet available
-    # - libdb1 since it conflicts with libdb
-    # - libthread_db since it contains unresolved references
-    # - it's just a test NSS module
-    # - We don't provide the libgcc so we don't test it
-    # - libmvec if it wasn't built
+    # Filter out libraries we don't want to link ...
+    next if (grep { $_ eq $name } @skip);
+    # ... and also libmvec if it wasn't built
     next if ($build_mathvec == 0 && $name eq "mvec");
-    if ($name ne "nss_ldap" && $name ne "db1"
-	&& $name ne "thread_db"
-	&& $name ne "nss_test1" && $name ne "libgcc_s") {
-      $link_libs .= " -l$name";
-      $versions{$name} = $version;
-    }
+    $link_libs .= " -l$name";
+    $versions{$name} = $version;
   } elsif ($LD_SO ne "") {
     ($ld_so_name, $ld_so_version) = split ('\.so\.', $LD_SO);
   } else {
