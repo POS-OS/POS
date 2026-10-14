@@ -919,18 +919,16 @@ load_environ()
 
 		var = environ[i];
 		val = strchr(var, '=');
-		if (val != NULL)
-			*val++ = '\0';
-		else
+		if (val != NULL) {
+			sub = make_string(var, val - var);
+			val++;
+		} else {
+			sub = make_string(var, strlen(var));
 			val = nullstr;
-		sub = make_string(var, strlen(var));
+		}
 		newval = make_string(val, strlen(val));
 		newval->flags |= USER_INPUT;
 		assoc_set(ENVIRON_node, sub, newval);
-
-		/* restore '=' so that system() gets a valid environment */
-		if (val != nullstr)
-			*--val = '=';
 	}
 	/*
 	 * Put AWKPATH and AWKLIBPATH into ENVIRON if not already there.
@@ -1605,6 +1603,7 @@ parse_args(int argc, char **argv)
 
 		case 'g':
 			do_flags |= DO_INTL;
+			warning(_("translation functions are deprecated and will be removed in the next major release"));
 			break;
 
 		case 'G':	// FIXME: command line option is temporary
@@ -1683,6 +1682,8 @@ parse_args(int argc, char **argv)
 		case 'M':
 #ifdef HAVE_MPFR
 			do_flags |= DO_MPFR;
+			if (getenv("GAWK_NO_MPFR_WARN") == NULL)
+				warning(_("MPFR support is deprecated and will be removed in the next major release"));
 #else
 			warning(_("-M ignored: MPFR/GMP support not compiled in"));
 #endif

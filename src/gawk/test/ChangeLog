@@ -1,10 +1,130 @@
+2026-10-08         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* dbugarray4.ok-zos, dbugbadcmd.ok-zos: Update after fixes.
+
+2026-10-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Remove memory status from arrdbg.ok* results. The numbers
+	will vary.
+
+	* Makefile.am (arrdbg): Add manual recipe.
+	* arrdbg.ok, arrdbg.ok-mpfr: Adjust contents.
+
+2026-10-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* genpot.ok, indirectbuiltin.ok, nlstringtest.ok: Revised
+	after code changes.
+	* Makefile.am (nlstringtest): Use a manual recipe and pass
+	$(srcdir) so the .po file can be found in an out-of-tree build.
+	(NEED_LOCALE_FR): Comment out.
+
+2026-10-06         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Clean up running tests from a different build directory.
+
+	* Makefile.am (EXTRA_DIST): Add arrdb.ok, arrdbg.ok-mpfr.
+	(arrdbg): Remove manual recipe, it can be generated.
+	(strftime): Restore removal of strftime.ok.
+	(dbugbadcmd, dbugbreak): Fix recipes to find the source via
+	AWKPATH so can run the tests from outside the source true.
+	* arrdbg.awk: Simplify the test. We don't need to generate
+	separate output files for regular and MPFR within the test.
+	* arrdbb.ok, arrdbg.ok-mpfr: New files.
+	* checkmany.sh: Look in "." for .ok files also, not just
+	in $srcdir. Test that such a file exists before running cmp.
+	* dbugbadcmd.ok, dbugbreak.ok: Adjust after changes.
+
+2026-10-02         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* indirectbuiltin7.ok, indirectbuiltin8.ok,
+	indirectbuiltin9.ok: Update after code changes.
+
+2026-09-30         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* dbugbadcmd.ok-zos, dbugbreak.ok-zos: New files.
+
+	Unrelated:
+
+	* Gentests: Use checkmany.sh for shell script tests.
+	* Makefile.am (strftime, pid): Use checkmany.sh instead of $(CMP).
+
+2026-09-30         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile.am (mpfrmemok1): Revise recipe for new output.
+	* mpfranswer42.ok, mpfrbigint.ok, mpfrbigint2.ok, mpfrcase.ok,
+	mpfrcase2.ok, mpfrexprange.ok, mpfrfield.ok, mpfrieee.ok,
+	mpfrmemok1.ok, mpfrnegzero.ok, mpfrnegzero2.ok, mpfrnonum.ok,
+	mpfrnr.ok, mpfrrem.ok, mpfrrnd.ok, mpfrrndeval.ok, mpfrsort.ok,
+	mpfrsqrt.ok, mpfrstrtonum.ok, mpfruplus.ok, mpgforcenum.ok: Revised.
+
+2026-09-29         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* Makefile.am (EXTRA_DIST): New tests, indirectbuiltin7,
+	indirectbuiltin8, indirectbuiltin9.
+	* indirectbuiltin7.awk, indirectbuiltin7.ok,
+	indirectbuiltin8.awk, indirectbuiltin8.ok,
+	indirectbuiltin9.awk, indirectbuiltin9.ok: New files.
+
+	Unrelated:
+
+	* Makefile.am (EXTRA_DIST): New test, elemnew7.
+	* elemnew7.awk, elemnew7.ok: New files.
+
+	Unrelated:
+
+	* Makefile.am (EXTRA_DIST): New tests, dbugbadcmd and dbugbreak.
+	* dbugbadcmd.awk, dbugbadcmd.ok, dbugbreak.awk, dbugbreak.ok: New files.
+
 2026-09-23         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* lintwarn.ok, noeffect.ok: Adjusted after code improvements.
 
+2026-09-22         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* case-check.ok-zos, numrange.ok-zos, printf-corners.ok-zos:
+	Updated after z/OS testing.
+	* exit.ok-zos: New file.
+
+2026-09-20         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* case-check.ok-zos, dbugarray4.ok-zos, posix-inf.ok-zos:
+	Updated.
+	
 2026-09-14         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* lintwarn.ok: Adjusted after code improvements.
+
+2026-09-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Refactor use of checkmany.sh in order to be able to add
+	z/OS tests.
+
+	* checkmany.sh: Only check the test results. Don't run the test.
+	* test/nlstringtest.ok-nogettext: Renamed from
+	test/nlstringtest-nogettext.ok.
+	* Makefile.am: Replace use of $(CMP) with calls to checkmany.sh
+	wherever possible.
+	(EXTRA_DIST): Handle renamed file test/nlstringtest.ok-nogettext.
+	Add all the *.ok-zos files.
+	(NEED_CHECKMANY): Removed this list.
+	(mbprintf5, nlstringtest): Removed manual recipes.
+	* GenTests: Remove code for NEED_CHECKMANY, print call to checkmany.sh
+	as final step in recipes.
+	* aasorti.ok-zos, aasort.ok-zos, arraysort.ok-zos, beginfile1.ok-zos,
+	beginfile2.ok-zos, case-check.ok-zos, charasbytes.ok-zos, clos1way6.ok-zos,
+	cmdlinefsbacknl2.ok-zos, concat4.ok-zos, dbugarray4.ok-zos, dfamb1.ok-zos,
+	double1.ok-zos, double2.ok-zos, elemnew4.ok-zos, errno.ok-zos,
+	forcenum.ok-zos, getlndir.ok-zos, greek-equiv.ok-zos, greek-utf.ok-zos,
+	gsubnulli18n.ok-zos, gsubtst5.ok-zos, hexfloat.ok-zos, ignrcas2.ok-zos,
+	inf-nan-torture.ok-zos, iolint.ok-zos, nofile.ok-zos, nonfatal2.ok-zos,
+	numrange.ok-zos, posix_compare.ok-zos, posix-inf.ok-zos,
+	printf-corners.ok-zos, printhuge.ok-zos, profile5.ok-zos,
+	regexpbad.ok-zos, regrange.ok-zos, reint2.ok-zos, rri1.ok-zos,
+	sigpipe1.ok-zos, sortfor.ok-zos, sortu.ok-zos, space.ok-zos,
+	subamp.ok-zos, subi18n.ok-zos, symtab11.ok-zos, symtab1.ok-zos,
+	symtab8.ok-zos, timeout.ok-zos, unicode1.ok-zos, wideidx2.ok-zos,
+	wideidx.ok-zos, widesub2.ok-zos, widesub3.ok-zos, widesub4.ok-zos,
+	widesub.ok-zos: New files. (Whew!)
 
 2026-08-31         Arnold D. Robbins     <arnold@skeeve.com>
 

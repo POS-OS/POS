@@ -1,3 +1,80 @@
+2026-10-08         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* NEWS: Updated.
+
+2026-10-08         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* debug.c (CHECK_PROG_RUNNING): Don't use __FILE__ so that
+	test output works on different systems. Mainly for z/OS.
+
+2026-10-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Deprecate I18N functionality.
+
+	* builtin.c (do_dcgettext, do_dcngettext, do_bindtextdomain):
+	Add warning messages that these functions are deprecated.
+	* main.c (parse_args): Add warning message for --gen-pot.
+
+2026-10-04         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* NEWS: Updated.
+
+2026-10-01         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* builtin.c, node.c: Change spelling of `regex' to `regexp' in
+	various messages. Thanks to Antonio Colombo for the report.
+
+2026-09-30         Arnold D. Robbins     <arnold@skeeve.com>
+
+	Deprecate MPFR.
+
+	* NEWS: Add a banner at the top about -M being deprecated.
+	* main.c (parse_args): Print a warning message for -M. If
+	GAWK_NO_MPFR_WARN exists in the environment, don't print it.
+
+2026-09-29         Arnold D. Robbins     <arnold@skeeve.com>
+
+	All of the following were reported by Daniel Koh Ji Yang
+	<Daniel.Koh@mbzuai.ac.ae>. We thank him.
+
+	* builtin.c (do_dcgettext, do_bindtextdomain): Rearrange the
+	code slightly so that there are no references into freed
+	memory.
+
+	Unrelated:
+
+	* builtin.c (call_sub): Make sure the regex isn't a plain
+	regex constant, and that it compiles properly.
+	(call_sub, call_match, call_split_func): Make sure the regex
+	compiles properly.
+	* awkgram.y (make_regnode): Check that exp->stptr isn't NULL.
+
+	Unrelated:
+
+	* interpret.h (Op_push): For a paramater that's a Node_elem_new,
+	make sure valref is > 1 before derefing. See elemnew7.awk
+	test case.
+
+	Unrelated:
+
+	* debug.c (do_commands): Check that arg is not NULL. See
+	dbugbadcmd.awk test.
+	(execute_commands): Use a local to walk the list in case the
+	command deletes the breakpoint. See dbugbreak test case.
+	(next_command): Check ret before checking if to delete a temporary
+	breakpoint, as it might already have been deleted. Thanks to
+	valgrind for the catch.
+
+2026-09-29         Henner Zeller         <henner.zeller+gawk@gmail.com>
+
+	* main.c (load_environ): Avoid writing into environment strings.
+	Apparently some loaders add environment variables to read-only
+	segments.
+
+2026-09-24         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* AUTHORS: Add Mike Haertel.
+
 2026-09-23         Arnold D. Robbins     <arnold@skeeve.com>
 
 	* gawkapi.c (api_create_value): Allow AWK_BOOL also.
@@ -34,6 +111,7 @@
 	outside of a loop message twice.
 	* builtin.c (do_exp): Set ERRNO if there's an error.
 
+<<<<<<< HEAD
 2026-09-03         Arnold D. Robbins     <arnold@skeeve.com>
 
 	Pull in some changes from C++ branch and also some cleanups.
@@ -47,6 +125,12 @@
 	mpfr_clear() and mpz_clear().
 	* str_array.c (fnv1a_hash_string): Make `ret' unsigned long
 	and remove `register' keyword.
+=======
+2026-09-07         Arnold D. Robbins     <arnold@skeeve.com>
+
+	* configure.ac: Remove setting of ZOS_FAIL.  The test
+	infrastructure now has *.ok-zos files to handle z/OS.
+>>>>>>> gawk-5.4-stable
 
 2026-09-02         Arnold D. Robbins     <arnold@skeeve.com>
 

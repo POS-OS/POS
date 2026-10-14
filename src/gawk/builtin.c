@@ -2245,8 +2245,12 @@ call_sub(const char *name, int nargs)
 		 */
 		if ((regex->flags & REGEX) != 0)
 			regex = regex->typed_re;
-		else {
+		else if (regex->stptr == NULL) {
+			fatal(_("%s: cannot pass plain regexp constant via indirect call"), fname);
+		} else {
 			regex = make_regnode(Node_regex, regex);
+			if (regex == NULL)
+				fatal(_("%s: invalid regexp passed via indirect call"), "fname");
 			need_free = true;
 		}
 		PUSH(regex);
@@ -2277,8 +2281,12 @@ call_sub(const char *name, int nargs)
 		 */
 		if ((regex->flags & REGEX) != 0)
 			regex = regex->typed_re;
-		else {
+		else if (regex->stptr == NULL) {
+			fatal(_("%s: cannot pass plain regexp constant via indirect call"), fname);
+		} else {
 			regex = make_regnode(Node_regex, regex);
+			if (regex == NULL)
+				fatal(_("%s: invalid regexp passed via indirect call"), "fname");
 			need_free = true;
 		}
 		PUSH(regex);
@@ -2340,6 +2348,8 @@ call_match(int nargs)
 		regex->re_exp = dupnode(Nnull_string);
 	} else {
 		regex = make_regnode(Node_regex, regex);
+		if (regex == NULL)
+			fatal(_("%s: invalid regexp passed via indirect call"), "match");
 		need_free = true;
 	}
 
@@ -2396,14 +2406,21 @@ call_split_func(const char *name, int nargs)
 			regex = regex->typed_re;
 		else {
 			regex = make_regnode(Node_regex, regex);
+			if (regex == NULL)
+				fatal(_("%s: invalid regexp passed via indirect call"), fname);
 			need_free = true;
 		}
 	} else {
 		if (fname[0] == 's') {
 			regex = make_regnode(Node_regex, FS_node->var_value);
+			if (regex == NULL)
+				fatal(_("%s: invalid regexp passed via indirect call"), fname);
 			regex->re_flags |= FS_DFLT;
-		} else
+		} else {
 			regex = make_regnode(Node_regex, FPAT_node->var_value);
+			if (regex == NULL)
+				fatal(_("%s: invalid regexp passed via indirect call"), fname);
+		}
 
 		need_free = true;
 		nargs++;
@@ -2879,6 +2896,12 @@ do_dcgettext(int nargs)
 
 	check_args_min_max(nargs, "dcgettext", 1, 3);
 
+	static bool warned = false;
+	if (! warned) {
+		warned = true;
+		warning(_("%s is deprecated and will be removed in the next major release"), "dcgettext");
+	}
+
 	if (nargs == 3) {	/* third argument */
 		tmp = POP_STRING();
 		if (do_lint && (fixtype(tmp)->flags & STRING) == 0)
@@ -2929,8 +2952,9 @@ do_dcgettext(int nargs)
 	the_result = string;
 	reslen = t1->stlen;
 #endif
+	NODE *ret = make_string(the_result, reslen);
 	DEREF(t1);
-	return make_string(the_result, reslen);
+	return ret;
 }
 
 
@@ -2951,6 +2975,12 @@ do_dcngettext(int nargs)
 	bool saved_end = false;
 
 	check_args_min_max(nargs, "dcngettext", 3, 5);
+
+	static bool warned = false;
+	if (! warned) {
+		warned = true;
+		warning(_("%s is deprecated and will be removed in the next major release"), "dcngettext");
+	}
 
 	if (nargs == 5) {	/* fifth argument */
 		tmp = POP_STRING();
@@ -3074,8 +3104,23 @@ do_bindtextdomain(int nargs)
 	}
 
 	the_result = bindtextdomain(domain, directory);
+	if (the_result == NULL)
+		the_result = "";
+
+	// Do this *after* bindtextdomain() is called.
+	// Otherwise, things don't work.
+	static bool warned = false;
+	if (! warned) {
+		warned = true;
+		warning(_("%s is deprecated and will be removed in the next major release"), "bindtextdomain");
+	}
+
 	if (directory)
 		str_restore(t1, save1);
+
+	// make a copy of the result now, which points into memory about
+	// to be deref'ed.
+	NODE *ret = make_string(the_result, strlen(the_result));
 
 	DEREF(t1);
 	if (t2 != NULL) {
@@ -3083,10 +3128,7 @@ do_bindtextdomain(int nargs)
 		DEREF(t2);
 	}
 
-	if (the_result == NULL)
-		the_result = "";
-
-	return make_string(the_result, strlen(the_result));
+	return ret;
 }
 
 /* do_typeof --- return a string with the type of the arg */

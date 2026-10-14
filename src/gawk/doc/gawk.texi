@@ -908,7 +908,7 @@ particular records in a file and perform operations upon them.
 * Computer Arithmetic::                 A quick intro to computer math.
 * Math Definitions::                    Defining terms used.
 * MPFR features::                       The MPFR features in @command{gawk}.
-* MPFR On Parole::                      MPFR features are on parole!
+* MPFR is deprecated::                  MPFR features are deprecated!
 * MPFR Intro::                          MPFR General introduction.
 * FP Math Caution::                     Things to know.
 * Inexactness of computations::         Floating point math is not exact.
@@ -4021,6 +4021,8 @@ with @samp{#!} scripts (@pxref{Executable Scripts}), like so:
 Analyze the source program and
 generate a GNU @command{gettext} portable object template file on standard
 output for all string constants that have been marked for translation.
+@strong{NOTE:} This option and the translation-related built-in
+functions are deprecated, and will be removed in the next major release.
 @xref{Internationalization},
 for information about this option.
 
@@ -4153,22 +4155,14 @@ Select arbitrary-precision arithmetic on numbers. This option has no effect
 if @command{gawk} is not compiled to use the GNU MPFR and MP libraries
 (@pxref{Arbitrary Precision Arithmetic}).
 
-@ignore
 @cindex @env{GAWK_NO_MPFR_WARN} environment variable
 @cindex environment variables @subentry @env{GAWK_NO_MPFR_WARN}
-@end ignore
-As of version 5.2,
-the arbitrary precision arithmetic features in @command{gawk}
-are ``on parole.''
-The primary maintainer is no longer willing to support this feature,
-but another member of the development team has stepped up to take it over.
-As long as this situation remains stable, MPFR will be supported. If it
-changes, the MPFR support will be removed from @command{gawk}.
-@ignore
+As of @command{gawk} version 6.0, the arbitrary precision arithmetic feature is
+deprecated. It will
+be removed in version 6.1.
 If you use this option, @command{gawk} generates a warning message.
 Create the environment variable @env{GAWK_NO_MPFR_WARN} with an arbitrary
 value in order to silence the warning.
-@end ignore
 
 @cindex @option{-n} option
 @cindex @option{--non-decimal-data} option
@@ -5094,13 +5088,16 @@ is thus essentially a place holder,
 in case some option becomes obsolete in a future version of @command{gawk}.
 @end ignore
 
-As of
-@command{gawk} version 5.2,
-the arbitrary precision arithmetic feature is ``on parole.''
-This feature is now being
-supported by a volunteer in the development team and not by the primary
-maintainer.  If this situation changes, then the feature will be removed.
-For more information see @ref{MPFR On Parole}.
+As of version 6.0 the following features are deprecated, and will
+be removed in version 6.1:
+
+@itemize @bullet
+@item
+The @option{-S}/@option{--sandbox} option for ``sandbox mode.''
+
+@item
+The arbitrary precision arithmetic feature enabled via @option{-M}/@option{--bignum}.
+@end itemize
 
 @node Undocumented
 @section Undocumented Options and Features
@@ -6540,6 +6537,8 @@ With the POSIX character classes, you can write
 @code{/[[:alnum:]]/} to match the alphabetic
 and numeric characters in your character set.
 
+@c 9/26: This is obsolete
+@ignore
 @c Thanks to
 @c Date: Tue, 01 Jul 2014 07:39:51 +0200
 @c From: Hermann Peifer <peifer@gmx.eu>
@@ -6551,6 +6550,7 @@ all values numerically between zero and 127, which is the defined
 range of the ASCII character set.  Use a complemented character list
 (@samp{[^\x00-\x7F]}) to match any single-byte characters that are not
 in the ASCII range.
+@end ignore
 
 @cindex bracket expressions @subentry collating elements
 @cindex bracket expressions @subentry non-ASCII
@@ -21951,6 +21951,11 @@ for (i = 1; i <= n; i++)
 @noindent
 @command{gawk} looks up the actual function to call only once.
 
+Of course, if @code{the_function} is assigned a new value
+as a result of the call (or other actions within the loop),
+then @command{gawk} uses the new value the next time
+the indirect function call is made.
+
 @node Functions Summary
 @section Summary
 
@@ -22701,19 +22706,14 @@ function _ord_init(    low, high, i, t)
 @cindex ASCII
 @cindex EBCDIC
 @cindex Unicode
-@cindex mark parity
 Some explanation of the numbers used by @code{_ord_init()} is worthwhile.
-The most prominent character set in use today is ASCII.@footnote{This
-is changing; many systems use Unicode, a very large character set
-that includes ASCII as a subset.  On systems with full Unicode support,
-a character can occupy up to 32 bits, making simple tests such as
-used here prohibitively expensive.}
-Although an
-8-bit byte can hold 256 distinct values (from 0 to 255), ASCII only
-defines characters that use the values from 0 to 127.@footnote{ASCII
+For many years, the most prominent character set in use was ASCII.
+Although an 8-bit byte can hold 256 distinct values (from 0 to 255), ASCII
+only defines characters that use the values from 0 to 127.@footnote{ASCII
 has been extended in many countries to use the values from 128 to 255
 for country-specific characters.  If your  system uses these extensions,
 you can simplify @code{_ord_init()} to loop from 0 to 255.}
+
 Large mainframe systems use the EBCDIC character set, which
 uses all 256 values.
 There are other character sets that were used on some ancient systems, but
@@ -22753,12 +22753,16 @@ written this way initially for ease of development.
 There is a ``test program'' in a @code{BEGIN} rule, to test the
 function.  It is commented out for production use.
 
-For a long time now, the world has been moving to the use of
-the @uref{https://www.unicode.org, Unicode character set}.
-The @command{awk} functions in this subsection don't work
-with Unicode, which is a multi-byte character set.
+@quotation CAUTION
+Today, most computing systems use the @uref{https://www.unicode.org,
+Unicode character set}.  ASCII is a subset of Unicode.  If you only
+work with ASCII data, you can use these functions.  Otherwise, they
+won't work with Unicode, which is a multi-byte character set.
+@end quotation
+
 With @command{gawk}, you can use the @code{ordchr} extension
-functions; see @ref{Extension Sample Ord}, for more information.
+functions, which can handle Unicode; see @ref{Extension Sample Ord},
+for more information.
 
 @node Join Function
 @subsection Merging an Array into a String
@@ -27063,11 +27067,11 @@ Today, the most popular character set in use is Unicode (of which ASCII
 is a pure subset). Unicode provides tens of thousands of unique characters
 (called @dfn{code points}) to cover most existing human languages, living
 and dead.  (Sadly, proposals to add some nonhuman ones, such as Klingon and
-J.R.R.@: Tolkien's Elvish languages, were not accepted).
+J.@: R.@: R.@: Tolkien's Elvish languages, were not accepted).
 
-To save space in files, Unicode code points are @dfn{encoded}, where each
+To save space in files and in memory, Unicode code points are @dfn{encoded}, where each
 character takes from one to four bytes in the file.  UTF-8 is possibly
-the most popular of such @dfn{multibyte encodings}.
+the most popular of such @dfn{multibyte encodings}, although there are others.
 
 The POSIX standard requires that @command{awk} function in terms
 of characters, not bytes.  Thus in @command{gawk}, @code{length()},
@@ -30333,7 +30337,7 @@ has been read, @command{gawk} terminates the coprocess and exits.
 
 @cindex ASCII
 As a side note, the assignment @samp{LC_ALL=C} in the @command{sort}
-command ensures traditional Unix (ASCII) sorting from @command{sort}.
+command ensures traditional Unix sorting from @command{sort}.
 This is not strictly necessary here, but it's good to know how to do this.
 
 Be careful when closing the @code{"from"} end of a two-way pipe; in this
@@ -31140,10 +31144,11 @@ persistent memory and why it's useful in a scripting language like
 This is the canonical source for Terence Kelly's Persistent Memory
 Allocator (PMA).  The latest source code and user manual
 will always be available at this location.
-Kelly may be reached directly at any of the following
-email addresses:
+Kelly may be reached directly at
+@EMAIL{terence.patrick.kelly@@proton.me, terence.patrick.kelly AT proton.me}, 
+Secondary email address are
 @EMAIL{tpkelly@@acm.org, tpkelly AT acm.org},
-@EMAIL{tpkelly@@cs.princeton.edu, tpkelly AT cs.princeton.edu}, or
+@EMAIL{tpkelly@@cs.princeton.edu, tpkelly AT cs.princeton.edu}, and
 @EMAIL{tpkelly@@eecs.umich.edu, tpkelly AT eecs.umich.edu}.
 
 @item @cite{Persistent Memory Allocation}
@@ -31322,6 +31327,15 @@ they should be added to the core interpreter only as a last resort.
 @quotation
 @i{It probably sounded better in Japanese.}
 @author Malka Robbins
+@end quotation
+
+@quotation CAUTION
+The internationalization features described
+in this chapter are deprecated.
+@command{gawk} issues a warning if you use the @option{--gen-pot}
+option or any of the translation-related built-in functions.
+Support for internationalization will be removed in version 6.1 of
+@command{gawk}.
 @end quotation
 
 Once upon a time, computer makers
@@ -34601,41 +34615,37 @@ This section briefly describes arbitrary-precision
 arithmetic in @command{gawk}.
 
 @menu
-* MPFR On Parole::              MPFR features are on parole!
+* MPFR is deprecated::          MPFR features are deprecated!
 * MPFR Intro::                  MPFR General introduction.
 @end menu
 
-@node MPFR On Parole
-@subsection Arbitrary Precision Arithmetic is On Parole!
+@node MPFR is deprecated
+@subsection Arbitrary Precision Arithmetic is deprecated!
 
-Arbitrary precision arithmetic in @command{gawk}
-is ``on parole.''  The primary @command{gawk} maintainer is no
-longer maintaining it. Fortunately, a volunteer from the development
-team has agreed to take it over.
+Arbitrary precision arithmetic in @command{gawk} is officially
+deprecated. Support for it will be removed in version 6.1 of
+@command{gawk}.
 
-This feature is on parole because its inclusion was a mistake. It has
-led to endless bug reports, misuse of the feature and public abuse of the
-maintainer, for no real increased value.
+@cindex @env{GAWK_NO_MPFR_WARN} environment variable
+@cindex environment variables @subentry @env{GAWK_NO_MPFR_WARN}
+@command{gawk} issues a warning message if you use it.  You may set the
+@env{GAWK_NO_MPFR_WARN} environment variable to disable this warning.
 
-@ignore
-If you use this feature, you should start working now to find a different
-toolset with which to accomplish your goals.@footnote{Of course, you can
-always continue to use a version of @command{gawk} that still supports
-arbitrary precision arithmetic. It simply will be unmaintained.}
+This feature is scheduled for removal because its inclusion was a
+mistake. It has led to endless bug reports, misuse of the feature
+and public abuse of the maintainer, for no real increased value.
+The maintenance burden has simply become too great.
 
-If the feature is very important to you, then consider if you are willing
-to volunteer to maintain it, so that it can continue to be included
-in @command{gawk}. If that is the case, contact the maintainer to discuss it
-with him.  You may do so by submitting a bug report.
-@end ignore
+If you use this feature, you should consider finding a different toolset
+with which to accomplish your goals.@footnote{Of course, you can always
+continue to use a version of @command{gawk} that still supports arbitrary
+precision arithmetic. It simply will be unmaintained.}
 
-If the situation with support changes, the feature will be removed
-from @command{gawk}.
-
-If you use this feature, you should consider finding a different
-toolset with which to accomplish your goals.@footnote{Of course, you can
-always continue to use a version of @command{gawk} that still supports
-arbitrary precision arithmetic. It simply will be unmaintained.}
+Some suggestions are the POSIX-standard @command{bc} utility, the
+@code{mpfr} extension available from the @code{gawkextlib} project
+(@pxref{gawkextlib}), or any of the various ``bignum'' packages available
+for Perl or Python.  You may also use the MPFR and GMP libraries
+directly from C or C++ code.
 
 @node MPFR Intro
 @subsection Arbitrary Precision Introduction
@@ -41069,6 +41079,15 @@ The ability to delete all of an array at once with @samp{delete @var{array}}
 
 @end itemize
 
+The 2024 POSIX standard introduced the following change:
+
+@itemize @value{BULLET}
+@item
+The ability to pass an array to @code{length()}
+(@pxref{String Functions}).
+
+@end itemize
+
 @xref{Common Extensions} for a list of common extensions
 not permitted by the POSIX standard.
 
@@ -41104,6 +41123,10 @@ The use of @code{func} as an abbreviation for @code{function}
 @item
 The @code{fflush()} built-in function for flushing buffered output
 (@pxref{I/O Functions})
+
+@item
+Support for Comma Separated Values (CSV) input files
+(@pxref{Comma Separated Fields}).
 
 @ignore
 @item
@@ -41147,7 +41170,9 @@ The
 @code{FPAT},
 @code{IGNORECASE},
 @code{LINT},
+@code{PREC},
 @code{PROCINFO},
+@code{ROUNDMODE},
 @code{RT},
 and
 @code{TEXTDOMAIN}
@@ -41245,11 +41270,6 @@ of a two-way pipe to a coprocess
 POSIX compliance for @code{gsub()} and @code{sub()} with @option{--posix}
 
 @item
-The @code{length()} function accepts an array argument
-and returns the number of elements in the array
-(@pxref{String Functions})
-
-@item
 The optional third argument to the @code{match()} function
 for capturing text-matching subexpressions within a regexp
 (@pxref{String Functions})
@@ -41330,6 +41350,7 @@ The @env{AWKLIBPATH} environment variable for specifying a path search for
 the @option{-l} command-line option
 (@pxref{Options})
 
+@c FIXME: Recheck this list against 6.0 and 6.1.
 @item
 The
 @option{-b},
@@ -41393,91 +41414,6 @@ long options
 @end itemize
 
 @c       new ports
-
-@item
-Support for the following obsolete systems was removed from the code
-and the documentation for @command{gawk} version 4.0:
-
-@c nested table
-@itemize @value{MINUS}
-@item
-Amiga
-
-@item
-Atari
-
-@item
-BeOS
-
-@item
-Cray
-
-@item
-MIPS RiscOS
-
-@item
-MS-DOS with the Microsoft Compiler
-
-@item
-MS-Windows with the Microsoft Compiler
-
-@item
-NeXT
-
-@item
-SunOS 3.x, Sun 386 (Road Runner)
-
-@item
-Tandem (non-POSIX)
-
-@item
-Prestandard VAX C compiler for VAX/VMS
-
-@item
-GCC for Alpha has not been tested for a while.
-
-@end itemize
-
-@item
-Support for the following obsolete system was removed from the code
-for @command{gawk} version 4.1:
-
-@c nested table
-@itemize @value{MINUS}
-@item
-Ultrix
-@end itemize
-
-@item
-Support for the following systems was removed from the code
-for @command{gawk} version 4.2:
-
-@c nested table
-@itemize @value{MINUS}
-@item
-MirBSD
-
-@item
-GNU/Linux on Alpha
-@end itemize
-
-@item
-Support for the following systems was removed from the code
-for @command{gawk} version 5.2:
-
-
-@c nested table
-@itemize @value{MINUS}
-@item
-OS/2
-
-@item
-DJGPP
-
-@item
-VAX/VMS
-
-@end itemize
 
 @item
 Support for the
@@ -41672,6 +41608,7 @@ The @option{--lint-old} option to
 warn about constructs that are not available in
 the original Version 7 Unix version of @command{awk}
 (@pxref{V7/SVR3.1}).
+@c FIXME: Removed in 6.0
 
 @item
 The @option{-m} option from BWK @command{awk}.  (Brian was
@@ -41681,6 +41618,7 @@ both his @command{awk} and from @command{gawk}.
 @item
 The @option{--re-interval} option to provide interval expressions in regexps
 (@pxref{Regexp Operators}).
+@c FIXME: Removed in 6.0
 
 @item
 The @option{--traditional} option was added as a better name for
@@ -42088,7 +42026,7 @@ The @option{-R} option was removed.
 @end itemize
 
 @item
-Support for high precision arithmetic with MPFR
+Support for arbitrary precision arithmetic with MPFR
 (@pxref{Arbitrary Precision Arithmetic}).
 
 @item
@@ -42165,7 +42103,7 @@ Optimizations are enabled by default. Use @option{-s} /
 For many years, POSIX specified that default field splitting
 only allowed spaces and tabs to separate fields, and this was
 how @command{gawk} behaved with @option{--posix}. As of 2013,
-the standard restored historical behavior, and now default
+the standard restored historical behavior, and so default
 field splitting with @option{--posix} also allows newlines to
 separate fields.
 
@@ -42465,6 +42403,7 @@ the three most widely used freely available versions of @command{awk}
 @item @code{delete} without subscript @tab X @tab X @tab X @tab X
 @item @code{fflush()} function @tab X @tab X @tab X @tab X
 @item @code{func} keyword @tab X @tab @tab X @tab
+@item @code{length()} of an array @tab X @tab X @tab X @tab X
 @item @code{nextfile} statement @tab X @tab X @tab X @tab X
 @item @code{RS} as regexp @tab X @tab X @tab X @tab
 @item Time-related functions @tab See text @tab X @tab X @tab
@@ -42563,12 +42502,12 @@ was in the user's locale.  During the development of version 4.0,
 he modified @command{gawk} to always treat ranges in the original,
 pre-POSIX fashion, unless @option{--posix} was used (@pxref{Options}).@footnote{And
 thus was born the Campaign for Rational Range Interpretation (or
-RRI). A number of GNU tools have already implemented this change,
-or will soon.  Thanks to Karl Berry for coining the phrase ``Rational
+RRI). A number of GNU tools have since implemented this change.
+Thanks to Karl Berry for coining the phrase ``Rational
 Range Interpretation.''}
 
 Fortunately, shortly before the final release of @command{gawk} 4.0,
-the maintainer learned that the 2008 standard had changed the
+the maintainer learned that the 2008 POSIX standard had changed the
 definition of ranges, such that outside the @code{"C"} and @code{"POSIX"}
 locales, the meaning of range expressions was @emph{undefined}.@footnote{See
 @uref{@value{POSIXURL}/basedefs/V1_chap09.html#tag_09_03_05, the standard}
@@ -42844,13 +42783,14 @@ the rest of the development team.
 @cindex Malmberg, John
 @item
 John Malmberg contributed significant improvements to the
-OpenVMS port and the related documentation.
+OpenVMS port and the related documentation, and now maintains it.
 
 @cindex Colombo, Antonio
 @item
 Antonio Giovanni Colombo rewrote a number of examples in the early
 chapters that were severely dated, for which I am incredibly grateful.
-He also provided and maintains the Italian translation.
+He also provided and maintains the Italian translation of this
+@value{DOCUMENT}.
 
 @cindex Curreli, Marco
 @item
@@ -42885,6 +42825,8 @@ major additions, including user-defined functions, were made to the language.
 Additional changes were made for System V Release 4, in 1989.
 Since then, further minor changes have happened under the auspices of the
 POSIX standard.
+In 2023, CSV support was added to BWK @command{awk},
+and @command{gawk} followed suit.
 
 @item
 Brian Kernighan's @command{awk} provides a small number of extensions
@@ -42902,7 +42844,8 @@ The interaction of POSIX locales and regexp matching in @command{gawk} has been 
 the years. Today, @command{gawk} implements Rational Range Interpretation, where
 ranges of the form @samp{[a-z]} match @emph{only} the characters numerically between
 @samp{a} through @samp{z} in the machine's native character set.  Usually this is ASCII,
-but it can be EBCDIC on IBM S/390 systems.
+or Unicode,
+but it can be EBCDIC on IBM S/390x systems.
 
 @item
 Many people have contributed to @command{gawk} development over the years.
@@ -44898,25 +44841,31 @@ it, be careful not to do @samp{make install} as it will overwrite
 copies of other applications in your @file{/usr/local/bin}.  For more
 information, see the @uref{https://busybox.net, project's home page}.
 
+@cindex MKS
+@cindex Mortice Kern Systems
+@item The MKS @command{awk}
+In the 1980s and 1990s, Mortice Kern Systems (MKS) supplied Unix tools for
+PCs and other non-POSIX systems.  Among their tools was an implementation
+of @command{awk}.
+
 @cindex OpenSolaris
 @cindex Solaris, POSIX-compliant @command{awk}
 @cindex source code @subentry Solaris @command{awk}
-@item The OpenSolaris POSIX @command{awk}
-The versions of @command{awk} in @file{/usr/xpg4/bin} and
-@file{/usr/xpg6/bin} on Solaris are more or less POSIX-compliant.
-They are based on the @command{awk} from Mortice Kern Systems for PCs.
-We were able to make this code compile and work under GNU/Linux
-with 1--2 hours of work.  Making it more generally portable (using
-GNU Autoconf and/or Automake) would take more work, and this
-has not been done, at least to our knowledge.
+Solaris adopted the MKS @command{awk} for their POSIX-compliant version,
+found in @file{/usr/xpg4/bin} and @file{/usr/xpg6/bin} on Solaris systems.
+The source code for it was released when Solaris was open-sourced for
+a while in the early 2000s.
 
-@cindex Illumos, POSIX-compliant @command{awk}
-@cindex source code @subentry Illumos @command{awk}
-The source code used to be available from the OpenSolaris website.
-However, that project was ended and the website shut down.  Fortunately, the
-@uref{https://wiki.illumos.org/display/illumos/illumos+Home, Illumos project}
-makes this implementation available.  You can view the files one at a time from
-@uref{https://github.com/joyent/illumos-joyent/blob/master/usr/src/cmd/awk_xpg4}.
+Today, the code is available from the Illumos project's
+@uref{https://github.com/illumos/illumos-gate, Git mirror};
+there, it lives in @file{/usr/src/cmd/awk_xpg4}.
+
+We were able to make this code compile and work under GNU/Linux with
+a few hours' work.  Making it more generally portable (using GNU
+Autoconf and/or Automake) would take more work, and this has not been
+done. We believe it will compile and run on any POSIX-compliant
+system, but this has not been tested. This version is available from
+@uref{https://github.com/arnoldrobbins/mksawk}.
 
 @cindex libmawk
 @cindex source code @subentry libmawk
@@ -46587,7 +46536,9 @@ In addition,
 @code{FPAT},
 @code{IGNORECASE},
 @code{LINT},
+@code{PREC},
 @code{PROCINFO},
+@code{ROUNDMODE},
 @code{RT},
 and
 @code{TEXTDOMAIN}
@@ -46633,12 +46584,11 @@ See ``Bracket Expression.''
 @item Character Set
 The set of numeric codes used by a computer system to represent the
 characters (letters, numbers, punctuation, etc.) of a particular country
-or place. The most common character set in use today is ASCII (American
-Standard Code for Information Interchange).  Many European
-countries use an extension of ASCII known as ISO-8859-1 (ISO Latin-1).
-The @uref{https://www.unicode.org, Unicode character set} is
-increasingly popular and standard, and is particularly
-widely used on GNU/Linux systems.
+or place. The most common character set in use today is
+the @uref{https://www.unicode.org, Unicode character set},
+of which ASCII (American
+Standard Code for Information Interchange) is a pure subset.  Many European
+countries used to use an extension of ASCII known as ISO-8859-1 (ISO Latin-1).
 
 @cindex Kernighan, Brian
 @cindex Bentley, Jon
