@@ -630,12 +630,6 @@ read_header (union block **return_block, struct tar_stat_info *info,
   return status;
 }
 
-static bool
-is_octal_digit (char c)
-{
-  return '0' <= c && c <= '7';
-}
-
 /* Decode things from a file HEADER block into STAT_INFO, also setting
    *FORMAT_POINTER depending on the header block format.  If
    DO_USER_GROUP, decode the user/group information (this is useful

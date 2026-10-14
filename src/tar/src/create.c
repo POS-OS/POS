@@ -454,7 +454,7 @@ file_dumpable_p (struct stat const *st)
 {
   if (S_ISDIR (st->st_mode))
     return true;
-  if (! (S_ISREG (st->st_mode) || S_ISCTG (st->st_mode)))
+  if (!S_ISREG (st->st_mode))
     return false;
   if (dev_null_output)
     return totals_option && sparse_option && ST_IS_SPARSE (*st);
@@ -1027,10 +1027,6 @@ dump_regular_file (int fd, struct tar_stat_info *st)
   blk = start_header (st);
   if (!blk)
     return dump_status_fail;
-
-  /* Mark contiguous files, if we support them.  */
-  if (archive_format != V7_FORMAT && S_ISCTG (st->stat.st_mode))
-    blk->header.typeflag = CONTTYPE;
 
   finish_header (st, blk, block_ordinal);
 
@@ -1712,7 +1708,7 @@ dump_file0 (struct tar_stat_info *st, char const *name, char const *p)
   if (!is_dir && dump_hard_link (st))
     return allocated;
 
-  if (is_dir || S_ISREG (st->stat.st_mode) || S_ISCTG (st->stat.st_mode))
+  if (is_dir || S_ISREG (st->stat.st_mode))
     {
       bool ok;
       struct stat st2;

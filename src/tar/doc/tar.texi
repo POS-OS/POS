@@ -10051,8 +10051,8 @@ suffix.  The following suffixes are recognized:
 @item @samp{.tbz2} @tab @command{bzip2}
 @item @samp{.tbz} @tab @command{bzip2}
 @item @samp{.lz} @tab @command{lzip}
+@item @samp{.tlz} @tab @command{lzip}
 @item @samp{.lzma} @tab @command{lzma}
-@item @samp{.tlz} @tab @command{lzma}
 @item @samp{.lzo} @tab @command{lzop}
 @item @samp{.xz} @tab @command{xz}
 @item @samp{.zst} @tab @command{zstd}

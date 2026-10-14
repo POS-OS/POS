@@ -494,6 +494,12 @@ void buffer_write_global_xheader (void);
 const char *first_decompress_program (int *pstate);
 const char *next_decompress_program (int *pstate);
 
+COMMON_INLINE bool
+is_octal_digit (char c)
+{
+  return '0' <= c && c <= '7';
+}
+
 /* Sum values returned by printf to estimate the total bytes output.
    Estimate -1 if there was a problem, e.g., int overflow or I/O error.  */
 COMMON_INLINE intmax_t

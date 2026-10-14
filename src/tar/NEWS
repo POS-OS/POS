@@ -1,4 +1,4 @@
-GNU tar NEWS - User visible changes. 2026-08-21
+GNU tar NEWS - User visible changes. 2026-10-09
 Please send GNU tar bug reports to <bug-tar@gnu.org>
 
 version 1.35.90 (git)
@@ -43,6 +43,13 @@ option.
    relative to DIR, without stripping leading DIR from file names.
    Formerly, the behavior was undocumented and differed from one tar
    version to the next.
+
+** The *.tlz extension in a tarball now implies lzip, not lzma.
+   This matches the change made to pkgtools in Slackware 15.0 (2022),
+   after lzma was superseded by xz in 2009.
+
+** Support for RTU-style contiguous files has been withdrawn.
+   RTU’s supplier dropped support for RTU decades ago.
 
 * Bug fixes
 

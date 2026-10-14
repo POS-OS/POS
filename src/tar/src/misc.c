@@ -29,10 +29,33 @@
 # define DOUBLE_SLASH_IS_DISTINCT_ROOT 0
 #endif
 
+/* Flags for fdbase_opendir.  */
+enum
+  {
+    /* Use either the main or the alternate cache but update only the
+       alternate cache.  By default, use and update only the main cache.
+       This means a call with ALTERNATE cannot invalidate a call without.  */
+    FDBASE_ALTERNATE = 1 << 0,
+
+    /* Open the named file.  By default open its parent directory.  */
+    FDBASE_CHILD = 1 << 1,
+
+    /* It is OK if the file escapes from the ancestor directory,
+       regardless of open_searchdir_how.  */
+    FDBASE_ESCAPE = 1 << 2,
+
+    /* Follow symlinks, regardless of open_searchdir_how.  */
+    FDBASE_FOLLOW = 1 << 3,
+
+    /* Do not follow symlinks, regardless of open_searchdir_how.
+       This option overrides FDBASE_FOLLOW.  */
+    FDBASE_NOFOLLOW = 1 << 4,
+  };
+
 static void namebuf_add_dir (namebuf_t, char const *);
 static char *namebuf_finish (namebuf_t);
 static const char *tar_getcdpath (idx_t);
-static struct fdbase fdbase_opendir (char const *, bool, bool, int);
+static struct fdbase fdbase_opendir (char const *, int);
 
 char const *
 quote_n_colon (int n, char const *arg)
@@ -221,19 +244,14 @@ unquote_string (char *string)
 	case '7':
 	  {
 	    unsigned char value = *source++ - '0';
-
-	    if (*source < '0' || *source > '7')
+	    if (is_octal_digit (*source))
 	      {
-		*destination++ = value;
-		break;
+		value = value * 8 + (*source++ - '0');
+		unsigned char val;
+		if (is_octal_digit (*source) && !ckd_mul (&val, value, 8))
+		  value = val + (*source++ - '0');
 	      }
-	    unsigned char val1 = value * 8 + (*source++ - '0'), val2;
-	    if (*source < '0' || *source > '7' || ckd_mul (&val2, val1, 8))
-	      {
-		*destination++ = value;
-		break;
-	      }
-	    *destination++ = val2 + (*source++ - '0');
+	    *destination++ = value;
 	    break;
 	  }
 
@@ -697,7 +715,7 @@ remove_any_file (const char *file_name, enum remove_option option)
      non-directory.  */
   bool try_unlink_first = cannot_unlink_dir ();
 
-  struct fdbase f = fdbase (file_name);
+  struct fdbase f = fdbase_opendir (file_name, FDBASE_NOFOLLOW);
 
   if (try_unlink_first)
     {
@@ -764,7 +782,8 @@ remove_any_file (const char *file_name, enum remove_option option)
 	      }
 
 	    free (directory);
-	    return safer_rmdir (file_name, fdbase (file_name)) == 0;
+	    struct fdbase f1 = fdbase_opendir (file_name, FDBASE_NOFOLLOW);
+	    return safer_rmdir (file_name, f1) == 0;
 	  }
 	}
       break;
@@ -1112,8 +1131,8 @@ chdir_do (idx_t i, bool create)
 	  if (! IS_ABSOLUTE_FILE_NAME (curr->name))
 	    chdir_do ((i - 1) & ~+one_top_level, false);
 
-	  int oflags = open_searchdir_how.flags & ~O_NOFOLLOW;
-	  fd = fdbase_opendir (curr->name, false, true, oflags).fd;
+	  int fflags = FDBASE_CHILD | FDBASE_ESCAPE | FDBASE_FOLLOW;
+	  fd = fdbase_opendir (curr->name, fflags).fd;
 	  if (fd < 0)
 	    {
 	      if (errno == ENOENT)
@@ -1123,7 +1142,7 @@ chdir_do (idx_t i, bool create)
 		      if (!create_dir (curr->name))
 			fatal_exit ();
 		      /* Directory likely exists now; retry.  */
-		      fd = fdbase_opendir (curr->name, false, true, oflags).fd;
+		      fd = fdbase_opendir (curr->name, fflags).fd;
 		    }
 		  else if (i & one_top_level)
 		    {
@@ -1268,31 +1287,29 @@ fdbase_close (int fd)
 }
 
 /* Starting from the directory FD, open a subdirectory SUBDIR for search.
-   If OFLAGS, open with OFLAGS.  Otherwise, open_searchdir_how
-   determines whether SUBDIR can escape FD, i.e., whether it must
-   be at or under FD in the directory hierarchy.  */
+   Respect open_searchdir_how, modified by
+   FFLAGS & (FDBASE_ESCAPE | FDBASE_FOLLOW).  */
 static int
-open_subdir (int fd, char const *subdir, int oflags)
+open_subdir (int fd, char const *subdir, int fflags)
 {
-  return
-    (oflags
-     ? openat (fd, subdir, oflags)
-     : openat2 (fd, subdir, &open_searchdir_how, sizeof open_searchdir_how));
+  struct open_how how =
+    {
+      .flags = ((open_searchdir_how.flags
+		 & ~(fflags & FDBASE_FOLLOW ? O_NOFOLLOW : 0))
+		| (fflags & FDBASE_NOFOLLOW ? O_NOFOLLOW : 0)),
+      .resolve = fflags & FDBASE_ESCAPE ? 0 : open_searchdir_how.resolve
+    };
+  return openat2 (fd, subdir, &how, sizeof how);
 }
 
-/* Return an fd open to a directory related to FILE_NAME
+/* Return an fd open for searching to a directory related to FILE_NAME
    along with the corresponding base name.
-   If ALTERNATE, use either the main or the alternate cache but update
-   only the alternate cache; otherwise, use and update only the main cache;
-   this means a call with ALTERNATE cannot invalidate a call without.
    If FILE_NAME is relative, it is relative to chdir_fd.
-   If CHILD, open FILE_NAME; otherwise open FILE_NAME's parent directory.
-   If OFLAGS, open the directory with those flags, possibly letting it
-   escape from chdir_fd; otherwise, do not let it escape.
+   Respect FFLAGS, including their modifications to open_searchdir_how.
    Return AT_FDCWD if FILE_NAME is relative to the working directory.
    Return BADFD (setting errno) on failure.  */
 static struct fdbase
-fdbase_opendir (char const *file_name, bool alternate, bool child, int oflags)
+fdbase_opendir (char const *file_name, int fflags)
 {
   char const *name = file_name;
   int dfd = IS_ABSOLUTE_FILE_NAME (file_name) ? AT_FDCWD : chdir_fd;
@@ -1319,6 +1336,7 @@ fdbase_opendir (char const *file_name, bool alternate, bool child, int oflags)
   /* For file names immediately under DFD, and for names of root directories,
      just use DFD and NAME.  Empty NAME is invalid, though.  */
   char const *base = last_component (name);
+  bool child = !!(fflags & FDBASE_CHILD);
   idx_t newdirlen = base + (child ? strlen (base) : 0) - name;
   if (!newdirlen | !*base)
     {
@@ -1329,6 +1347,7 @@ fdbase_opendir (char const *file_name, bool alternate, bool child, int oflags)
     }
 
   /* Try to reuse fdbase_cache[0] or (if ALTERNATE) fdbase_cache[1].  */
+  bool alternate = !!(fflags & FDBASE_ALTERNATE);
   int fd;
   idx_t subdirlen;
   bool chdirmatch;
@@ -1385,7 +1404,7 @@ fdbase_opendir (char const *file_name, bool alternate, bool child, int oflags)
      open descendant to FD rather than to CHDIR_FD.  */
   bool descendant = old_prefixes_new & chdirmatch;
   int newfd = open_subdir (descendant ? fd : chdir_fd,
-			   &newdir[descendant ? subdirlen : 0], oflags);
+			   &newdir[descendant ? subdirlen : 0], fflags);
   if (newfd < 0)
     return (struct fdbase) { .fd = BADFD, .base = base };
 
@@ -1400,42 +1419,46 @@ fdbase_opendir (char const *file_name, bool alternate, bool child, int oflags)
   return (struct fdbase) { .fd = newfd, .base = base };
 }
 
-/* Return an fd open to NAME's parent directory
+/* Return an fd open for searching to NAME's parent directory
    along with the corresponding base name.
-   Do not escape from chdir_fd unless ESCAPE or unless -P is used.  */
+   When extracting or diffing, do not escape from chdir_fd
+   unless ESCAPE or unless -h or -P is used.  */
 struct fdbase
 fdbase_escape (char const *name, bool escape)
 {
-  return fdbase_opendir (name, false, false,
-			 escape ? open_searchdir_how.flags : 0);
+  return fdbase_opendir (name, escape ? FDBASE_ESCAPE : 0);
 }
 
-/* Return an fd open to NAME's parent directory
+/* Return an fd open for searching to NAME's parent directory
    along with the corresponding base name.
-   Do not escape from chdir_fd unless -P is used.  */
+   When extracting or diffing, do not escape from chdir_fd
+   unless -h or -P is used.  */
 struct fdbase
 fdbase (char const *name)
 {
   return fdbase_escape (name, false);
 }
 
-/* Return an fd open to NAME's parent directory
+/* Return an fd open for searching to NAME's parent directory
    along with the corresponding base name.
-   Do not escape from chdir_fd unless -P is used.
+   When extracting or diffing, do not escape from chdir_fd
+   unless -h or -P is used.
    Use the alternate cache instead of the main one;
    this is for syscalls like 'linkat' that need two fds.  */
 struct fdbase
 fdbase1 (char const *name)
 {
-  return fdbase_opendir (name, true, false, 0);
+  return fdbase_opendir (name, FDBASE_ALTERNATE);
 }
 
-/* Return an fd open to NAME.
-   Do not escape from chdir_fd unless -P is used.  */
+/* Return an fd open for searching to NAME.
+   This function is used only when creating, so it does not matter
+   that when extracting or diffing, it does not escape from chdir_fd
+   unless -h or -P is used.  */
 int
 open_searchdir (char const *name)
 {
-  return fdbase_opendir (name, false, true, open_searchdir_how.flags).fd;
+  return fdbase_opendir (name, FDBASE_CHILD).fd;
 }
 
 
@@ -1707,8 +1730,8 @@ namebuf_finish (namebuf_t buf)
 }
 
 /* Return the filenames in directory NAME, relative to the chdir_fd.
-   If the directory does not exist, report error if MUST_EXIST is
-   true.
+   If MUST_EXIST, report an error if the directory does not exist;
+   if !MUST_EXIST, do not follow symlinks regardless of -h.
 
    Return NULL on errors.
 */
@@ -1717,9 +1740,11 @@ tar_savedir (const char *name, bool must_exist)
 {
   char *ret = NULL;
   DIR *dir = NULL;
-  struct fdbase f = fdbase (name);
+  struct fdbase f = fdbase_opendir (name, must_exist ? 0 : FDBASE_NOFOLLOW);
   int fd = (f.fd == BADFD ? -1
-	    : openat (f.fd, f.base, open_read_flags | O_DIRECTORY));
+	    : openat (f.fd, f.base,
+		      (open_read_flags | O_DIRECTORY
+		       | (must_exist ? 0 : O_NOFOLLOW))));
   if (fd < 0)
     {
       if (!must_exist && errno == ENOENT)
