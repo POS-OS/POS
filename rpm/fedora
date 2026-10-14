@@ -13,10 +13,11 @@
 # compiler searches /pos/include, not the /usr/include Fedora -devel
 # packages install into.
 
-glibc glibc glibc-common glibc-gconv-extra glibc-minimal-langpack libnsl nss_db nss_hesiod
-# glibc: C.UTF-8 is the only compiled locale (/pos/lib/locale/C.utf8), as
-# with glibc-minimal-langpack. Fedora's langpacks install into
-# /usr/lib/locale, which POS glibc does not read.
+glibc glibc glibc-common glibc-gconv-extra glibc-minimal-langpack glibc-all-langpacks libnsl nss_db nss_hesiod
+# glibc: the UTF-8 locales are compiled (/pos/lib/locale), not the legacy
+# character sets glibc-all-langpacks also has. Fedora's per-language
+# langpacks (glibc-langpack-<lang>) are not listed: they install into
+# /usr/lib/locale, which POS glibc does not read, and do no harm there.
 zlib zlib-ng-compat
 bzip2 bzip2 bzip2-libs
 xz xz xz-libs xz-lzma-compat
@@ -72,6 +73,11 @@ logrotate logrotate
 file file file-libs
 which which
 procps procps-ng
+cpio cpio
+dracut dracut
+# dracut: Fedora's subpackages (dracut-network, dracut-squash, ...) are not
+# listed; POS's dracut has their modules, but not the Fedora configuration
+# (dracut-config-*).
 diffutils diffutils
 patch patch
 pos-integration fedora-release fedora-release-common fedora-release-identity-basic

@@ -13,6 +13,9 @@
 #   POS_SOURCE      the source name (src/<source>)
 #   POS_PREP_DIR    the tree to prepare, a copy of the committed src/<source>
 #   POS_UPSTREAM    the committed src/<source>.upstream (ref, commit, date, url)
+#   POS_WITH_SRC_DIRS  the package's further source trees (meta
+#                   "with-sources"), as <source>=<dir> words; prep_setup
+#                   copies each into the tree, as a directory named after it
 
 source=${POS_SOURCE:?run prepare recipes through buildsys/build.sh}
 
@@ -27,6 +30,10 @@ prep_setup() {
   base=${POS_BASE:?}
   prep_dir=${POS_PREP_DIR:?}
   cd "$prep_dir" || exit 1
+  local w
+  for w in ${POS_WITH_SRC_DIRS:-}; do
+    rsync -a --delete "${w#*=}/" "$prep_dir/${w%%=*}/"
+  done
   if [[ -x $base/src/gnulib/gnulib-tool ]]; then
     GNULIB_SRCDIR=$base/src/gnulib
     export GNULIB_SRCDIR

@@ -1,0 +1,42 @@
+# A bootable POS system without an RPM layer: the OS stages, Fedora's
+# kernel (kernel), systemd-boot and a disk (repart.d). BUILD.md "Images".
+#
+#   stage <stage>            stage archive extracted into /pos
+#   dir <path> <mode>        directory
+#   link <path> <target>     symlink
+
+stage core-libs
+stage system
+
+dir /dev 0755
+dir /proc 0555
+dir /sys 0555
+dir /run 0755
+dir /tmp 1777
+dir /boot 0755
+dir /root 0700
+dir /home 0755
+dir /etc 0755
+dir /var 0755
+dir /var/tmp 1777
+dir /var/lib 0755
+dir /var/log 0755
+dir /var/cache 0755
+dir /var/spool 0755
+dir /var/spool/mail 0755
+
+# Paths outside /pos that programs and the kernel assume (BUILD.md
+# "Prefix"), as in images/container.
+link /bin/sh ../pos/bin/sh
+link /bin/bash ../pos/bin/bash
+link /sbin/init ../pos/sbin/init
+link /usr/bin/env ../../pos/bin/env
+link /lib64/ld-linux-x86-64.so.2 ../pos/lib/ld-linux-x86-64.so.2
+link /usr/share/factory ../../pos/share/factory
+link /usr/lib/os-release ../../pos/lib/os-release
+link /etc/os-release ../usr/lib/os-release
+# Kernel modules are in /usr/lib/modules, where kernel packages install
+# them and kmod looks (BUILD.md "System stage"); dracut and the packages'
+# own paths say /lib/modules.
+dir /usr/lib/modules 0755
+link /lib/modules ../usr/lib/modules

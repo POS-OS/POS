@@ -4,7 +4,8 @@
 #
 #   image.sh <build dir> <image>
 #
-# images/<image>/layout names the stages and the root layout around /pos.
+# images/<image>/layout names the stages and the root layout around /pos;
+# files in images/<image>/root are copied in after it.
 # The archive is <build dir>/pos-image-<image>-<stem>.tar.zst (stem:
 # buildinfo.sh), owned by root.
 # The tree is left at <build dir>/image/<image>.
@@ -52,6 +53,12 @@ while read -r kind path arg; do
     *) echo "$layout: unknown entry: $kind" >&2; exit 1 ;;
   esac
 done < "$layout"
+
+# Configuration of the image (/etc/kernel), with the modes of the umask,
+# not the checkout's.
+if [[ -d $base/images/$image/root ]]; then
+  cp -R --no-preserve=mode "$base/images/$image/root/." "$root/"
+fi
 
 # Shipped defaults, from the factory tree (BUILD.md "Prefix").
 "$base/buildsys/image-factory.sh" "$root"

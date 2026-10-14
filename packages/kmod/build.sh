@@ -27,5 +27,11 @@ meson setup "$build_dir" "$src_dir" \
       -Dbuild-tests=false
 meson compile -C "$build_dir" -j "$nproc"
 DESTDIR="$dest_dir" meson install -C "$build_dir"
+# The kernel loads modules on demand (a file system's, mounting the ESP) by
+# running the modprobe its build names, /sbin/modprobe or /usr/bin/modprobe;
+# the kernels POS boots are built by others, so the path is set at boot.
+install -d "${dest_dir}${prefix}/lib/sysctl.d"
+printf 'kernel.modprobe = %s\n' "${prefix}/sbin/modprobe" \
+  >"${dest_dir}${prefix}/lib/sysctl.d/50-kmod.conf"
 
 pkg_finish

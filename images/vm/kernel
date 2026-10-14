@@ -1,0 +1,6 @@
+# The kernel of the image: Fedora's packages, unpacked into the image and
+# added with POS's kernel-install (buildsys/image-kernel.sh). POS boots
+# kernels other projects build. One package per line.
+kernel-core
+kernel-modules-core
+kernel-modules

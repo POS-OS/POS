@@ -1,0 +1,3 @@
+# The check of the booted disk (BUILD.md "Build numbers"): a script
+# devtools/vm.sh runs in it as root.
+devtools/smoke.sh

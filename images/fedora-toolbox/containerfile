@@ -1,6 +1,6 @@
-# The build toolbox image: the container-dnf image (BASE, the build's
-# pos-dnf) made a toolbox image. New builds make their toolboxes from it
-# (BUILD.md "Toolboxes").
+# POS as a toolbox image, for working in: the container-dnf image (BASE,
+# the build's pos-dnf) with what toolbox needs; anything else is installed
+# with dnf. BUILD.md "Images made with podman".
 ARG BASE
 FROM $BASE
 

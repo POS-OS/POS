@@ -7,8 +7,9 @@
 #
 #   image-disk.sh <build dir> <image>
 #
-# The disk is <build dir>/pos-disk-<image>-<stem>.raw (stem:
-# buildinfo.sh), a sparse file. Its partitions have the discoverable
+# The disk is <build dir>/pos-disk-<image>-<stem>.qcow2 (stem:
+# buildinfo.sh), compressed, for qemu, libvirt and the rest to boot or
+# convert. Its partitions have the discoverable
 # partition types: systemd finds the ESP and root by their type, so the
 # image needs no fstab and no root= on the kernel command line. /boot is
 # the ESP: the image's boot loader entries and kernels are written there
@@ -36,7 +37,7 @@ fi
 stem=$(build_stem "$bdir")
 root=${bdir}/image/${image}
 archive=${bdir}/pos-image-${image}-${stem}.tar.zst
-disk=${bdir}/pos-disk-${image}-${stem}.raw
+disk=${bdir}/pos-disk-${image}-${stem}.qcow2
 
 rm -rf "$root"
 mkdir -p "$root"
@@ -50,9 +51,12 @@ SYSTEMD_RELAX_ESP_CHECKS=1 "$root/pos/lib/ld-linux-x86-64.so.2" \
   --library-path "$root/pos/lib:$root/pos/lib/systemd" \
   "$root/pos/bin/bootctl" --root="$root" --esp-path=/boot install --no-variables
 
-rm -f "$disk.tmp"
+# systemd-repart writes a raw disk, which is then converted.
+rm -f "$disk.raw" "$disk.tmp"
 systemd-repart --empty=create --size=auto --offline=yes --dry-run=no \
-  --root="$root" --definitions="$base/images/$image/repart.d" "$disk.tmp"
-mv "$disk.tmp" "$disk"
+  --root="$root" --definitions="$base/images/$image/repart.d" "$disk.raw"
 rm -rf "$root"
+qemu-img convert -c -O qcow2 "$disk.raw" "$disk.tmp"
+rm "$disk.raw"
+mv "$disk.tmp" "$disk"
 echo "$disk"

@@ -231,7 +231,7 @@ done
 # own generator, as Fedora's packages get theirs.
 for s in "${stages[@]}"; do
   find "$bdir/assemble/$s/pos" -type f -name '*.so*' -exec sh -c '
-    for f; do [ "$(head -c 4 "$f")" = "$(printf "\177ELF")" ] && echo "$f"; done' sh {} +
+    for f; do if [ "$(head -c 4 "$f")" = "$(printf "\177ELF")" ]; then echo "$f"; fi; done' sh {} +
 done | /usr/lib/rpm/elfdeps --provides | sort -u >"$work/pos.sonames"
 
 # A claim stands only if POS has every versioned soname and symbol version
@@ -326,9 +326,8 @@ It provides what those provide, links their programs and libraries in
 POS; dnf installs only what POS does not have. The POS loader also
 searches /usr/lib64, after /pos/lib (/etc/pos/ld.so.conf, also as
 /etc/ld.so.conf for tools that read the library path there), where Fedora
-packages installed next to POS put their libraries. Fedora's dracut is
-given POS's systemd, udev and dbus directories. The system's os-release
-is POS's.
+packages installed next to POS put their libraries. The system's
+os-release is POS's.
 
 %install
 mkdir -p %{buildroot}/usr/bin %{buildroot}/usr/lib %{buildroot}/usr/lib64 %{buildroot}/etc/pos
@@ -338,7 +337,6 @@ done <'$work/links'
 printf '%s\n' /pos/lib /usr/lib64 >%{buildroot}/etc/pos/ld.so.conf
 chmod 0644 %{buildroot}/etc/pos/ld.so.conf
 ln -s pos/ld.so.conf %{buildroot}/etc/ld.so.conf
-install -D -m 0644 '$base/rpm/dracut.conf' %{buildroot}/usr/lib/dracut/dracut.conf.d/50-pos.conf
 $osrel_install
 
 # The POS loader finds what is not in /pos/lib through its cache only, so
@@ -358,7 +356,6 @@ rpm.execute("/pos/sbin/ldconfig")
 %dir /etc/pos
 %config(noreplace) /etc/pos/ld.so.conf
 /etc/ld.so.conf
-/usr/lib/dracut/dracut.conf.d/50-pos.conf
 $osrel_files
 $(awk '{print $1}' "$work/links" | rpm_escape)
 EOF

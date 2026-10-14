@@ -46,12 +46,23 @@ EOF2
 make -j"$nproc"
 
 make DESTDIR="$dest_dir" install
-# C.UTF-8, the one locale a system needs whatever its language: programs
+# C.UTF-8, the locale a system needs whatever its language: programs
 # that require UTF-8 fall back to it (tmux), and containers set it. Built
 # by the new localedef as files, /pos/lib/locale/C.utf8, as Fedora ships it
 # (glibc-minimal-langpack). glibc reads locales only from its own prefix.
 make DESTDIR="$dest_dir" SUPPORTED-LOCALES=C.UTF-8/UTF-8 localedata/install-locale-files
+# The other UTF-8 locales of glibc's SUPPORTED list, so any language works
+# without building one: one archive, /pos/lib/locale/locale-archive, which
+# shares what locales have in common (glibc-all-langpacks, without the
+# legacy character sets).
+locales=$(sed -n 's/^\([^#=]*\/UTF-8\) \\$/\1/p' "${src_dir}/localedata/SUPPORTED" | grep -v '^C\.UTF-8/')
+make -j"$nproc" DESTDIR="$dest_dir" SUPPORTED-LOCALES="$locales" localedata/install-locales
 # ldconfig output, regenerated on the target; not a shipped default.
 rm -f "${dest_dir}/etc/pos/ld.so.cache"
+# The loader's configuration, a shipped default (factory): its own
+# directory, which it also searches without one. ldconfig writes the
+# cache next to it. pos-fedora replaces it with one that adds /usr/lib64.
+install -d "${dest_dir}/etc/pos"
+printf '%s\n' "${prefix}/lib" >"${dest_dir}/etc/pos/ld.so.conf"
 
 pkg_finish

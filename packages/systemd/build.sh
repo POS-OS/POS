@@ -16,6 +16,12 @@ pkg_sync_src
 # /usr/sbin. The *-path options move the ones POS ships: kmod from kmod,
 # the rest from util-linux (BUILD.md "Prefix"). quotaon, quotacheck, kexec,
 # loadkeys and setfont are not in POS and keep their dead defaults.
+# Programs a unit names without a path (ExecStart=systemd-tmpfiles) are
+# looked up in the built-in search path, /usr/local and /usr; POS's bin
+# directories are appended to it (extra-exec-search-path), which also
+# gives services and user sessions their PATH. Without them only a system
+# with links in /usr/bin (pos-fedora) finds those programs, not POS's own
+# root or its initramfs.
 #
 # Its pam.d files go where POS pam reads vendor configuration
 # (VENDORDIR/pam.d, packages/pam sets VENDORDIR=/pos/share/pam); the meson
@@ -41,6 +47,7 @@ meson setup "$build_dir/build" "$build_dir" \
       --buildtype=plain \
       -Dmode=release \
       -Dsplit-bin=true \
+      -Dextra-exec-search-path="${prefix}/sbin:${prefix}/bin" \
       -Dcompat-sysv-interfaces=false \
       -Dkmod-path="${prefix}/bin/kmod" \
       -Dmount-path="${prefix}/bin/mount" \

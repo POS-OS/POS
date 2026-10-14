@@ -1,0 +1,2 @@
+build-requires gcc pos-link
+requires glibc kmod bash coreutils cpio findutils grep sed gawk util-linux systemd gzip xz zstd

@@ -1,0 +1,3 @@
+# Shared by GNU tar and cpio (packages/tar, packages/cpio meta with-sources):
+# their bootstrap takes files from it into their trees. Nothing else uses it.
+kind source

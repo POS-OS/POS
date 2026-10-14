@@ -29,7 +29,7 @@ A build has an ID (a timestamp) and keeps everything under
 info (see "Debug info"), `logs/<package>.log`, the stage archives
 `pos-<stage>-<stem>.tar.zst` with their `pos-debug-<stage>-<stem>.tar.zst`,
 the RPM packages in `rpm/`, the image archives
-`pos-image-<image>-<stem>.tar.zst` and disks `pos-disk-<image>-<stem>.raw`,
+`pos-image-<image>-<stem>.tar.zst` and disks `pos-disk-<image>-<stem>.qcow2`,
 where `<stem>` is `<version>-<id>` (see "Build numbers"). `work/builds/current`
 points at the build that `run` continues. `run --new` starts another, a
 pos build, or a toolchain build with `--toolchain` (`info`: `pipeline`;
@@ -116,7 +116,9 @@ the release preparation itself. A source goes through three steps:
 
 1. Sync: `src/<source>` holds exactly the files upstream's git tracks, and
    `src/<source>.upstream` records the branch (`ref`), `commit`, commit
-   `date` and `url` it came from. Both are committed.
+   `date` and `url` it came from. Both are committed. Upstream's
+   submodules are part of the tree, except those that are sources of their
+   own (gnulib, paxutils), which packages take from `src/<name>`.
 2. Prepare: what upstream's release process adds to a release tarball.
    `packages/<source>/prepare.sh` works on a copy of the committed
    `src/<source>`, with helpers from `buildsys/prepare.sh`: `prep_pull` runs
@@ -125,8 +127,10 @@ the release preparation itself. A source goes through three steps:
    `.tarball-version`. Files gnulib-tool links to `src/gnulib` are copied,
    so the prepared tree stands alone. Prepare runs in a build container
    with network access, which has the recipes, the committed source,
-   `src/gnulib` and the tree to prepare; `prepare-requires` in the meta
-   lists its Fedora packages.
+   `src/gnulib` and the tree to prepare, into which the package's
+   `with-sources` are copied first (tar's and cpio's bootstrap imports
+   files from `paxutils`); `prepare-requires` in the meta lists its Fedora
+   packages.
 3. Build: from the prepared tree when the source has a prepare recipe, from
    `src/<source>` otherwise. A build needs no network.
 
@@ -140,8 +144,8 @@ their `configure`) have no prepare recipe and are built from `src/`.
 
 Prepared trees are kept in `work/sources/<source>/<key>`. The key is a hash
 of the committed source tree, its `.upstream`, the prepare recipe, the
-helpers, the `prepare-requires`, and the committed `src/gnulib` for
-packages that use gnulib. A tree is prepared once for each key and shared by
+helpers, the `prepare-requires`, the committed `src/gnulib` for
+packages that use gnulib, and the committed `with-sources`. A tree is prepared once for each key and shared by
 every package built from that source (util-linux, util-linux-bootstrap),
 every build that copies it into its own tree (gcc builds gmp, mpfr and mpc
 in its tree: `with-sources gmp mpfr mpc`), and later builds. `run` prepares a source when it
@@ -488,7 +492,13 @@ outside `/pos` (`buildsys/build.sh` warns on it).
   `pos-fedora` system, a kernel) are still read.
 * kmod: `-Ddistconfdir=/pos/lib` for `modprobe.d`/`depmod.d`. Modules stay
   in `/usr/lib/modules`, where kernel packages install them: POS boots
-  kernels other projects build.
+  kernels other projects build. The kernel loads modules on demand with
+  the modprobe its build names (`/usr/bin/modprobe` in Fedora's); kmod's
+  `sysctl.d/50-kmod.conf` sets `kernel.modprobe` to `/pos/sbin/modprobe`.
+* systemd: programs a unit names without a path, and the `PATH` of
+  services and user sessions, are looked up in `/usr/local` and `/usr`, with
+  `/pos/sbin:/pos/bin` appended (`-Dextra-exec-search-path`). sudo's
+  `secure_path` is the same list.
 * util-linux: `--enable-fs-paths-default=/pos/sbin` for mount helpers.
 * shadow: `--enable-vendordir=/pos/share/factory/etc`, so login.defs is found
   before `/etc/login.defs` has been created. pam's vendordir
@@ -571,7 +581,12 @@ libraries makes each loader pick up the other's libc; in a toolbox the POS
 loader found Fedora's `/lib64/libc.so.6` and every program without an rpath
 crashed (gcc's libatomic configure runs one). The glibc recipe sets
 `LD_SO_CACHE` and `LD_SO_CONF` in `configparms`. With no POS cache, as in a
-build container, the loader searches `/pos/lib`.
+build container, the loader searches `/pos/lib`. glibc ships
+`/etc/pos/ld.so.conf` (`/pos/lib`) as a factory default, so ldconfig can
+write the cache next to it; pos-fedora's adds `/usr/lib64`. dracut's
+library lookup (dracut-install, and the cache it makes in the initramfs)
+is changed by its recipe to read `/etc/pos/ld.so.conf` and search
+`/pos/lib`, as the POS loader does.
 
 Binaries carry no rpath. The loader searches the binary's RPATH/RUNPATH,
 then `LD_LIBRARY_PATH`, then its cache, then its default directory
@@ -605,11 +620,14 @@ POS loader searches only `/pos/lib`. A build that dies with exit 127 while
 running its own freshly built program is this. Check with
 `objdump -p <binary> | grep NEEDED`.
 
-glibc installs one compiled locale, C.UTF-8, as
-`/pos/lib/locale/C.utf8` (Fedora's glibc-minimal-langpack has the same).
-Programs that need a UTF-8 locale fall back to it (tmux), and containers
-set it. glibc reads compiled locales only from its own prefix; other
-languages would be built the same way (`SUPPORTED-LOCALES`).
+glibc installs C.UTF-8 as `/pos/lib/locale/C.utf8` (Fedora's
+glibc-minimal-langpack has the same): programs that need a UTF-8 locale
+fall back to it (tmux), and containers set it. The other UTF-8 locales of
+glibc's `localedata/SUPPORTED` are compiled into one archive,
+`/pos/lib/locale/locale-archive`, so any language works as it is;
+the legacy character sets (ISO-8859-*, EUC-*, ...) are not built. glibc
+reads compiled locales only from its own prefix, not Fedora's
+`/usr/lib/locale`.
 
 gmp and mpfr are in this stage. coreutils `expr` and `factor`, and gawk
 `-M`, link them at run time. gmp `--enable-cxx` needs libstdc++, from the
@@ -625,7 +643,8 @@ An image is a root filesystem with POS installed, archived as
 `work/builds/<id>/pos-image-<image>-<stem>.tar.zst` by `buildsys/image.sh`.
 `images/<image>/layout` names the stages it holds and the root layout
 around `/pos`: directories with their modes, and the symlinks into `/pos`
-for the paths in "Prefix". `run` makes an image when it assembles every
+for the paths in "Prefix". Files in `images/<image>/root` are copied in
+after it. `run` makes an image when it assembles every
 stage the image holds, so a plain `run` makes them all. The tree is left at
 `work/builds/<id>/image/<image>`.
 
@@ -649,7 +668,22 @@ it:
         --change 'CMD ["/bin/bash"]' \
         work/builds/<id>/pos-image-container-<stem>.tar.zst pos:<id>
 
-`devtools/import-image.sh [-i <image>] [<id>]` does that.
+`devtools/import-image.sh [-i <image>] [<id>]` does that, and tags the
+image with the build's version too (`pos:2`), the tag to make containers
+from: it moves to whichever build of that version was imported last. For
+an image made with podman (see "Images made with podman"), which is in
+podman already, it only sets the version tag.
+
+`images/vm` is a bootable POS system without an RPM layer: core-libs and
+system, Fedora's kernel and a disk (see "Disks"). A layout image with
+`images/<image>/kernel` gets the kernel packages it names:
+`buildsys/image-kernel.sh`, as root in a container of the tools image
+with network, downloads them from Fedora's repositories, unpacks them
+into the image's tree (the image has no rpm) and runs POS's
+kernel-install there, as Fedora's scriptlet does in vm-dnf: its plugins
+run depmod, POS's dracut, which makes the initramfs, and write the boot
+loader entry (`root/etc/kernel`). The modules are in `/usr/lib/modules`,
+with `/lib/modules` a link to it, the path kernel packages and dracut use.
 
 ## Images made with dnf
 An image with `images/<image>/packages` instead of a layout is made by
@@ -690,18 +724,17 @@ packages, which use POS for what it replaces:
     # dnf install htop
 
 `images/vm-dnf` is container-dnf's packages and Fedora's kernel
-(`kernel-core`, `kernel-modules`) with `dracut`: a bootable system. POS
-boots kernels other projects build; Fedora's kernel package installs as
-on Fedora. Its scriptlet runs POS's kernel-install (`root/etc/kernel`:
-Type #1 boot loader entries, the kernel command line), whose plugins are
-POS's (depmod, the loader entry) and dracut's, which makes the initramfs
-from POS's systemd, udev and libraries (pos-fedora gives dracut their
-directories, see "RPM packages"). The kernel, initramfs and entry are in
+(`kernel-core`, `kernel-modules`): a bootable system. POS boots kernels
+other projects build; Fedora's kernel package installs as on Fedora. Its
+scriptlet runs POS's kernel-install (`root/etc/kernel`: Type #1 boot
+loader entries, the kernel command line), whose plugins are POS's (depmod,
+the loader entry, and dracut's, which makes the initramfs from POS's
+systemd, udev and libraries). The kernel, initramfs and entry are in
 `/boot`.
 
 ## Disks
 An image with `images/<image>/repart.d` (layout or dnf) also gets a disk,
-`pos-disk-<image>-<stem>.raw`, made by `buildsys/image-disk.sh` from the
+`pos-disk-<image>-<stem>.qcow2`, made by `buildsys/image-disk.sh` from the
 image's archive in a container of the tools image: the image's own
 systemd-boot is installed into `/boot` (POS `bootctl install`), then
 `systemd-repart` makes the partitions of `repart.d` and fills them from
@@ -709,7 +742,10 @@ the tree, without loop devices or privileges. The partitions have the
 discoverable partition types, so systemd finds them by type: no fstab and
 no `root=` on the kernel command line. vm-dnf's disk is a 1G ESP (vfat)
 with `/boot`'s contents, mounted at `/boot`, and an 8G root (ext4) with
-the rest. The file is sparse.
+the rest. The disk is a compressed qcow2 image (systemd-repart's raw disk
+converted with `qemu-img`), which qemu and libvirt boot as it is; how to
+run it is up to whoever uses it. `qemu-img convert -O raw` gives a raw
+disk.
 
 `devtools/vm.sh [-i <image>] [<id>]` boots a disk in qemu with KVM and
 UEFI firmware, in a container of `localhost/pos-vm` (Fedora with qemu
@@ -746,6 +782,12 @@ toolbox puts its user in `wheel` with an empty password and runs sudo, so
 the image adds a `wheel` rule in `/etc/sudoers.d` to POS's `/etc/sudoers`
 (from the factory tree), which has none. sudo's PAM configuration is
 POS's (see "System integration").
+
+A toolbox stays on the image it was made from: moving to a later build is
+making the toolbox again, from the image of that build.
+
+    $ devtools/import-image.sh -i fedora-toolbox [<id>]
+    $ toolbox create -i localhost/pos-fedora-toolbox:<version> <name>
 
 # RPM packages (experimental)
 `./build rpm [<stage>...]` makes the RPM packages of the current build's
@@ -814,10 +856,12 @@ which the POS loader does not search by default. pos-fedora ships
 which Fedora's glibc ships, links to it: tools that read the library path
 there (dracut's) see the POS loader's.
 
-Fedora's dracut has Fedora's `/usr` directories of systemd, udev and dbus
-in its configuration (`01-dist.conf`). pos-fedora sets them to POS's
-(`/usr/lib/dracut/dracut.conf.d/50-pos.conf`, from `rpm/dracut.conf`), so
-an initramfs is made from POS's systemd.
+dracut is POS's (in the system stage, with GNU cpio): pos-fedora stands in
+for Fedora's. Its configuration (`/pos/lib/dracut/dracut.conf.d/01-dist.conf`,
+from `packages/dracut`) names POS's directories of systemd, udev and dbus,
+and the library directories, so an initramfs is made from POS's systemd.
+The same dracut makes the initramfs when an image is made and on a running
+system, through kernel-install.
 
 rpmbuild's defaults are for Fedora's `/usr`, and both specs turn them off:
 automatic dependencies (they would make `pos` provide `libc.so.6()(64bit)`

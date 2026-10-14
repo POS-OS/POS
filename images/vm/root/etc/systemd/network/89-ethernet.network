@@ -1,0 +1,7 @@
+# Wired interfaces get an address by DHCP (systemd's 89-ethernet.network.example).
+[Match]
+Kind=!*
+Type=ether
+
+[Network]
+DHCP=yes

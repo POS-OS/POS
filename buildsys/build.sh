@@ -124,15 +124,15 @@ host_podman() {
 # The Fedora packages of the tools image: the host-requires and
 # prepare-requires of every package, so any step of the run finds what it
 # declares, rpm-build for the RPM packages (buildsys/rpm.sh), and
-# systemd-repart and the tools it makes file systems with, for disks
-# (buildsys/image-disk.sh).
+# systemd-repart, the tools it makes file systems with and qemu-img, for
+# disks (buildsys/image-disk.sh).
 tools_packages() {
   local p
   {
     for p in "${PKGS[@]}"; do
       echo ${HREQ[$p]} ${PREQ[$p]}
     done
-    echo rpm-build systemd-standalone-repart dosfstools mtools e2fsprogs
+    echo rpm-build systemd-standalone-repart dosfstools mtools e2fsprogs qemu-img
   } | xargs -n1 | sort -u
 }
 
@@ -380,7 +380,7 @@ upstream_info() {
 
 # The key of a prepared tree: everything that goes into it.
 prepare_key() {
-  local s=$1
+  local s=$1 w
   {
     source_tree "$s"
     upstream_info "$s"
@@ -389,15 +389,20 @@ prepare_key() {
     if [[ -f $base/src/$s/bootstrap.conf || -x $base/src/$s/autopull.sh ]]; then
       source_tree gnulib
     fi
+    for w in ${WSRC[$s]}; do
+      source_tree "$w"
+    done
   } | sha256sum | cut -c1-16
 }
 
 # Prepare a source unless a tree with the same key exists. Sets PREPARED to
 # the prepared tree. Prepare has network: it fetches what upstream's
 # release process does. It sees the committed source (prepare recipes
-# compare with it), and src/gnulib.
+# compare with it), src/gnulib, and the committed sources of the package's
+# with-sources, which upstream's bootstrap may take files from (tar's and
+# cpio's paxutils).
 prepare_source() {
-  local s=$1 key dir log hbase
+  local s=$1 key dir log hbase w with_dirs=
   local -a mounts
   key=$(prepare_key "$s") || exit 1
   dir=$sources/$s/$key
@@ -411,6 +416,10 @@ prepare_source() {
   upstream_info "$s" >"$dir.upstream"
   mounts=(net ro:"$base/buildsys" ro:"$base/packages" ro:"$base/src/$s" rw:"$dir.tmp" ro:"$dir.upstream")
   [[ ! -d $base/src/gnulib ]] || mounts+=(ro:"$base/src/gnulib")
+  for w in ${WSRC[$s]}; do
+    mounts+=(ro:"$base/src/$w")
+    with_dirs+=" $w=$hbase/src/$w"
+  done
   title "prepare $s"
   echo "=== prepare $s ($key) ===" | tee "$log"
   step_run "prepare-$s" "${mounts[@]}" -- env \
@@ -418,6 +427,7 @@ prepare_source() {
     POS_SOURCE="$s" \
     POS_PREP_DIR="$(host_path "$dir.tmp")" \
     POS_UPSTREAM="$(host_path "$dir.upstream")" \
+    POS_WITH_SRC_DIRS="${with_dirs# }" \
     bash "$hbase/packages/$s/prepare.sh" 2>&1 | tee -a "$log"
   mv "$dir.tmp" "$dir"
   touch "$dir.done"
@@ -784,6 +794,14 @@ dnf_image() {
     bash "$(host_path "$base/buildsys/image-dnf.sh")" "$(host_path "$bdir")" "$1"
 }
 
+# Install the Fedora kernel packages of images/<image>/kernel into a
+# layout image (buildsys/image-kernel.sh), as root: kernel-install runs in
+# the image's tree. It needs network for Fedora's repositories.
+kernel_image() {
+  step_run "kernel-$1" net root ro:"$base/buildsys" ro:"$base/images" rw:"$bdir" -- \
+    bash "$(host_path "$base/buildsys/image-kernel.sh")" "$(host_path "$bdir")" "$1"
+}
+
 disk_image() {
   step_run "disk-$1" root ro:"$base/buildsys" ro:"$base/images" rw:"$bdir" -- \
     bash "$(host_path "$base/buildsys/image-disk.sh")" "$(host_path "$bdir")" "$1"
@@ -791,8 +809,8 @@ disk_image() {
 
 # Make the images of the given names: layout images from the stage
 # archives, dnf images from the RPM packages, podman images from another
-# image. A layout or dnf image with images/<image>/repart.d also gets a
-# disk.
+# image. A layout image with images/<image>/kernel gets that kernel. A
+# layout or dnf image with images/<image>/repart.d also gets a disk.
 make_images() {
   local t
   for t in "$@"; do
@@ -800,6 +818,7 @@ make_images() {
     step_start "image-$t"
     if [[ -f $base/images/$t/layout ]]; then
       "$base/buildsys/image.sh" "$bdir" "$t"
+      [[ ! -f $base/images/$t/kernel ]] || kernel_image "$t"
     elif [[ -f $base/images/$t/packages ]]; then
       dnf_image "$t"
     else
@@ -1143,6 +1162,9 @@ cmd_tag() {
   [[ ${1:-} != --unchecked ]] || { unchecked=yes; shift; }
   (($# == 0)) || usage
   [[ $(git -C "$base" symbolic-ref --short HEAD 2>/dev/null) == main ]] || die "tag numbers builds of main; check out main"
+  # The tagger is whoever numbers the build: git's identity here.
+  git -C "$base" var GIT_COMMITTER_IDENT >/dev/null 2>&1 ||
+    die "git has no identity for the tagger; set user.name and user.email (git config)"
   id=$(current_id) || die "no current build"
   validate "$unchecked"
   commit=$(build_info commit)

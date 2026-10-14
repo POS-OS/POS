@@ -1,0 +1,7 @@
+build-requires gcc pos-link
+requires glibc
+# paxutils: its bootstrap imports files from it (src/paxutils).
+with-sources paxutils
+# gnulib bootstrap checks the tools in bootstrap.conf buildreq; translations
+# are fetched with wget.
+prepare-requires wget

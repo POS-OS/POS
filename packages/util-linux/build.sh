@@ -43,6 +43,12 @@ cd "$build_dir" || exit 1
             "${configure_extra[@]}"
 make -j"$nproc"
 make DESTDIR="$dest_dir" install
+# The unit names mv by its /usr path (not a configure substitution).
+unit=${dest_dir}${prefix}/lib/systemd/system/lastlog2-import.service
+if [[ -f $unit ]]; then
+  sed -i "s|/usr/bin/mv |${prefix}/bin/mv |" "$unit"
+  ! grep -q '/usr/' "$unit" || { echo "util-linux: $unit still names /usr" >&2; exit 1; }
+fi
 
 pkg_setuid "${prefix}/bin/su" "${prefix}/bin/mount" "${prefix}/bin/umount" \
            "${prefix}/bin/chfn" "${prefix}/bin/chsh"

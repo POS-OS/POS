@@ -43,7 +43,7 @@ while (($#)); do
   esac
 done
 id=${1:-$(basename "$(readlink "${builds}/current")")}
-disk=${builds}/${id}/pos-disk-${image}-$(build_stem "${builds}/${id}").raw
+disk=${builds}/${id}/pos-disk-${image}-$(build_stem "${builds}/${id}").qcow2
 [[ -f $disk ]] || { echo "no disk $disk" >&2; exit 1; }
 [[ -z $script || -f $script ]] || { echo "no script $script" >&2; exit 1; }
 
@@ -83,7 +83,7 @@ fi
 qemu='
 set -e
 cp /usr/share/edk2/ovmf/OVMF_VARS.fd /tmp/vars.fd
-qemu-img create -q -f qcow2 -b /disk.raw -F raw /tmp/overlay.qcow2
+qemu-img create -q -f qcow2 -b /disk.qcow2 -F qcow2 /tmp/overlay.qcow2
 cmdline=systemd.firstboot=no
 args=(-smbios "type=11,value=$1")
 if [[ -n $2 ]]; then
@@ -110,7 +110,7 @@ ExecStart=-/pos/sbin/agetty --autologin root --noreset --noclear --keep-baud 115
 EOF
   )
   exec host_podman run --rm -it --device /dev/kvm --security-opt label=disable \
-    -v "$(host_path "$disk"):/disk.raw:ro" localhost/pos-vm bash -c "$qemu" vm "$autologin" ""
+    -v "$(host_path "$disk"):/disk.qcow2:ro" localhost/pos-vm bash -c "$qemu" vm "$autologin" ""
 fi
 
 # The script's unit: started once the boot transaction is done (Type=exec
@@ -140,7 +140,7 @@ mkdir -p "$out"
 rm -f "$out/script.out"
 status=0
 host_podman run --rm --timeout "${POS_VM_TIMEOUT:-900}" --device /dev/kvm --security-opt label=disable \
-  -v "$(host_path "$disk"):/disk.raw:ro" -v "$(host_path "$out"):/out" \
+  -v "$(host_path "$disk"):/disk.qcow2:ro" -v "$(host_path "$out"):/out" \
   localhost/pos-vm bash -c "$qemu" vm "$unit" "$code" \
   </dev/null >"$log" 2>&1 || status=$?
 result=$(tr -d '\r' <"$out/script.out" 2>/dev/null | sed -n '/^vm.sh: start$/,$p' | sed 1d) || true

@@ -25,6 +25,9 @@ file
 which
 # Process tools: ps, top, free, pgrep, sysctl, watch, w, uptime.
 procps
+# The initramfs: dracut (kernel-install's plugin), with GNU cpio.
+cpio
+dracut
 # POS's own integration: the default PAM stack.
 pos-integration
 # Moved to stages/sdk (developer material): diffutils, patch, man-pages.

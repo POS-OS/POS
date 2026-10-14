@@ -4,8 +4,8 @@
 #   devtools/vm.sh -c devtools/smoke.sh [<id>]
 #
 # One line per check, ok or FAIL with what the check printed (its first
-# ten lines); the exit status is the number of failed checks. The dnf check
-# needs the network.
+# ten lines); the exit status is the number of failed checks. The dnf check,
+# made where dnf is installed, needs the network.
 
 PATH=/pos/sbin:/pos/bin:/usr/sbin:/usr/bin
 failed=0
@@ -37,7 +37,10 @@ check "initrd loads modules (kmod context)" journal_lacks 'Failed to initialize 
 check "unit files not executable" journal_lacks 'is marked executable'
 check "modprobe" bash -c 'modprobe vfat && grep -q "^vfat " /proc/modules'
 check "network link routable" bash -c 'networkctl list --no-legend | grep -q routable || { networkctl list; false; }'
-check "dnf install" bash -c 'dnf -y -q install tree >/dev/null && tree --version'
+# On an RPM system (vm-dnf): Fedora packages install on top of POS.
+if [[ -x /usr/bin/dnf ]]; then
+  check "dnf install" bash -c 'dnf -y -q install tree >/dev/null && tree --version'
+fi
 check "PAM: chpasswd" bash -c 'echo "root:smoke-test" | chpasswd'
 check "PAM: su" su -s /pos/bin/sh -c true nobody
 check "PAM: runuser" runuser -u nobody -- true
