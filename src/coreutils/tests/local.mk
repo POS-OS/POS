@@ -79,6 +79,7 @@ TESTS_ENVIRONMENT =				\
   MAKE=$(MAKE)					\
   PACKAGE_VERSION=$(PACKAGE_VERSION)		\
   PERL='$(PERL)'				\
+  PERL_UNICODE=0				\
   SHELL='$(PREFERABLY_POSIX_SHELL)'		\
   ; test -d /usr/xpg4/bin && PATH='/usr/xpg4/bin$(PATH_SEPARATOR)'"$$PATH"; \
   PATH='$(abs_top_builddir)/src$(PATH_SEPARATOR)'"$$PATH" \
@@ -186,6 +187,7 @@ all_tests =					\
   tests/misc/read-errors.sh			\
   tests/misc/responsive.sh			\
   tests/misc/no-fork.sh				\
+  tests/misc/exec-bad-unicode.sh		\
   tests/misc/traversal-missing.sh		\
   tests/misc/tty-quoting.sh			\
   tests/misc/uname-labeled.sh			\
@@ -194,6 +196,7 @@ all_tests =					\
   tests/tail/basic-seek.sh			\
   tests/tail/inotify-hash-abuse.sh		\
   tests/tail/inotify-hash-abuse2.sh		\
+  tests/tail/inotify-parent-hash.sh		\
   tests/tail/F-vs-missing.sh			\
   tests/tail/F-vs-rename.sh			\
   tests/tail/F-headers.sh			\
@@ -309,6 +312,8 @@ all_tests =					\
   tests/cut/mb-non-utf8.sh			\
   tests/cut/bounded-memory.sh			\
   tests/cut/cut-huge-range.sh			\
+  tests/wc/mb-non-utf8.sh			\
+  tests/wc/page-size.sh				\
   tests/wc/wc.pl				\
   tests/wc/wc-cpu.sh				\
   tests/wc/wc-files0-from.pl			\
@@ -712,6 +717,7 @@ all_tests =					\
   tests/ln/target-1.sh				\
   tests/ls/a-option.sh				\
   tests/ls/acl.sh				\
+  tests/ls/acl-cache.sh				\
   tests/ls/abmon-align.sh			\
   tests/ls/birthtime.sh				\
   tests/ls/block-size.sh			\

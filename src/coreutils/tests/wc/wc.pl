@@ -103,6 +103,23 @@ if (defined $single_byte_locale)
     push @Tests, @new;
   };
 
+# A split EM SPACE must not leave continuation bytes to start another word.
+# Separated here so we read from file and thus exercise IO_BUFSIZE.
+if (defined $mb_locale && $mb_locale ne 'none')
+  {
+    my $bufsize = getlimits ()->{IO_BUFSIZE};
+    push @Tests,
+      ['mb-split-space', '-w', '<',
+       {IN=>('a' x ($bufsize - 1)) . "\xe2\x80\x83"},
+       {OUT=>"1\n"}, {ENV=>"LC_ALL=$mb_locale"}];
+
+    # Ensure we handle a split character, NUL, and encoding errors.
+    push @Tests,
+      ['mb-count-buffer', '-m', '<',
+       {IN=>('a' x ($bufsize - 1)) . "\xc3\xa9\0\xffZ\xe2\x82"},
+       {OUT=>($bufsize + 2) . "\n"}, {ENV=>"LC_ALL=$mb_locale"}];
+  }
+
 my $save_temps = $ENV{DEBUG};
 my $verbose = $ENV{VERBOSE};
 

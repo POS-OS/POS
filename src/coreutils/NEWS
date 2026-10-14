@@ -4,22 +4,78 @@ GNU coreutils NEWS                                    -*- outline -*-
 
 ** Bug fixes
 
-  'realpath' no longer loops infinitely when resolving a symbolic link which
+  'chroot --userspec=USER' now uses the primary group of USER as looked up
+  inside the chroot.  Previously the group looked up outside the chroot
+  was used, even when the look-up inside the chroot succeeded.
+  [bug introduced in coreutils-8.23]
+
+  cut, expand, fold, join, numfmt, unexpand, and uniq, no longer consider
+  the \u0085 (next line) character as a separator on non-GLIBC platforms.
+  [bug introduced in coreutils-9.11]
+
+  'fold' no longer prematurely wraps lines with a wide character towards
+  the start of a line, followed by multiple backspaces.  Also backspaces
+  after a tab character are accounted for correctly.
+  [bugs introduced in coreutils-9.8]
+
+  'ls' no longer omits ACL indicators or capability coloring for subsequent
+  files on the same file system after an unsupported security context
+  lookup on a file without an ACL.
+  [bug introduced in coreutils-9.6]
+
+  'realpath' without -s, or 'readlink' with -e,-f,-m no longer
+  loop infinitely when resolving a symbolic link which
   resolves to a path beginning with the symbolic link itself.
   [bug introduced in coreutils-9.0]
+
+  'unexpand' no longer overflows a heap buffer on non-GLIBC platforms,
+  given whitespace characters whose display width is negative.  E.g.,
+  this edge case can occur with \u0085 (next line) characters on musl.
+  [bug introduced in coreutils-9.11]
+
+  'wc' no longer miscounts characters or words when a multi-byte character
+  spans input buffers.  E.g. this could affect character counts
+  in GB18030 locales, and word counts in UTF-8 locales.
+  [bug introduced in coreutils-9.5]
+
+  'wc -c' no longer miscounts bytes when stdin has a nonzero offset
+  into a seekable file whose size is a multiple of the page size.
+  [bug introduced in coreutils-8.24]
+
+  When configured with both --disable-bold-man-page-references and
+  --disable-manual-url, 'chroot', 'head', 'shred', 'sort', 'split', and 'tail'
+  no longer use an uninitialized va_list when printing --help.  Previously, they
+  would likely crash due to this undefined behavior.
+  [bug introduced in coreutils-9.10]
 
 ** New Features
 
   'env' and 'printenv' now support the --quoting-style option
   to control the format of printed environment variables.
 
+  'tr' accepts the undocumented -u option to operate in unbuffered mode,
+  for compatibility with FreeBSD and macOS tr(1).
+
 ** Changes in behavior
+
+  command --help output will no longer be marked up with bold or hyperlinks
+  when output is not a tty.  E.g. paged --help output will no longer
+  contain URLs to the full online manual.
 
   'env' and 'printenv' now quote printed environment variables only when
   outputting to a terminal.  The previous release enabled this for all
   outputs by default, requiring setting QUOTING_STYLE=literal to disable.
 
+  'fold' when processing backspaces characters will no longer account for the
+  whole width of a previous character, unless the --characters option is used.
+  This aligns with POSIX and terminal behavior.
+
 ** Improvements
+
+  'basenc --base58' encoding speed is 20x faster when built without libgmp.
+
+  'cut -c' is up to 10x faster in UTF-8 locales, and
+  'cut -f -w' is up to 10x faster in uni-byte locales.
 
   'od' allocates half the memory when -v,--output-duplicates is specified.
 
@@ -27,10 +83,18 @@ GNU coreutils NEWS                                    -*- outline -*-
   initial reads finish, but subsequent reads might block, which was seen
   e.g. with fifos on NetBSD 10.
 
+  'tail -F' is more responsive to changes when following many file names,
+  when using inotify.
+
+  'wc -m' counts ASCII up to 14x faster, and UTF-8 up to 7x faster.
+
 ** Build-related
 
   gzip-compressed tarballs are no longer distributed,
   instead being replaced with zstandard-compressed tarballs.
+
+  The configure option '--disable-libsmack' is consolidated to
+  '--without-libsmack'.  The option '--disable-libsmack' is now deprecated.
 
 
 * Noteworthy changes in release 9.12 (2026-09-14) [stable]

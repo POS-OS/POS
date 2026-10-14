@@ -1,8 +1,6 @@
 #!/bin/sh
-# Show that we've eliminated most of ls' failing getxattr syscalls,
+# Show that we've eliminated most of ls' failing xattr syscalls,
 # regardless of how many files are in a directory we list.
-# This test is skipped on systems that lack LD_PRELOAD support; that's fine.
-# Similarly, on a system that lacks getxattr altogether, skipping it is fine.
 
 # Copyright (C) 2012-2026 Free Software Foundation, Inc.
 
@@ -21,46 +19,35 @@
 
 . "${srcdir=.}/tests/init.sh"; path_prepend_ ./src
 print_ver_ ls
-require_gcc_shared_
+uses_strace_
 
-# Replace each getxattr and lgetxattr call with a call to these stubs.
-# Count those and write the total number of calls to the file "x"
-# via a global destructor.
-cat > k.c <<'EOF' || framework_failure_
-#include <errno.h>
-#include <stdio.h>
-#include <sys/types.h>
-
-static unsigned long int n_calls;
-
-static void __attribute__ ((destructor))
-print_call_count (void)
-{
-  FILE *fp = fopen ("x", "w"); if (!fp) return;
-  fprintf (fp, "%lu\n", n_calls); fclose (fp);
+trace_ls_xattrs() {
+  strace -o strace.out \
+   -e trace=listxattr,llistxattr,getxattr,lgetxattr \
+   -e fault=listxattr,llistxattr,getxattr,lgetxattr:error=EOPNOTSUPP \
+   ls --color=always -l . >/dev/null
 }
 
-static ssize_t incr () { ++n_calls; errno = ENOTSUP; return -1; }
-ssize_t getxattr (const char *path, const char *name, void *value, size_t size)
-{ return incr (); }
-ssize_t lgetxattr(const char *path, const char *name, void *value, size_t size)
-{ return incr (); }
-EOF
+# Get a base count
+# Note there could be no getxattr calls if built without SELinux
+# but there should always be listxattr calls.
+trace_ls_xattrs; ret=$?
+grep xattr strace.out > xattr.out &&
+test -s xattr.out || skip_ 'no xattr calls were intercepted'
+test "$ret" = 0 || fail=1
+base_count=$(wc -l <xattr.out)
 
-# Then compile/link it:
-gcc_shared_ k.c k.so \
-  || framework_failure_ 'failed to build shared library'
+# This should always be the case,
+# but let's not enforce to reduce coupling
+#test $base_count -le 4 || fail=1
 
 # Create a few files:
 seq 20 | xargs touch || framework_failure_
 
-# Finally, run the test:
-LD_PRELOAD=$LD_PRELOAD:./k.so ls --color=always -l . || fail=1
-
-test -f x || skip_ "internal test failure: maybe LD_PRELOAD doesn't work?"
-
-# Ensure that there were no more than 3 *getxattr calls.
-n_calls=$(cat x)
-test "$n_calls" -le 3 || fail=1
+# Ensure the count is independent of the number of files
+trace_ls_xattrs || fail=1
+grep xattr strace.out > xattr.out || fail=1
+new_count=$(wc -l <xattr.out)
+test $base_count = $new_count || fail=1
 
 Exit $fail

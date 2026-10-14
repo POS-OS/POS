@@ -980,7 +980,7 @@ exclude_file_name_regexp--sc_prohibit_tab_based_indentation = \
   $(tbi_1)|$(tbi_2)|$(tbi_3)
 
 exclude_file_name_regexp--sc_preprocessor_indentation = \
-  ^(gl/lib/(rand-isaac|mbbuf)\.[ch]|gl/tests/test-rand-isaac\.c)$$|$(_ll)
+  ^(gl/lib/(rand-isaac|mbbuf|utf8)\.[ch]|gl/tests/test-rand-isaac\.c)$$|$(_ll)
 exclude_file_name_regexp--sc_prohibit_stat_st_blocks = \
   ^(src/system\.h|tests/du/2g\.sh)$$
 
@@ -988,7 +988,7 @@ exclude_file_name_regexp--sc_prohibit_continued_string_alpha_in_column_1 = \
   ^src/(system\.h|od\.c|printf\.c|getlimits\.c)$$
 
 _cksum = ^tests/cksum/cksum-base64\.pl$$
-_tb_misc = misc/(stdbuf|responsive)
+_tb_misc = misc/(exec-bad-unicode|stdbuf|responsive)
 exclude_file_name_regexp--sc_prohibit_test_backticks = \
   ^tests/(local\.mk|(init|$(_tb_misc)|factor/create-test)\.sh)$$|$(_cksum)
 
@@ -1042,4 +1042,4 @@ csiwl_2 = kno,ois,afile,whats,hda,indx,ot,nam,ist
 codespell_ignore_words_list = $(csiwl_1),$(csiwl_2)
 exclude_file_name_regexp--sc_codespell = \
   ^(THANKS\.in|tests/pr/.*(F|tn?|l(o|m|i)|bl))$$
-exclude_file_name_regexp--sc_GPL_version = ^(gl/lib/mbbuf\.[hc])$$
+exclude_file_name_regexp--sc_GPL_version = ^(gl/lib/(mbbuf|utf8)\.[hc])$$

@@ -19,7 +19,8 @@
 print_ver_ unexpand printf
 getlimits_
 
-test "$LOCALE_FR_UTF8" != none || skip_ "French UTF-8 locale not available"
+{ test -z "$LOCALE_FR_UTF8" || test "$LOCALE_FR_UTF8" = none; } &&
+  skip_ 'French UTF-8 locale not available'
 export LC_ALL="$LOCALE_FR_UTF8"
 
 #input containing multibyte characters
@@ -177,5 +178,14 @@ ideo_space=$(env printf '\u3000')
 { yes "$ideo_space" | head -n 40000 | tr -d '\n'; echo; } |
   unexpand -t1 >out 2>err; ret=$?
 test "$ret" = 0 || { cat err; fail=1; }
+
+# Ensure U+0085 is not treated as a separator,
+# and also no buffer overflows (where wcwidth() is -1) as per:
+# https://github.com/coreutils/coreutils/pull/361
+next_line=$(env printf '\u0085')
+yes "$next_line" | head -n 40000 | { tr -d '\n'; echo; } >next_lines ||
+  framework_failure_
+unexpand -t1 <next_lines >out || fail=1
+compare out next_lines || fail=1
 
 Exit $fail

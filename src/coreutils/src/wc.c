@@ -41,6 +41,7 @@
 #include "cpu-supports.h"
 #include "ioblksize.h"
 #include "wc.h"
+#include "utf8.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "wc"
@@ -427,7 +428,7 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
             ;
           else if (end_pos % page_size)
             {
-              /* We only need special handling of /proc and /sys files etc.
+              /* We need special handling of /proc and /sys files etc. only
                  when they're a multiple of PAGE_SIZE.  In the common case
                  for files with st_size not a multiple of PAGE_SIZE,
                  it's more efficient and accurate to use st_size.
@@ -435,19 +436,24 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
                  Be careful here.  The current position may actually be
                  beyond the end of the file.  As in the example above.  */
 
-              bytes = end_pos < current_pos ? 0 : end_pos - current_pos;
-              if (bytes && 0 <= lseek (fd, bytes, SEEK_CUR))
-                skip_read = true;
-              else
-                bytes = 0;
+              if (current_pos < end_pos)
+                {
+                  bytes = end_pos - current_pos;
+                  skip_read = true;
+                }
             }
-          else
+          else if (0 < end_pos)
             {
-              off_t hi_pos = (end_pos
-                              - end_pos % (STP_BLKSIZE (&fstatus->st) + 1));
-              if (0 <= current_pos && current_pos < hi_pos
-                  && 0 <= lseek (fd, hi_pos, SEEK_CUR))
+              off_t ep_1 = end_pos - 1;
+              off_t hi_pos = ep_1 - ep_1 % STP_BLKSIZE (&fstatus->st);
+              if (current_pos < hi_pos)
                 bytes = hi_pos - current_pos;
+            }
+
+          if (0 < bytes && lseek (fd, bytes, SEEK_CUR) < 0)
+            {
+              bytes = 0;
+              skip_read = false;
             }
         }
 
@@ -479,6 +485,8 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
       intmax_t linepos = 0;
       mbstate_t state; mbszero (&state);
       bool in_shift = false;
+      bool count_utf8 = !count_complicated && !print_lines
+                        && is_utf8_charset ();
       idx_t prev = 0; /* Number of bytes carried over from previous round.  */
 
       for (ssize_t bytes_read;
@@ -495,8 +503,21 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
           bytes += bytes_read;
           char const *p = buf;
           char const *plim = p + prev + bytes_read;
+          bool try_count_utf8 = count_utf8;
           do
             {
+              if (try_count_utf8 && !in_shift)
+                {
+                  /* Scan at most once per buffer, to avoid repeatedly
+                     scanning ASCII after decoding errors.  */
+                  try_count_utf8 = false;
+                  idx_t n = plim - p;
+                  chars += u8_count (p, &n);
+                  p += n;
+                  if (p == plim)
+                    break;
+                }
+
               char32_t wide_char;
               idx_t charbytes;
               bool single_byte;
@@ -511,6 +532,7 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
                 }
               else
                 {
+                  idx_t prev_bytes = prev;
                   idx_t scanbytes = plim - (p + prev);
                   size_t n = mbrtoc32 (&wide_char, p + prev, scanbytes, &state);
                   prev = 0;
@@ -550,7 +572,9 @@ wc (int fd, char const *file_x, struct fstatus *fstatus)
                       continue;
                     }
 
-                  charbytes = n + !n;
+                  /* Include bytes already consumed into STATE in an earlier
+                     read, but still present at P in the buffer.  */
+                  charbytes = prev_bytes + n + !n;
                   single_byte = charbytes == !in_shift;
                   in_shift = !mbsinit (&state);
                 }

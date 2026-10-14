@@ -118,9 +118,9 @@ WORD;
 
 typedef struct
   {
-    WORD *start;		/* array of WORDs */
     idx_t alloc;		/* allocated length */
     idx_t length;		/* number of used entries */
+    WORD *start COUNTED_BY (alloc);	/* array of WORDs */
   }
 WORD_TABLE;
 
@@ -283,7 +283,7 @@ static BLOCK reference;		/* reference field for input reference mode */
 
 /* Diagnose an error in the regular expression matcher.  Then exit.  */
 
-static void
+static _Noreturn void
 matcher_error (void)
 {
   error (EXIT_FAILURE, errno, _("error in regular expression matcher"));

@@ -38,6 +38,7 @@
 #include "memchr2.h"
 
 #include "set-fields.h"
+#include "utf8.h"
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 #define PROGRAM_NAME "cut"
@@ -657,6 +658,23 @@ find_field_delim (char *buf, size_t len)
 #endif
 }
 
+/* Return a pointer to the next TAB or SPACE in BUF, searching LEN bytes.
+   Return NULL if none is found.
+   It works for all unibyte locales, i.e., assumes they match c_isblank.  */
+
+ATTRIBUTE_PURE
+static char *
+find_c_blank (char *buf, size_t len)
+{
+  /* Avoid memchr2 setup for short fields.  */
+  idx_t n = MIN (len, 16);
+  for (idx_t i = 0; i < n; i++)
+    if (c_isblank (buf[i]))
+      return buf + i;
+
+  return memchr2 (buf + n, ' ', '\t', len - n);
+}
+
 /* Return the number of trailing bytes in BUF that could be the initial
    bytes of a delimiter split across buffers.  */
 
@@ -710,7 +728,7 @@ find_field_terminator (char *buf, idx_t len,
   idx_t field_len = ctx->line_end ? ctx->line_end - buf : len;
 
   char *field_end = (ctx->blank_delimited
-                     ? memchr2 (buf, ' ', '\t', field_len)
+                     ? find_c_blank (buf, field_len)
                      : find_field_delim (buf, field_len));
 
   if (field_end)
@@ -897,6 +915,7 @@ cut_bytes (FILE *stream)
 static void
 cut_characters_mode (FILE *stream, bool byte_mode)
 {
+  bool utf8 = is_utf8_charset ();
   uintmax_t idx = 0;
   bool print_delimiter = false;
   static char bytes_in[IO_BUFSIZE];
@@ -907,6 +926,35 @@ cut_characters_mode (FILE *stream, bool byte_mode)
 
   while (true)
     {
+      /* Skip unselected line suffixes without decoding each character.  */
+      if (idx && field_selection_exhausted (idx))
+        {
+          idx_t available = mbbuf_topup (&mbbuf);
+          char *p = mbbuf.buffer + mbbuf.offset;
+          char *end = search_bytes (p, line_delim, available);
+          mbbuf_advance (&mbbuf, end ? end - p : available);
+          if (!end && available)
+            continue;
+        }
+
+      /* Count unselected ASCII/UTF-8 characters directly, for efficiency.  */
+      if (!byte_mode && utf8 && idx + 1 < current_rp->lo)
+        {
+          char const *p = mbbuf.buffer + mbbuf.offset;
+          idx_t n = MIN (mbbuf_avail (&mbbuf), current_rp->lo - idx - 1);
+          char const *end = search_bytes (p, line_delim, n);
+          if (end)
+            {
+              /* Even with ASCII, this cannot reach the next selection.  */
+              mbbuf_advance (&mbbuf, end - p + 1);
+              reset_item_line (&idx, &print_delimiter);
+              continue;
+            }
+
+          idx += u8_count (p, &n);
+          mbbuf_advance (&mbbuf, n);
+        }
+
       mcel_t g = mbbuf_get_char (&mbbuf);
 
       if (g.ch == line_delim)
@@ -1101,9 +1149,11 @@ cut_fields_bytesearch (FILE *stream)
 
       /* Fast path: no field delimiter in chunk — output or skip lines.  */
       if (field_idx == 1
-          && !whitespace_delimited
+          && (!whitespace_delimited || !field_selection_exhausted (field_idx))
           && !field_delim_is_line_delim ()
-          && !find_field_delim (chunk, n_avail))
+          && !(whitespace_delimited
+               ? find_c_blank (chunk, n_avail)
+               : find_field_delim (chunk, n_avail)))
         {
           char *last_line_delim = search.at_eof
                                   ? chunk + n_avail - 1
