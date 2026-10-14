@@ -73,7 +73,7 @@
 #  include <wchar.h>
 #endif
 
-#include "../lib/xcsinc.c"
+#include "../lib/xcs.h"
 
 enum ExitCode {
   XMLWF_EXIT_SUCCESS = 0,
@@ -358,23 +358,6 @@ cleanupUserData(XmlwfUserData *userData) {
   free((void *)userData->currentDoctypeName);
   userData->currentDoctypeName = NULL;
   freeNotations(userData);
-}
-
-static int
-xcscmp(const XML_Char *xs, const XML_Char *xt) {
-  while (*xs != 0 && *xt != 0) {
-    if (*xs < *xt)
-      return -1;
-    if (*xs > *xt)
-      return 1;
-    xs++;
-    xt++;
-  }
-  if (*xs < *xt)
-    return -1;
-  if (*xs > *xt)
-    return 1;
-  return 0;
 }
 
 static int

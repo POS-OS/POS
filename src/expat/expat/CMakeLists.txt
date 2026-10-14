@@ -43,7 +43,7 @@ cmake_minimum_required(VERSION 3.17.0)
 
 project(expat
     VERSION
-        2.8.5
+        2.9.0
     LANGUAGES
         C
 )
@@ -181,9 +181,9 @@ endif()
 expat_shy_set(EXPAT_CHAR_TYPE "char" CACHE STRING "Character type to use (char|ushort|wchar_t) [default=char]")
 expat_shy_set(EXPAT_ATTR_INFO OFF CACHE BOOL "FEATURE REMOVED")
 mark_as_advanced(EXPAT_ATTR_INFO)
-expat_shy_set(EXPAT_LARGE_SIZE OFF CACHE BOOL "Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>")
+expat_shy_set(EXPAT_LARGE_SIZE OFF CACHE BOOL "[DEPRECATED] Make XML_GetCurrent* functions return <(unsigned) long long> rather than <(unsigned) long>")
 mark_as_advanced(EXPAT_LARGE_SIZE)
-expat_shy_set(EXPAT_MIN_SIZE OFF CACHE BOOL "Get a smaller (but slower) parser (in particular avoid multiple copies of the tokenizer)")
+expat_shy_set(EXPAT_MIN_SIZE OFF CACHE BOOL "FEATURE REMOVED")
 mark_as_advanced(EXPAT_MIN_SIZE)
 if(MSVC OR _EXPAT_HELP)
     expat_shy_set(EXPAT_MSVC_STATIC_CRT OFF CACHE BOOL "Use /MT flag (static CRT) when compiling in MSVC")
@@ -216,6 +216,10 @@ if(EXPAT_ATTR_INFO)
     message(FATAL_ERROR "Feature -DEXPAT_ATTR_INFO=ON has been removed. Please open a GitHub issue if you need it back.")
 endif()
 
+if(EXPAT_MIN_SIZE)
+    message(FATAL_ERROR "Feature -DEXPAT_MIN_SIZE=ON has been removed. Please open a GitHub issue if you need it back.")
+endif()
+
 if(MSVC)
     # For the three types of MSVC version values, please see:
     # - https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
@@ -246,10 +250,6 @@ endmacro()
 
 if(EXPAT_LARGE_SIZE)
     add_definitions(-DXML_LARGE_SIZE)
-endif()
-
-if(EXPAT_MIN_SIZE)
-    add_definitions(-DXML_MIN_SIZE)
 endif()
 
 if(EXPAT_CHAR_TYPE STREQUAL "char")
@@ -313,7 +313,6 @@ endif()
 _expat_copy_bool_int(EXPAT_DTD              XML_DTD)
 _expat_copy_bool_int(EXPAT_GE               XML_GE)
 _expat_copy_bool_int(EXPAT_LARGE_SIZE       XML_LARGE_SIZE)
-_expat_copy_bool_int(EXPAT_MIN_SIZE         XML_MIN_SIZE)
 _expat_copy_bool_int(EXPAT_NS               XML_NS)
 if(NOT WIN32)
     _expat_copy_bool_int(EXPAT_DEV_URANDOM  XML_DEV_URANDOM)
@@ -408,11 +407,11 @@ endif()
 # C library
 #
 set(_EXPAT_C_SOURCES
+    lib/xcs.c
     lib/xmlparse.c
     lib/xmlrole.c
     lib/xmltok.c
 # NOTE: ISO C forbids an empty translation unit
-#   lib/xcsinc.c
 #   lib/xmltok_impl.c
 #   lib/xmltok_ns.c
 )
@@ -548,9 +547,9 @@ foreach(build_type_upper
     set_property(TARGET expat PROPERTY ${build_type_upper}_POSTFIX ${EXPAT_${build_type_upper}_POSTFIX})
 endforeach()
 
-set(LIBCURRENT 13)  # sync
-set(LIBREVISION 5)  # with
-set(LIBAGE 12)      # configure.ac!
+set(LIBCURRENT 14)  # sync
+set(LIBREVISION 0)  # with
+set(LIBAGE 13    )  # configure.ac!
 math(EXPR LIBCURRENT_MINUS_AGE "${LIBCURRENT} - ${LIBAGE}")
 
 if(NOT WIN32)
@@ -652,6 +651,7 @@ endif()
 #
 if(EXPAT_BUILD_TOOLS)
     set(xmlwf_SRCS
+        lib/xcs.c
         xmlwf/codepage.c
         xmlwf/readfilemap.c
         xmlwf/xmlfile.c
@@ -733,8 +733,10 @@ if(EXPAT_BUILD_TESTS)
         tests/misc_tests.c
         tests/ns_tests.c
         tests/nsalloc_tests.c
+        tests/props_tests.c
         tests/runtests.c
         tests/structdata.c
+        tests/xcs_tests.c
         ${_EXPAT_C_SOURCES}
     )
 
@@ -1062,7 +1064,6 @@ message(STATUS "    Context bytes ............ ${EXPAT_CONTEXT_BYTES}")
 message(STATUS "    DTD support .............. ${EXPAT_DTD}")
 message(STATUS "    General entities ......... ${EXPAT_GE}")
 message(STATUS "    Large size ............... ${EXPAT_LARGE_SIZE}")
-message(STATUS "    Minimum size ............. ${EXPAT_MIN_SIZE}")
 message(STATUS "    Namespace support ........ ${EXPAT_NS}")
 message(STATUS "")
 message(STATUS "  Entropy sources")

@@ -26,6 +26,7 @@
    Copyright (c) 2026      Zeyou Liu <zeyouliu@tencent.com>
    Copyright (c) 2026      Afonso Januário <afonso-januario@hotmail.com>
    Copyright (c) 2026      Braian Plaku <braianplaku@gmail.com>
+   Copyright (c) 2026      Filippo Tedeschi <filippotedeschi98@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -73,6 +74,7 @@
 #include "handlers.h"
 #include "siphash.h"
 #include "basic_tests.h"
+#include "../lib/xcs.h"
 
 #define EXPAT_TESTS_ASAN 1
 
@@ -919,9 +921,8 @@ check_attr_contains_normalized_whitespace(void *userData, const XML_Char *name,
   for (i = 0; atts[i] != NULL; i += 2) {
     const XML_Char *attrname = atts[i];
     const XML_Char *value = atts[i + 1];
-    if (xcstrcmp(XCS("attr"), attrname) == 0
-        || xcstrcmp(XCS("ents"), attrname) == 0
-        || xcstrcmp(XCS("refs"), attrname) == 0) {
+    if (xcscmp(XCS("attr"), attrname) == 0 || xcscmp(XCS("ents"), attrname) == 0
+        || xcscmp(XCS("refs"), attrname) == 0) {
       if (! is_whitespace_normalized(value, 0)) {
         char buffer[256];
         snprintf(buffer, sizeof(buffer),
@@ -2596,6 +2597,57 @@ START_TEST(test_default_current) {
 }
 END_TEST
 
+/* Test XML_DefaultCurrent does not dereference NULL when outside an event */
+START_TEST(test_default_current_outside_event) {
+  struct handler_record_list handlerCalls;
+  handlerCalls.count = 0;
+
+  set_subtest("NULL parser");
+  XML_DefaultCurrent(NULL);
+
+  set_subtest("before parse");
+  {
+    XML_Parser parser = XML_ParserCreate(NULL);
+    XML_SetDefaultHandler(parser, record_default_handler);
+    XML_SetUserData(parser, &handlerCalls);
+
+    XML_DefaultCurrent(parser);
+    assert_true(handlerCalls.count == 0);
+
+    XML_ParserFree(parser);
+  }
+
+  set_subtest("after parse");
+  {
+    const char *text = "<r>hello</r>";
+    XML_Parser parser = XML_ParserCreate(NULL);
+    if (XML_Parse(parser, text, (int)strlen(text), XML_TRUE)
+        == XML_STATUS_ERROR)
+      xml_failure(parser);
+
+    XML_SetDefaultHandler(parser, record_default_handler);
+    XML_SetUserData(parser, &handlerCalls);
+
+    XML_DefaultCurrent(parser);
+    assert_true(handlerCalls.count == 0);
+
+    XML_ParserFree(parser);
+  }
+
+  set_subtest("explicit encoding before parse");
+  {
+    XML_Parser parser = XML_ParserCreate(XCS("ISO-8859-1"));
+    XML_SetDefaultHandler(parser, record_default_handler);
+    XML_SetUserData(parser, &handlerCalls);
+
+    XML_DefaultCurrent(parser);
+    assert_true(handlerCalls.count == 0);
+
+    XML_ParserFree(parser);
+  }
+}
+END_TEST
+
 /* Test DTD element parsing code paths */
 START_TEST(test_dtd_elements) {
   const char *text = "<!DOCTYPE doc [\n"
@@ -2625,7 +2677,7 @@ element_decl_check_model(void *userData, const XML_Char *name,
    *     [5] (type 4, quant 3, name "xyz")
    *   [2] (type 4, quant 2, name "zebra")
    */
-  errorFlags |= ((xcstrcmp(name, XCS("junk")) == 0) ? 0 : (1u << 0));
+  errorFlags |= ((xcscmp(name, XCS("junk")) == 0) ? 0 : (1u << 0));
   errorFlags |= ((model != NULL) ? 0 : (1u << 1));
 
   if (model != NULL) {
@@ -2645,26 +2697,25 @@ element_decl_check_model(void *userData, const XML_Char *name,
     errorFlags |= ((model[2].quant == XML_CQUANT_REP) ? 0 : (1u << 13));
     errorFlags |= ((model[2].numchildren == 0) ? 0 : (1u << 14));
     errorFlags |= ((model[2].children == NULL) ? 0 : (1u << 15));
-    errorFlags
-        |= ((xcstrcmp(model[2].name, XCS("zebra")) == 0) ? 0 : (1u << 16));
+    errorFlags |= ((xcscmp(model[2].name, XCS("zebra")) == 0) ? 0 : (1u << 16));
 
     errorFlags |= ((model[3].type == XML_CTYPE_NAME) ? 0 : (1u << 17));
     errorFlags |= ((model[3].quant == XML_CQUANT_NONE) ? 0 : (1u << 18));
     errorFlags |= ((model[3].numchildren == 0) ? 0 : (1u << 19));
     errorFlags |= ((model[3].children == NULL) ? 0 : (1u << 20));
-    errorFlags |= ((xcstrcmp(model[3].name, XCS("bar")) == 0) ? 0 : (1u << 21));
+    errorFlags |= ((xcscmp(model[3].name, XCS("bar")) == 0) ? 0 : (1u << 21));
 
     errorFlags |= ((model[4].type == XML_CTYPE_NAME) ? 0 : (1u << 22));
     errorFlags |= ((model[4].quant == XML_CQUANT_NONE) ? 0 : (1u << 23));
     errorFlags |= ((model[4].numchildren == 0) ? 0 : (1u << 24));
     errorFlags |= ((model[4].children == NULL) ? 0 : (1u << 25));
-    errorFlags |= ((xcstrcmp(model[4].name, XCS("foo")) == 0) ? 0 : (1u << 26));
+    errorFlags |= ((xcscmp(model[4].name, XCS("foo")) == 0) ? 0 : (1u << 26));
 
     errorFlags |= ((model[5].type == XML_CTYPE_NAME) ? 0 : (1u << 27));
     errorFlags |= ((model[5].quant == XML_CQUANT_PLUS) ? 0 : (1u << 28));
     errorFlags |= ((model[5].numchildren == 0) ? 0 : (1u << 29));
     errorFlags |= ((model[5].children == NULL) ? 0 : (1u << 30));
-    errorFlags |= ((xcstrcmp(model[5].name, XCS("xyz")) == 0) ? 0 : (1u << 31));
+    errorFlags |= ((xcscmp(model[5].name, XCS("xyz")) == 0) ? 0 : (1u << 31));
   }
 
   XML_SetUserData(g_parser, (void *)(uintptr_t)errorFlags);
@@ -2831,7 +2882,7 @@ START_TEST(test_set_base) {
   old_base = XML_GetBase(g_parser);
   if (XML_SetBase(g_parser, new_base) != XML_STATUS_OK)
     fail("Unable to set base");
-  if (xcstrcmp(XML_GetBase(g_parser), new_base) != 0)
+  if (xcscmp(XML_GetBase(g_parser), new_base) != 0)
     fail("Base setting not correct");
   if (XML_SetBase(g_parser, NULL) != XML_STATUS_OK)
     fail("Unable to NULL base");
@@ -3158,12 +3209,12 @@ check_second_attr_normalization(void *userData, const XML_Char *name,
   for (size_t i = 0; atts[i] != NULL; i += 2) {
     const XML_Char *const key = atts[i];
     const XML_Char *const value = atts[i + 1];
-    if (xcstrcmp(key, XCS("second")) != 0)
+    if (xcscmp(key, XCS("second")) != 0)
       continue;
     *seen_second = 1;
     /* Attribute "second" is not of type CDATA, so leading, trailing and
      * repeated whitespace is to be normalized away. */
-    if (xcstrcmp(value, XCS("a b")) != 0)
+    if (xcscmp(value, XCS("a b")) != 0)
       fail("Attribute of non-CDATA type was not whitespace-normalized");
   }
 }
@@ -4189,7 +4240,7 @@ external_bom_checker(XML_Parser parser, const XML_Char *context,
   if (ext_parser == NULL)
     fail("Could not create external entity parser");
 
-  if (! xcstrcmp(systemId, XCS("004-2.ent"))) {
+  if (! xcscmp(systemId, XCS("004-2.ent"))) {
     struct bom_testdata *const testdata = XML_GetUserData(parser);
     const char *const external = testdata->external;
     const int split = testdata->split;
@@ -4200,7 +4251,7 @@ external_bom_checker(XML_Parser parser, const XML_Char *context,
       xml_failure(ext_parser);
     }
     text = external + split; // the parse below will continue where we left off.
-  } else if (! xcstrcmp(systemId, XCS("004-1.ent"))) {
+  } else if (! xcscmp(systemId, XCS("004-1.ent"))) {
     text = "<!ELEMENT doc EMPTY>\n"
            "<!ENTITY % e1 SYSTEM '004-2.ent'>\n"
            "<!ENTITY % e2 '%e1;'>\n";
@@ -7178,6 +7229,7 @@ make_basic_test_case(Suite *s) {
   tcase_add_test(tc_basic, test_suspend_parser_between_cdata_calls);
   tcase_add_test(tc_basic, test_memory_allocation);
   tcase_add_test__if_xml_ge(tc_basic, test_default_current);
+  tcase_add_test(tc_basic, test_default_current_outside_event);
   tcase_add_test(tc_basic, test_dtd_elements);
   tcase_add_test(tc_basic, test_dtd_elements_nesting);
   tcase_add_test__ifdef_xml_dtd(tc_basic, test_set_foreign_dtd);

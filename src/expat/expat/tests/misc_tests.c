@@ -24,6 +24,7 @@
    Copyright (c) 2026      Kartik Kenchi <netliomax25@gmail.com>
    Copyright (c) 2026      Evgeny Kotkov <kotkov@apache.org>
    Copyright (c) 2026      Darren Carreras <carrerasdarren@gmail.com>
+   Copyright (c) 2026      Junki Lee <junkilee80@gmail.com>
    Licensed under the MIT license:
 
    Permission is  hereby granted,  free of charge,  to any  person obtaining
@@ -67,6 +68,7 @@
 #include "ascii.h" /* for ASCII_xxx */
 #include "handlers.h"
 #include "misc_tests.h"
+#include "../lib/xcs.h"
 
 void XMLCALL accumulate_characters_ext_handler(void *userData,
                                                const XML_Char *s, int len);
@@ -220,7 +222,7 @@ START_TEST(test_misc_version) {
   if (! versions_equal(&read_version, &parsed_version))
     fail("Version mismatch");
 
-  if (xcstrcmp(version_text, XCS("expat_2.8.5"))
+  if (xcscmp(version_text, XCS("expat_2.9.0"))
       != 0) /* needs bump on releases */
     fail("XML_*_VERSION in expat.h out of sync?\n");
 }

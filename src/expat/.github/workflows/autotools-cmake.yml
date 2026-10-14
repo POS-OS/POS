@@ -49,7 +49,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macoS-26
             configure_args:
             cmake_args:
           - os: ubuntu-22.04
@@ -80,7 +80,7 @@ jobs:
       if: "${{ runner.os == 'Linux' }}"
       run: |-
         set -x
-        sudo apt-get update
+        sudo timeout 10m apt-get update
         sudo timeout 10m apt-get install --yes --no-install-recommends -V \
             cmake \
             docbook2x \

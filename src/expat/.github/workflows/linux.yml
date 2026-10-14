@@ -65,8 +65,6 @@ jobs:
           - MODE: qa-sh
             FLAT_ENV: CC=clang CXX=clang++ LD=clang++ QA_SANITIZER=address CMAKE_ARGS=-DEXPAT_LARGE_SIZE=ON
           - MODE: qa-sh
-            FLAT_ENV: CC=clang CXX=clang++ LD=clang++ QA_SANITIZER=address CMAKE_ARGS=-DEXPAT_MIN_SIZE=ON
-          - MODE: qa-sh
             FLAT_ENV: CC=clang CXX=clang++ LD=clang++ QA_SANITIZER=address CMAKE_ARGS=-DEXPAT_NS=OFF
           - MODE: qa-sh
             FLAT_ENV: CC=clang CXX=clang++ LD=clang++ QA_SANITIZER=cfi
@@ -97,7 +95,7 @@ jobs:
 
         # Install 32bit Wine
         sudo dpkg --add-architecture i386  # for wine32
-        sudo apt-get update  # due to new architecture
+        sudo timeout 10m apt-get update  # due to new architecture
         sudo timeout 10m apt-get install --yes --no-install-recommends -V \
             mingw-w64 \
             retry \
@@ -110,8 +108,7 @@ jobs:
         set -x
         source /etc/os-release
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository "deb https://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-23 main"
-        sudo apt-get update  # due to new repository
+        sudo timeout 10m add-apt-repository "deb https://apt.llvm.org/${UBUNTU_CODENAME}/ llvm-toolchain-${UBUNTU_CODENAME}-23 main"
         # NOTE: Please note the version-specific ${PATH} extension for Clang adding /usr/lib/llvm-23/bin in .ci.sh
         sudo timeout 10m apt-get install --yes --no-install-recommends -V \
             clang-23 \
@@ -132,5 +129,11 @@ jobs:
     - name: Perform check "${{ matrix.MODE }}"
       env:
         MODE: ${{ matrix.MODE }}
+        drop_warning: "${{ contains(matrix.FLAT_ENV, '-DEXPAT_LARGE_SIZE=ON') && 'true' || 'false' }}"
       run: |
+        if ${drop_warning} ; then
+          sed 's|^# *warning|// &|' -i.bak expat/lib/expat_external.h
+          rm                               expat/lib/expat_external.h.bak
+        fi
+
         env ${{ matrix.FLAT_ENV }} ./.ci.sh
