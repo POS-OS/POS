@@ -760,9 +760,8 @@ podman_import() {
 }
 
 # Make an image with podman from images/<image>/containerfile, on top of
-# the build's image named in images/<image>/from (BASE). It is tagged
-# with the build ID and with the Fedora release, the tag a new build
-# looks for.
+# the build's image named in images/<image>/from (BASE), tagged with the
+# build ID (devtools/import-image.sh adds the version tag).
 podman_image() {
   local t=$1 from name
   from=$(image_from "$t")
@@ -772,7 +771,6 @@ podman_image() {
   host_podman build --build-arg "BASE=localhost/$(podman_name "$from"):$id" \
     --label "pos.build=$id" --label "pos.version=$(info_get "$bdir" version)" -t "$name:$id" \
     -f "$(host_path "$base/images/$t/containerfile")" "$(host_path "$base/images/$t")"
-  host_podman tag "$name:$id" "$name:$(build_info fedora)"
   echo "$name:$id"
 }
 

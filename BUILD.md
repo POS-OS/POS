@@ -773,7 +773,7 @@ has just made or `./build image` finds in the build. The build imports
 that image's archive into podman as `localhost/pos-<x>:<id>` (images
 `container-<x>` and `<x>`; `container` is `pos`) and builds on it, as
 `BASE`. The result exists only in podman's local store, tagged with the
-build ID and with the Fedora release.
+build ID; `devtools/import-image.sh` tags it with the build's version.
 
 `images/fedora-toolbox` is container-dnf as a toolbox image,
 `localhost/pos-fedora-toolbox`, for working in a POS-based toolbox; builds
