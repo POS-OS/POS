@@ -1,3 +1,63 @@
+2026-10-13  Paul Eggert  <eggert@cs.ucla.edu>
+
+	regex-tests: pacify -Wformat-overflow
+	Problem and fix reported by Pádraig Brady in:
+	https://lists.gnu.org/r/bug-gnulib/2026-10/msg00072.html
+	* tests/test-regex-el.c (main): Use %c not %s.
+
+2026-10-12  Arno Onken  <asnelt@asnelt.org>
+
+	regex: fold case in bracket fastmap only if RE_ICASE
+	* lib/regcomp.c (re_compile_fastmap_iter): For SIMPLE_BRACKET, set
+	fastmap for case folded counterparts only if RE_ICASE.
+	Copyright-paperwork-exempt: Yes
+
+2026-10-11  Paul Eggert  <eggert@cs.ucla.edu>
+
+	localeinfo: improve comments
+	* lib/localeinfo.c (lonesome_lower): In comments, show how to
+	derive this table, and describe better what the table is for.
+
+	regex: fix REG_ICASE for single-byte chars
+	Problem reported by Arno Onken in:
+	https://lists.gnu.org/r/bug-gnulib/2026-10/msg00029.html
+	* lib/regcomp.c (re_compile_fastmap_iter): For SIMPLE_BRACKET,
+	also set fastmap for leading bytes of case folded counterparts
+	of each character.
+	* tests/test-regex-el.c (main): Test [C] as well as C,
+	for each problematic character C.
+
+2026-10-11  Bruno Haible  <bruno@clisp.org>
+
+	Make C++ templates more hygienic.
+	* lib/math.in.h (isfinite, isinf, isnan, signbit): Rename template
+	parameter T to _T_.
+	* lib/string.in.h (strnul, mbsstr_template, mbspcasecmp_template,
+	mbscasestr_template): Likewise.
+	* lib/unigbrk.in.h (u8_grapheme_next_template,
+	u16_grapheme_next_template, u32_grapheme_next_template,
+	u8_grapheme_prev_template, u16_grapheme_prev_template,
+	u32_grapheme_prev_template): Likewise.
+	* lib/unistr.in.h (u8_check_template, u16_check_template,
+	u32_check_template, u8_chr_template, u16_chr_template, u32_chr_template,
+	u8_next_template, u16_next_template, u32_next_template,
+	u8_prev_template, u16_prev_template, u32_prev_template,
+	u8_strchr_template, u16_strchr_template, u32_strchr_template,
+	u8_strrchr_template, u16_strrchr_template, u32_strrchr_template,
+	u8_strpbrk_template, u16_strpbrk_template, u32_strpbrk_template,
+	u8_strstr_template, u16_strstr_template, u32_strstr_template): Likewise.
+	* lib/xalloc.h (xrealloc, xreallocarray, xnrealloc, x2realloc,
+	x2nrealloc, xmemdup): Likewise.
+	* lib/stdcountof.in.h (struct _gl_array_type_test): Likewise. Rename
+	template parameter N to _N_.
+
+2026-10-10  Paul Eggert  <eggert@cs.ucla.edu>
+
+	stdio-windows: fix _UCRT test on MinGW-64
+	Problem reported for Emacs by Yue Yi <https://bugs.gnu.org/81837#53>.
+	* modules/stdio-windows (USES_MSVCRT): Include <stdio.h>
+	before testing whether _UCRT is defined.
+
 2026-10-07  Bruno Haible  <bruno@clisp.org>
 
 	all: Update URLs to msdn.microsoft.com or docs.microsoft.com.
