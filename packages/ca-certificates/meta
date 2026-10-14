@@ -1,0 +1,4 @@
+# Mozilla Network Security Services (NSS) Root CA Certificates.
+# Uses Python 3 to extract and convert Mozilla certdata.txt into standard PEM trust stores.
+source nss
+host-requires python3

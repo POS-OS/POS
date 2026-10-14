@@ -34,5 +34,6 @@ link /sbin/init ../pos/sbin/init
 link /usr/bin/env ../../pos/bin/env
 link /lib64/ld-linux-x86-64.so.2 ../pos/lib/ld-linux-x86-64.so.2
 link /usr/share/factory ../../pos/share/factory
+link /usr/share/zoneinfo ../../pos/share/zoneinfo
 link /usr/lib/os-release ../../pos/lib/os-release
 link /etc/os-release ../usr/lib/os-release

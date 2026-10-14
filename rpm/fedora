@@ -44,6 +44,8 @@ mpfr mpfr
 # Not openssl: POS has OpenSSL 4 (libcrypto.so.4), Fedora 3 (libcrypto.so.3).
 elfutils elfutils elfutils-libelf elfutils-libs elfutils-debuginfod-client
 pam pam pam-libs
+ca-certificates ca-certificates
+tzdata tzdata
 libseccomp libseccomp
 util-linux util-linux util-linux-core util-linux-script libblkid libmount libsmartcols libuuid libfdisk liblastlog2 uuidd
 # util-linux: no setpriv, write, fdformat.

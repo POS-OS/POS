@@ -634,6 +634,12 @@ gmp and mpfr are in this stage. coreutils `expr` and `factor`, and gawk
 reference's gcc-runtime. The compiler has its own static copies (see
 "Toolchain").
 
+`ca-certificates` installs the Mozilla trusted root certificates as
+`/pos/share/ca-certificates/ca-bundle.crt` and provides `/etc/ssl/cert.pem` and
+`/etc/ssl/certs/ca-certificates.crt` via the factory tree for OpenSSL and standard
+tools. `tzdata` installs the IANA time zone database into `/pos/share/zoneinfo`
+and the `zic`/`zdump` utilities.
+
 `run` assembles each stage it was given into one archive,
 `work/builds/<id>/pos-<stage>-<stem>.tar.zst`, with a top-level `pos/`
 directory. The merged tree is left at `work/builds/<id>/assemble/<stage>/pos`.

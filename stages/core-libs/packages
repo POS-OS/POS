@@ -25,3 +25,6 @@ icu
 openssl
 elfutils
 pam
+# System trust store and timezone data
+ca-certificates
+tzdata
