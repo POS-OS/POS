@@ -70,6 +70,32 @@ fail:
     return 0;
 }
 
+/*
+ * Like nonneg_uint(), but for the 64-bit hexadecimal values that --decode
+ * takes. It rejects the same things: an empty or negative value, and
+ * trailing characters. It also rejects overflow, which strtoull() reports
+ * through errno.
+ */
+static unsigned long long hex_ull(const char *text, const char *prefix)
+{
+    char *remains;
+    unsigned long long value;
+
+    if (!*text || *text == '-') {
+	goto fail;
+    }
+    errno = 0;
+    value = strtoull(text, &remains, 16);
+    if (*remains || errno != 0) {
+	goto fail;
+    }
+    return value;
+
+fail:
+    fprintf(stderr, "%s: want hex value, got \"%s\"\n", prefix, text);
+    exit(1);
+}
+
 static char *binary(unsigned long value)
 {
     static char string[8*sizeof(unsigned long) + 1];
@@ -937,7 +963,7 @@ int main(int argc, char *argv[], char *envp[])
 
 	    /* Note, if capabilities become longer than 64-bits we'll need
 	       to fixup the following code.. */
-	    value = strtoull(argv[i]+9, NULL, 16);
+	    value = hex_ull(argv[i]+9, "invalid --decode value");
 	    printf("0x%016llx=", value);
 
 	    for (cap=0; (cap < 64) && (value >> cap); ++cap) {

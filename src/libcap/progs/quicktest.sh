@@ -46,6 +46,8 @@ pass_capsh --print
 pass_capsh --current
 fail_capsh --groups=4294967296 --print
 fail_capsh --groups=1junk --print
+fail_capsh --decode=CapEff:0000003fffffffff --print
+fail_capsh --decode=3junk --print
 
 # Validate that PATH expansion works
 PATH=$(/bin/pwd)/junk:$(/bin/pwd) capsh == == == --modes
