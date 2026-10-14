@@ -286,6 +286,8 @@ Dont_use_color Don't use color
 Use_color Use color
 Dont_get_size_of_each_file Don't get size of each file
 Get_size_of_each_file Get size of each file
+Time_file_size Time limit for --file-size (milliseconds; 0=unlimited):\40
+Time_file_size_is_X Time limit for --file-size is %d milliseconds
 Line_highlight_applies_to_text_only Line highlight applies to text only
 Line_highlight_applies_to_entire_width_of_screen Line highlight applies to entire width of screen
 Accept_pasted_input Accept pasted input
@@ -347,6 +349,9 @@ Cannot_find_OSC8_link Cannot find OSC8 link
 No_handler_for_X_link_type No handler for \"%s\" link type
 Cannot_quote_URI Cannot quote URI
 link_done link done
+pipe_done |done
+shell_done !done
+hash_done #done
 Please_re_enter_search_pattern Please re-enter search pattern
 No_tags_file No tags file
 No_such_tag_in_tags_file No such tag in tags file

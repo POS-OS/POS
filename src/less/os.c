@@ -29,6 +29,9 @@
 #if HAVE_TIME_H
 #include <time.h>
 #endif
+#if HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
 #if HAVE_ERRNO_H
 #include <errno.h>
 #endif
@@ -37,10 +40,6 @@ extern int errno;
 #endif
 #if HAVE_VALUES_H
 #include <values.h>
-#endif
-
-#if defined(__APPLE__)
-#include <sys/utsname.h>
 #endif
 
 #if HAVE_POLL && !MSDOS_COMPILER && !defined(__MVS__)
@@ -116,14 +115,6 @@ public void init_poll(void)
 	idelay = (delay == NULL) ? 0 : atoi(delay);
 	if (idelay > 0)
 		screenfill_ms = idelay;
-#if USE_POLL
-#if defined(__APPLE__)
-	/* In old versions of MacOS, poll() does not work with /dev/tty. */
-	struct utsname uts;
-	if (uname(&uts) < 0 || lstrtoi(uts.release, NULL, 10) < 20)
-		use_poll = FALSE;
-#endif
-#endif
 }
 
 #if USE_POLL
@@ -619,5 +610,19 @@ public void sleep_ms(int ms)
 #endif
 #endif
 #endif
+#endif
+}
+
+/*
+ * Set a timer to send SIGALRM after the specified number of milliseconds.
+ */
+public void set_mstimer(unsigned long ms)
+{
+#if HAVE_SETITIMER
+	struct itimerval timer;
+	timer.it_value.tv_sec = ms / 1000;
+	timer.it_value.tv_usec = (ms % 1000) * 1000;
+	timer.it_interval.tv_sec = timer.it_interval.tv_usec = 0;
+	setitimer(ITIMER_REAL, &timer, NULL);
 #endif
 }

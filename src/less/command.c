@@ -332,7 +332,7 @@ static void exec_mca(void)
 		 * Otherwise, copy cmdbuf to shellcmd,
 		 * expanding any special characters ("%" or "#").
 		 */
-		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : "!done";
+		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : LM(shell_done);
 		if (done_msg == NULL)
 			++cbuf;
 		if (strcmp(cbuf, "!") != 0)
@@ -346,7 +346,7 @@ static void exec_mca(void)
 		lsystem(shellcmd == NULL ? "" : shellcmd, done_msg);
 		break; }
 	case A_PSHELL: {
-		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : "#done";
+		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : LM(hash_done);
 		if (done_msg == NULL)
 			++cbuf;
 		if (!secure_allow(SF_SHELL))
@@ -356,14 +356,12 @@ static void exec_mca(void)
 #endif
 #if PIPEC
 	case A_PIPE: {
-		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : "|done";
+		constant char *done_msg = (*cbuf == CONTROL('P')) ? NULL : LM(pipe_done);
 		if (done_msg == NULL)
 			++cbuf;
 		if (!secure_allow(SF_PIPE))
 			break;
-		(void) pipe_pos(cbuf, pipe_pos1, pipe_pos2);
-		if (done_msg != NULL)
-			error(done_msg, NULL_PARG);
+		(void) pipe_pos(cbuf, pipe_pos1, pipe_pos2, done_msg);
 		break; }
 #endif
 	}
@@ -1108,7 +1106,7 @@ public void getcc_clear(void)
  * but may come from ungotten characters
  * (characters previously given to ungetcc or ungetsc).
  */
-static char getccu(void)
+static int getccu(unsigned long timeout_ms)
 {
 	int c = 0;
 	while (c == 0 && sigs == 0)
@@ -1117,7 +1115,9 @@ static char getccu(void)
 		{
 			/* Normal case: no ungotten chars.
 			 * Get char from the user. */
-			c = getchr();
+			c = getchr_timeout(timeout_ms);
+			if (c == READ_TIMEOUT)
+				return -1;
 			if (c < 0) c = '\0';
 		} else
 		{
@@ -1129,32 +1129,38 @@ static char getccu(void)
 				c = getcc_end_command();
 		}
 	}
-	return ((char) c);
+	return c;
 }
 
 /*
  * Get a command character, but if we receive the orig sequence,
  * convert it to the repl sequence.
  */
-static char getcc_repl(char constant *orig, char constant *repl, char (*gr_getc)(void), void (*gr_ungetc)(char))
+static char getcc_repl(char constant *orig, char constant *repl)
 {
-	char c;
+	int c;
 	char keys[16];
 	size_t ki = 0;
+	constant unsigned long esc_seq_timeout_ms = 15;
 
-	c = (*gr_getc)();
+	c = getccu(0);
+	if (c < 0)
+		return '\0';
 	if (orig == NULL || orig[0] == '\0')
 		return c;
 	for (;;)
 	{
-		keys[ki] = c;
-		if (c != orig[ki] || ki >= sizeof(keys)-1)
+		if (c < 0)
+			--ki;
+		else
+			keys[ki] = (char) c;
+		if (c < 0 || (char) c != orig[ki] || ki >= sizeof(keys)-1)
 		{
 			/* This is not orig we have been receiving.
 			 * If we have stashed chars in keys[],
 			 * unget them and return the first one. */
 			while (ki > 0)
-				(*gr_ungetc)(keys[ki--]);
+				ungetcc(keys[ki--]);
 			return keys[0];
 		}
 		if (orig[++ki] == '\0')
@@ -1163,12 +1169,12 @@ static char getcc_repl(char constant *orig, char constant *repl, char (*gr_getc)
 			 * Return the repl sequence. */
 			ki = strlen(repl)-1;
 			while (ki > 0)
-				(*gr_ungetc)(repl[ki--]);
+				ungetcc(repl[ki--]);
 			return repl[0];
 		}
 		/* We've received a partial orig sequence (ki chars of it).
 		 * Get next char and see if it continues to match orig. */
-		c = (*gr_getc)();
+		c = getccu(esc_seq_timeout_ms);
 	}
 }
 
@@ -1179,7 +1185,7 @@ public char getcc(void)
 {
 	/* Replace kent (keypad Enter) with a newline.
 	 * However don't do this if kent is mapped to a command via lesskey. */
-	return getcc_repl(kent_mapped ? NULL : kent, "\n", getccu, ungetcc);
+	return getcc_repl(kent_mapped ? NULL : kent, "\n");
 }
 
 /*

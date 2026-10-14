@@ -1129,11 +1129,15 @@ v709  8/15/26   Fix --rscroll with non-ASCII char; fix exit with invalid TERM;
 v710  9/8/26    Fix string overrrun if input contains "\e\0"; fix memory leak
                 when using ${...} in lesskey file; fix status column when long
                 line is marked.
-v711            Improve builds for MS-DOS and OS/2; fix redirected stderr;
+v711  10/10/26  Improve builds for MS-DOS and OS/2; fix redirected stderr;
                 disallow -t with LESSSECURE; don't clear screen on ^C;
                 fix invalid lesskey file name on OS/2; add INSERT mode;
                 add lesskey support for shift/ctrl INSERT; remove support
-                for binary lesskey file.
+                for binary lesskey file; make word-erase char work; improve
+                mapping of ESC; fix bug with wrapped colored text;
+                add --time-file-size.
+v712            Enable -R by default; | cmd print done msg before term init;
+                add mark chars '*' and ','.
 */
 
-char version[] = "711x";
+char version[] = "712x";

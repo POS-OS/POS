@@ -51,7 +51,7 @@ public lbool is_lesstest(void)
 #if !MSDOS_COMPILER
 static int open_tty_device(constant char* dev)
 {
-#if OS2
+#if OS2 && !defined(__KLIBC__)
 	/* The __open() system call translates "/dev/tty" to "con". */
 	return __open(dev, OPEN_READ, 0);
 #else
@@ -76,15 +76,22 @@ public int open_tty(void)
 			fd = 0; /* assume lesstest uses stdin */
 	}
 #endif /*LESSTEST*/
+#ifndef __APPLE__
+	/* MacOS does not support poll() on /dev/tty, so prefer ttyname(2). */
 	if (fd < 0)
 		fd = open_tty_device("/dev/tty");
-#if HAVE_TTYNAME
+#endif
+#if HAVE_TTYNAME && !defined(__KLIBC__)
 	if (fd < 0)
 	{
 		constant char *dev = ttyname(2);
 		if (dev != NULL)
 			fd = open_tty_device(dev);
 	}
+#endif
+#ifdef __APPLE__
+	if (fd < 0)
+		fd = open_tty_device("/dev/tty");
 #endif
 	if (fd < 0)
 		fd = 2;
@@ -198,7 +205,7 @@ public int default_wheel_lines(void)
 /*
  * Get a character from the keyboard.
  */
-public int getchr(void)
+public int getchr_timeout(unsigned long timeout_ms)
 {
 	char c;
 	ssize_t result;
@@ -206,7 +213,7 @@ public int getchr(void)
 	do
 	{
 		flush();
-#if !LESS_IREAD_TTY
+#if !LESS_IREAD_TTY || defined(__KLIBC__)
 		/*
 		 * In raw read, we don't see ^C so look here for it.
 		 */
@@ -216,6 +223,8 @@ public int getchr(void)
 			return (READ_INTR);
 #endif
 		c = WIN32getch();
+#elif defined(__KLIBC__)
+		c = _read_kbd(0, 1, 0);
 #else
 		c = getch();
 #endif
@@ -225,7 +234,16 @@ public int getchr(void)
 #else /* LESS_IREAD_TTY */
 		{
 			unsigned char uc;
+			if (timeout_ms > 0)
+				set_mstimer(timeout_ms); /* set timer */
 			result = iread(tty, &uc, sizeof(char));
+			if (timeout_ms > 0)
+				set_mstimer(0); /* cancel timer */
+			if (sigs & S_TIMER)
+			{
+				sigs &= ~S_TIMER;
+				return (READ_TIMEOUT);
+			}
 			c = (char) uc;
 		}
 		if (result == READ_INTR)
@@ -297,4 +315,9 @@ public int getchr(void)
 	} while (result != 1);
 
 	return (unsigned char) c;
+}
+
+public int getchr(void)
+{
+	return getchr_timeout(0);
 }

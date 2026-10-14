@@ -50,6 +50,11 @@ extern int fd0;
 
 #else
 
+#ifdef __KLIBC__
+#define INCL_VIO
+#include <os2.h>
+#endif
+
 #if HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
 #endif
@@ -284,6 +289,7 @@ static int above_mem, below_mem;        /* Memory retained above/below screen */
 /* term_init has been called; terminal is ready for use by less */
 static lbool term_init_done = FALSE;
 public lbool term_init_ever = FALSE;
+public lbool in_raw_mode = FALSE;
 
 public int auto_wrap;           /* Terminal does \r\n when write past margin */
 public int defer_wrap;          /* After printing char in last column, doesn't wrap until next char */
@@ -409,10 +415,8 @@ static void set_termio_flags(
  */
 public void raw_mode(lbool on)
 {
-	static lbool curr_on = FALSE;
-
-	if (on == curr_on)
-			return;
+	if (on == in_raw_mode)
+		return;
 	erase2_char = '\b'; /* in case OS doesn't know about erase2 */
 #if LESSTEST
 	if (is_lesstest())
@@ -738,7 +742,7 @@ public void raw_mode(lbool on)
 #endif
 #endif
 #endif
-	curr_on = on;
+	in_raw_mode = on;
 }
 
 #if !MSDOS_COMPILER
@@ -1742,6 +1746,7 @@ static void get_term_info(void)
 		sc_addline = t1;
 	else
 		sc_addline = cheaper(t1, t2, "");
+#ifndef __KLIBC__
 	if (*sc_addline == '\0')
 	{
 		/*
@@ -1749,6 +1754,7 @@ static void get_term_info(void)
 		 */
 		no_back_scroll = TRUE;
 	}
+#endif
 }
 
 /*
@@ -2239,7 +2245,13 @@ public void add_line(void)
 {
 	assert_interactive();
 #if !MSDOS_COMPILER
+#ifndef __KLIBC__
 	ltputs(sc_addline, sc_height, putchr);
+#else
+	flush();
+	VioScrollDn(0, 0, sc_height - 1, sc_width - 1, 1, (PBYTE) "\x20\x07", 0);
+	VioSetCurPos(0, 0, 0);
+#endif
 #else
 	flush();
 #if MSDOS_COMPILER==MSOFTC

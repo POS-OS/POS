@@ -70,6 +70,7 @@ public int status_col_width;    /* Width of status column */
 public int incr_search;         /* Incremental search */
 public int use_color;           /* Use UI color */
 public int want_filesize;       /* Scan to EOF if necessary to get file size */
+public int time_want_filesize;  /* Time limit for --file-size (ms) */
 public int status_line;         /* Highlight entire marked lines */
 public int header_lines;        /* Freeze header lines at top of screen */
 public int header_cols;         /* Freeze header columns at left of screen */
@@ -172,6 +173,7 @@ static struct optname status_col_width_optname = { "status-col-width", NULL };
 static struct optname incr_search_optname = { "incsearch",       NULL };
 static struct optname use_color_optname = { "use-color",         NULL };
 static struct optname want_filesize_optname = { "file-size",     NULL };
+static struct optname time_want_filesize_optname = { "time-file-size", NULL };
 static struct optname status_line_optname = { "status-line",     NULL };
 static struct optname header_optname = { "header",               NULL };
 static struct optname no_paste_optname = { "no-paste",           NULL };
@@ -229,7 +231,7 @@ static struct loption option[] =
 	},
 
 	{ 'b', &b_optname,
-		O_NUMBER|O_INIT_HANDLER, 64, &bufspace, opt_b, 
+		O_NUMBER|O_INIT_HANDLER|O_NEGOK, 64, &bufspace, opt_b, 
 		{
 			LM_Max_buffer_space_per_file,
 			LM_Max_buffer_space_per_file_X,
@@ -688,6 +690,15 @@ static struct loption option[] =
 		},
 		{ NULL, NULL, NULL }
 	},
+	{ OLETTER_NONE, &time_want_filesize_optname,
+		O_NUMBER, 0, &time_want_filesize, NULL,
+		{
+			LM_Time_file_size,
+			LM_Time_file_size_is_X,
+			LM_NULL
+		},
+		{ NULL, NULL, NULL }
+	},
 	{ OLETTER_NONE, &status_line_optname,
 		O_BOOL|O_REPAINT, OPT_OFF, &status_line, NULL,
 		{
@@ -739,7 +750,7 @@ static struct loption option[] =
 		{ NULL, NULL, NULL }
 	},
 	{ OLETTER_NONE, &nonum_headers_optname,
-		O_BOOL|O_REPAINT, 0, &nonum_headers, NULL,
+		O_BOOL|O_REPAINT, OPT_OFF, &nonum_headers, NULL,
 		{
 			LM_Number_header_lines,
 			LM_Dont_number_header_lines,
@@ -748,17 +759,17 @@ static struct loption option[] =
 		{ NULL, NULL, NULL }
 	},
 	{ OLETTER_NONE, &nosearch_headers_optname,
-		O_BOOL|O_HL_REPAINT, 0, NULL, opt_nosearch_headers,
+		O_BOOL|O_HL_REPAINT, OPT_OFF, NULL, opt_nosearch_headers,
 		{ LM_NULL, LM_NULL, LM_NULL },
 		{ NULL, NULL, NULL }
 	},
 	{ OLETTER_NONE, &nosearch_header_lines_optname,
-		O_BOOL|O_HL_REPAINT, 0, NULL, opt_nosearch_header_lines,
+		O_BOOL|O_HL_REPAINT, OPT_OFF, NULL, opt_nosearch_header_lines,
 		{ LM_NULL, LM_NULL, LM_NULL },
 		{ NULL, NULL, NULL }
 	},
 	{ OLETTER_NONE, &nosearch_header_cols_optname,
-		O_BOOL|O_HL_REPAINT, 0, NULL, opt_nosearch_header_cols,
+		O_BOOL|O_HL_REPAINT, OPT_OFF, NULL, opt_nosearch_header_cols,
 		{ LM_NULL, LM_NULL, LM_NULL },
 		{ NULL, NULL, NULL }
 	},
@@ -909,6 +920,12 @@ public void init_option(void)
 		if (o->otype & O_INIT_HANDLER)
 			(*(o->ofunc))(INIT, (char *) NULL);
 	}
+	/*
+	 * Ugly special case to make -R be the default. We don't change its
+	 * odefault in the option table because we want the -R and -+R options
+	 * to retain their historical behavior.
+	 */
+	ctldisp = OPT_ONPLUS;
 }
 
 /*

@@ -33,6 +33,9 @@
  */
 
 #include "less.h"
+#if MSDOS_COMPILER==WIN32C
+#include <windows.h>
+#endif
 
 /*
  * Structure to keep track of a line number and the associated file position.
@@ -68,6 +71,7 @@ extern int sigs;
 extern int sc_height;
 extern int header_lines;
 extern int nonum_headers;
+extern int time_want_filesize;
 extern POSITION header_start_pos;
 
 /*
@@ -199,69 +203,67 @@ public void add_lnum(LINENUM linenum, POSITION pos)
 	}
 }
 
-/*
- * If we get stuck in a long loop trying to figure out the
- * line number, print a message to tell the user what we're doing.
- */
-static void longloopmessage(void)
-{
-	ierror(LM(Calculating_line_numbers), NULL_PARG);
-}
-
+typedef enum dm_type { DM_LINENUM, DM_POS, DM_SCAN_EOF } dm_type;
 struct delayed_msg
 {
-	void (*message)(void);
-	int loopcount;
+	constant char *message;
+	dm_type dmtype;
 #if HAVE_TIME
 	time_type startime;
+#else
+	int loopcount;
 #endif
 };
 
-static void start_delayed_msg(struct delayed_msg *dmsg, void (*message)(void))
+/*
+ * If we spend a lot of time doing something, wait a little while,
+ * then print a message telling the user that we're busy.
+ */
+static void start_delayed_msg(struct delayed_msg *dmsg, dm_type dmtype, constant char *message)
 {
-	dmsg->loopcount = 0;
 	dmsg->message = message;
+	dmsg->dmtype = dmtype;
 #if HAVE_TIME
 	dmsg->startime = get_time();
+#else
+	dmsg->loopcount = 0;
 #endif
 }
 
 static void delayed_msg(struct delayed_msg *dmsg)
 {
+	lbool print_msg = dmsg->message != NULL &&
 #if HAVE_TIME
-	if (dmsg->loopcount >= 0 && ++(dmsg->loopcount) > 100)
-	{
-		dmsg->loopcount = 0;
-		if (get_time() >= dmsg->startime + LONGTIME)
-		{
-			dmsg->message();
-			dmsg->loopcount = -1;
-		}
-	}
+		get_time() >= dmsg->startime + LONGTIME;
 #else
-	if (dmsg->loopcount >= 0 && ++(dmsg->loopcount) > LONGLOOP)
-	{
-		dmsg->message();
-		dmsg->loopcount = -1;
-	}
+		++(dmsg->loopcount) > LONGLOOP;
 #endif
+	if (print_msg)
+	{
+		ierror(dmsg->message, NULL_PARG);
+		dmsg->message = NULL; /* print message only once */
+	}
 }
 
-/*
- * Turn off line numbers because the user has interrupted
- * a lengthy line number calculation.
- */
 static void abort_delayed_msg(struct delayed_msg *dmsg)
 {
-	if (dmsg->loopcount >= 0)
-		return;
-	if (linenums == OPT_ONPLUS)
+	if (dmsg->dmtype == DM_LINENUM)
+	{
 		/*
-		 * We were displaying line numbers, so need to repaint.
+		 * Turn off line numbers because the user has interrupted
+		 * a lengthy line number calculation.
 		 */
-		screen_trashed();
-	linenums = 0;
-	error(LM(Line_numbers_turned_off), NULL_PARG);
+		if (linenums == OPT_ONPLUS)
+		{
+			/* We were displaying line numbers, so need to repaint. */
+			screen_trashed();
+		}
+		if (linenums != OPT_OFF)
+		{
+			linenums = OPT_OFF;
+			error(LM(Line_numbers_turned_off), NULL_PARG);
+		}
+	}
 }
 
 /*
@@ -311,7 +313,7 @@ public LINENUM find_linenum(POSITION pos)
 	 * The decision is based on which way involves 
 	 * traversing fewer bytes in the file.
 	 */
-	start_delayed_msg(&dmsg, longloopmessage);
+	start_delayed_msg(&dmsg, DM_LINENUM, LM(Calculating_line_numbers));
 	if (p == &anchor || pos - p->prev->pos < p->pos - pos)
 	{
 		/*
@@ -326,7 +328,8 @@ public LINENUM find_linenum(POSITION pos)
 			 * Allow a signal to abort this loop.
 			 */
 			cpos = forw_raw_line(cpos, NULL, NULL);
-			if (ABORT_SIGS()) {
+			if (ABORT_SIGS())
+			{
 				abort_delayed_msg(&dmsg);
 				return (0);
 			}
@@ -357,7 +360,8 @@ public LINENUM find_linenum(POSITION pos)
 			 * Allow a signal to abort this loop.
 			 */
 			cpos = back_raw_line(cpos, NULL, NULL);
-			if (ABORT_SIGS()) {
+			if (ABORT_SIGS())
+			{
 				abort_delayed_msg(&dmsg);
 				return (0);
 			}
@@ -382,6 +386,7 @@ public POSITION find_pos(LINENUM linenum)
 	struct linenum_info *p;
 	POSITION cpos;
 	LINENUM clinenum;
+	struct delayed_msg dmsg;
 
 	if (linenum <= 1)
 		/*
@@ -398,6 +403,7 @@ public POSITION find_pos(LINENUM linenum)
 		/* Found it exactly. */
 		return (p->pos);
 
+	start_delayed_msg(&dmsg, DM_POS, LM(Calculating_line_numbers));
 	if (p == &anchor || linenum - p->prev->line < p->line - linenum)
 	{
 		/*
@@ -413,9 +419,13 @@ public POSITION find_pos(LINENUM linenum)
 			 */
 			cpos = forw_raw_line(cpos, NULL, NULL);
 			if (ABORT_SIGS())
+			{
+				abort_delayed_msg(&dmsg);
 				return (NULL_POSITION);
+			}
 			if (cpos == NULL_POSITION)
 				return (NULL_POSITION);
+			delayed_msg(&dmsg);
 		}
 	} else
 	{
@@ -431,9 +441,13 @@ public POSITION find_pos(LINENUM linenum)
 			 */
 			cpos = back_raw_line(cpos, NULL, NULL);
 			if (ABORT_SIGS())
+			{
+				abort_delayed_msg(&dmsg);
 				return (NULL_POSITION);
+			}
 			if (cpos == NULL_POSITION)
 				return (NULL_POSITION);
+			delayed_msg(&dmsg);
 		}
 	}
 	/*
@@ -466,11 +480,6 @@ public LINENUM currline(int where)
 	return (linenum);
 }
 
-static void detlenmessage(void)
-{
-	ierror(LM(Determining_length_of_file), NULL_PARG);
-}
-
 /*
  * Scan entire file, counting line numbers.
  */
@@ -479,6 +488,15 @@ public void scan_eof(void)
 	POSITION pos = ch_zero();
 	LINENUM linenum = 0;
 	struct delayed_msg dmsg;
+#if MSDOS_COMPILER==WIN32C
+  /*
+   * We don't have a timer signal on Windows, so we just check the elapsed
+   * time in the loop. This is not as good as using a signal because it
+   * doesn't interrupt a blocked read.
+   * {{ Could probably do this with SetTimer and CancelSynchronousIo. }}
+   */
+  ULONGLONG start_time;
+#endif
 
 	if (ch_seek(0))
 		return;
@@ -486,21 +504,40 @@ public void scan_eof(void)
 	 * scanning_eof prevents the "Waiting for data" message from 
 	 * overwriting "Determining length of file".
 	 */
-	start_delayed_msg(&dmsg, detlenmessage);
+	start_delayed_msg(&dmsg, DM_SCAN_EOF, LM(Determining_length_of_file));
 	scanning_eof = TRUE;
+	if (time_want_filesize > 0)
+	{
+#if MSDOS_COMPILER==WIN32C
+		start_time = GetTickCount64();
+#else
+		set_mstimer(time_want_filesize);
+#endif
+	}
 	while (pos != NULL_POSITION)
 	{
 		/* For efficiency, only add one every 256 line numbers. */
 		if ((linenum++ % 256) == 0)
 			add_lnum(linenum, pos);
 		pos = forw_raw_line(pos, NULL, NULL);
-		if (ABORT_SIGS())
+		if (ABORT_SIGS() || (sigs & S_TIMER)
+#if MSDOS_COMPILER==WIN32C
+			|| (time_want_filesize > 0 && GetTickCount64() > start_time + time_want_filesize)
+#endif
+			)
 		{
 			abort_delayed_msg(&dmsg);
 			break;
 		}
 		delayed_msg(&dmsg);
 	}
+#if MSDOS_COMPILER!=WIN32C
+	if (time_want_filesize > 0)
+	{
+		set_mstimer(0);
+		sigs &= ~S_TIMER;
+	}
+#endif
 	scanning_eof = FALSE;
 }
 
