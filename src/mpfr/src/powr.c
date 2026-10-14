@@ -21,6 +21,9 @@ If not, see <https://www.gnu.org/licenses/>. */
 
 #include "mpfr-impl.h"
 
+/* Warning! As usual, changing z must be done after all the tests
+   (due to the support of reused arguments). */
+
 int
 mpfr_powr (mpfr_ptr z, mpfr_srcptr x, mpfr_srcptr y, mpfr_rnd_t rnd_mode)
 {
@@ -28,32 +31,40 @@ mpfr_powr (mpfr_ptr z, mpfr_srcptr x, mpfr_srcptr y, mpfr_rnd_t rnd_mode)
      powr(+/-0,+/-0) is NaN whereas pow(x,+/-0) = 1 if x is not NaN (b)
      powr(+Inf,+/-0) is NaN whereas pow(x,+/-0) = 1 if x is not NaN (b)
      We can use MPFR_IS_SINGULAR since we already excluded x=NaN and x=-Inf.
-     powr(1,+/-Inf) = NaN whereas pow(1,+/-Inf) = 1 (c) */
-  if (MPFR_IS_NAN (x) || MPFR_IS_STRICTNEG(x) ||      /* case (a) */
-      (MPFR_IS_SINGULAR(x) && MPFR_IS_ZERO(y)) ||     /* case (b) */
-      (mpfr_cmp_ui (x, 1) == 0 && MPFR_IS_INF(y)))    /* case (c) */
+     powr(1,+/-Inf) = NaN whereas pow(1,+/-Inf) = 1 (c)
+     powr(x,qNaN) = qNaN for x>=0, even for x=1 (d) */
+  if (MPFR_IS_NAN (x) || MPFR_IS_NAN (y) ||           /* cases (a) and (d) */
+      MPFR_IS_STRICTNEG (x) ||                        /* case (a) */
+      (MPFR_IS_SINGULAR (x) && MPFR_IS_ZERO (y)) ||   /* case (b) */
+      (MPFR_IS_INF (y) && mpfr_cmp_ui (x, 1) == 0))   /* case (c) */
     {
       MPFR_SET_NAN (z);
       MPFR_RET_NAN;
     }
-  /* for finite y < 0, powr(-0,y) is +Inf, whereas pow(-0,y) is -Inf for y an
-     odd negativeinteger, and +Inf otherwise */
-  if (MPFR_IS_ZERO(x) && MPFR_SIGN(x) < 0 && !MPFR_IS_SINGULAR (y)
-      && MPFR_IS_NEG(y))
+
+  /* It is faster to handle all the remaining cases x being -0 here
+     (fewer tests). */
+  if (MPFR_IS_ZERO (x) && MPFR_IS_NEG (x))
     {
-      MPFR_SET_INF (z);
+      MPFR_ASSERTD (MPFR_IS_INF (y) || !MPFR_IS_SINGULAR (y));
+      /* For y <> 0, powr(-0,y) always has a positive sign (the result
+         is +Inf for y < 0 and +0 for y > 0), whereas pow differs (the
+         sign is negative for y an odd integer, positive otherwise). */
+      if (MPFR_IS_NEG (y))
+        {
+          if (!MPFR_IS_INF (y))
+            MPFR_SET_DIVBY0 ();
+          MPFR_SET_INF (z);
+        }
+      else
+        {
+          MPFR_ASSERTD (MPFR_IS_POS (y));
+          MPFR_SET_ZERO (z);
+        }
       MPFR_SET_POS (z);
-      MPFR_SET_DIVBY0 ();
       MPFR_RET (0);
     }
-  /* for y > 0, powr(-0,y) is +0, whereas pow gives -0 for y an odd integer */
-  if (MPFR_IS_ZERO(x) && MPFR_SIGN(x) < 0 && !MPFR_IS_SINGULAR (y)
-      && MPFR_IS_POS(y))
-    {
-      MPFR_SET_ZERO (z);
-      MPFR_SET_POS (z);
-      MPFR_RET (0);
-    }
+
   /* otherwise powr coincides with pow */
   return mpfr_pow (z, x, y, rnd_mode);
 }
