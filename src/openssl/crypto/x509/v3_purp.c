@@ -346,12 +346,19 @@ int X509_supported_extension(const X509_EXTENSION *ex)
     return 0;
 }
 
-/* Returns 1 on success, 0 if x is invalid, -1 on (internal) error. */
-static int setup_dp(const X509 *x, DIST_POINT *dp)
+/*
+ * Returns 1 on success, 0 if x is invalid.
+ *
+ * The full name of a nameRelativeToCRLIssuer distribution point is not
+ * computed here.  Doing so for every parsed certificate cost an
+ * X509_NAME_dup() of the issuer name per relative distribution point,
+ * which a certificate with many such entries could turn into hundreds of
+ * megabytes of heap on a plain TLS handshake, while the result is only
+ * needed when a CRL is actually being matched against the certificate.
+ * That name is now built on demand in the CRL checking code instead.
+ */
+static int setup_dp(DIST_POINT *dp)
 {
-    const X509_NAME *iname = NULL;
-    int i;
-
     if (dp->distpoint == NULL && sk_GENERAL_NAME_num(dp->CRLissuer) <= 0) {
         ERR_raise(ERR_LIB_X509, X509_R_INVALID_DISTPOINT);
         return 0;
@@ -365,30 +372,10 @@ static int setup_dp(const X509 *x, DIST_POINT *dp)
     } else {
         dp->dp_reasons = CRLDP_ALL_REASONS;
     }
-    if (dp->distpoint == NULL || dp->distpoint->type != 1)
-        return 1;
-
-    /* Handle name fragment given by nameRelativeToCRLIssuer */
-    /*
-     * Note that the below way of determining iname is not really compliant
-     * with https://tools.ietf.org/html/rfc5280#section-4.2.1.13
-     * According to it, sk_GENERAL_NAME_num(dp->CRLissuer) MUST be <= 1
-     * and any CRLissuer could be of type different to GEN_DIRNAME.
-     */
-    for (i = 0; i < sk_GENERAL_NAME_num(dp->CRLissuer); i++) {
-        GENERAL_NAME *gen = sk_GENERAL_NAME_value(dp->CRLissuer, i);
-
-        if (gen->type == GEN_DIRNAME) {
-            iname = gen->d.directoryName;
-            break;
-        }
-    }
-    if (iname == NULL)
-        iname = X509_get_issuer_name(x);
-    return DIST_POINT_set_dpname(dp->distpoint, iname) ? 1 : -1;
+    return 1;
 }
 
-/* Return 1 on success, 0 if x is invalid, -1 on (internal) error. */
+/* Return 1 on success, 0 if x is invalid. */
 static int setup_crldp(const X509 *x, STACK_OF(DIST_POINT) **tmp_crldp)
 {
     int i;
@@ -398,10 +385,8 @@ static int setup_crldp(const X509 *x, STACK_OF(DIST_POINT) **tmp_crldp)
         return 0;
 
     for (i = 0; i < sk_DIST_POINT_num(*tmp_crldp); i++) {
-        int res = setup_dp(x, sk_DIST_POINT_value(*tmp_crldp, i));
-
-        if (res < 1)
-            return res;
+        if (!setup_dp(sk_DIST_POINT_value(*tmp_crldp, i)))
+            return 0;
     }
     return 1;
 }
@@ -600,6 +585,11 @@ int ossl_x509v3_cache_extensions(const X509 *const_x)
                 tmp_ex_flags |= EXFLAG_INVALID;
             } else {
                 tmp_ex_pathlen = ASN1_INTEGER_get(bs->pathlen);
+                if (tmp_ex_pathlen < 0 || tmp_ex_pathlen > 255) {
+                    ERR_raise(ERR_LIB_X509V3, X509V3_R_PATHLEN_TOO_LARGE);
+                    tmp_ex_flags |= EXFLAG_INVALID;
+                    tmp_ex_pathlen = -1;
+                }
             }
         }
         BASIC_CONSTRAINTS_free(bs);
@@ -615,10 +605,22 @@ int ossl_x509v3_cache_extensions(const X509 *const_x)
             || X509_get_ext_by_NID(const_x, NID_issuer_alt_name, -1) >= 0) {
             tmp_ex_flags |= EXFLAG_INVALID;
         }
-        if (pci->pcPathLengthConstraint != NULL)
-            tmp_ex_pcpathlen = ASN1_INTEGER_get(pci->pcPathLengthConstraint);
-        else
+        if (pci->pcPathLengthConstraint != NULL) {
+            if (pci->pcPathLengthConstraint->type == V_ASN1_NEG_INTEGER) {
+                ERR_raise(ERR_LIB_X509V3, X509V3_R_NEGATIVE_PATHLEN);
+                tmp_ex_flags |= EXFLAG_INVALID;
+                tmp_ex_pcpathlen = -1;
+            } else {
+                tmp_ex_pcpathlen = ASN1_INTEGER_get(pci->pcPathLengthConstraint);
+                if (tmp_ex_pcpathlen < 0 || tmp_ex_pcpathlen > 255) {
+                    ERR_raise(ERR_LIB_X509V3, X509V3_R_PATHLEN_TOO_LARGE);
+                    tmp_ex_flags |= EXFLAG_INVALID;
+                    tmp_ex_pcpathlen = -1;
+                }
+            }
+        } else {
             tmp_ex_pcpathlen = -1;
+        }
         PROXY_CERT_INFO_EXTENSION_free(pci);
         tmp_ex_flags |= EXFLAG_PROXY;
     } else if (i != -1) {
@@ -894,6 +896,14 @@ void X509_set_proxy_flag(X509 *x)
 
 void X509_set_proxy_pathlen(X509 *x, long l)
 {
+    /*
+     * Out of range values cannot be reported from a void function, so
+     * fail closed: the caller asked for a constraint, and 0 permits no
+     * further delegation and can never be more permissive than the
+     * requested value.
+     */
+    if (l < -1 || l > 255)
+        l = 0;
     x->ex_pcpathlen = l;
 }
 

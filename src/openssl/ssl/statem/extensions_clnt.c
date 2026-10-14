@@ -40,7 +40,7 @@ EXT_RETURN tls_construct_ctos_renegotiate(SSL_CONNECTION *s, WPACKET *pkt,
                 && ssl_security(s, SSL_SECOP_VERSION, 0, TLS1_VERSION, NULL)
                 && s->min_proto_version <= TLS1_VERSION)) {
             /*
-             * For TLS <= 1.0 SCSV is used instead, and for TLS 1.3 this
+             * For TLSv1.0 SCSV is used instead, and for TLS 1.3 this
              * extension isn't used at all.
              */
             return EXT_RETURN_NOT_SENT;
@@ -1284,14 +1284,17 @@ EXT_RETURN tls_construct_ctos_early_data(SSL_CONNECTION *s, WPACKET *pkt,
             psk, sizeof(psk));
 
         if (psklen > PSK_MAX_PSK_LEN) {
-            SSLfatal(s, SSL_AD_HANDSHAKE_FAILURE, ERR_R_INTERNAL_ERROR);
+            OPENSSL_cleanse(psk, sizeof(psk));
+            SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
             return EXT_RETURN_FAIL;
-        } else if (psklen > 0) {
+        }
+        if (psklen > 0) {
             const unsigned char tls13_aes128gcmsha256_id[] = { 0x13, 0x01 };
             const SSL_CIPHER *cipher;
 
             idlen = strlen(identity);
             if (idlen > PSK_MAX_IDENTITY_LEN) {
+                OPENSSL_cleanse(psk, sizeof(psk));
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
                 return EXT_RETURN_FAIL;
             }
@@ -1304,6 +1307,7 @@ EXT_RETURN tls_construct_ctos_early_data(SSL_CONNECTION *s, WPACKET *pkt,
             cipher = SSL_CIPHER_find(SSL_CONNECTION_GET_SSL(s),
                 tls13_aes128gcmsha256_id);
             if (cipher == NULL) {
+                OPENSSL_cleanse(psk, sizeof(psk));
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
                 return EXT_RETURN_FAIL;
             }
@@ -1314,8 +1318,9 @@ EXT_RETURN tls_construct_ctos_early_data(SSL_CONNECTION *s, WPACKET *pkt,
                 || !SSL_SESSION_set1_master_key(psksess, psk, psklen)
                 || !SSL_SESSION_set_cipher(psksess, cipher)
                 || !SSL_SESSION_set_protocol_version(psksess, version1_3)) {
+                SSL_SESSION_free(psksess);
+                OPENSSL_cleanse(psk, sizeof(psk));
                 SSLfatal(s, SSL_AD_INTERNAL_ERROR, ERR_R_INTERNAL_ERROR);
-                OPENSSL_cleanse(psk, psklen);
                 return EXT_RETURN_FAIL;
             }
             OPENSSL_cleanse(psk, psklen);

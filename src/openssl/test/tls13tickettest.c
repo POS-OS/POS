@@ -999,37 +999,25 @@ static int test_tls13_ticket_early_data_accepted(void)
  *
  * A session that negotiated ALPN is resumed on a connection that negotiates no
  * ALPN at all (the client advertises none). The NewSessionTicket issued for the
- * resumed session must not retain the ALPN protocol from the original session;
- * otherwise a later 0-RTT attempt using that ticket would incorrectly assume
- * that protocol had been negotiated.
+ * resumed session must not carry the ALPN protocol from the original session
+ * (GitHub issue #11197).
  *
- * Regression test for GitHub issue #11197: tls_construct_new_session_ticket()
- * copied s->s3.alpn_selected into the session only when an ALPN protocol was
- * negotiated, but failed to clear s->session->ext.alpn_selected when it wasn't.
+ * A third connection resumes the ALPN-cleared ticket and negotiates
+ * "goodalpn", the original session's protocol. The ticket carries no ALPN, so
+ * 0-RTT must be rejected: the client's SSL_write_early_data() succeeds (the
+ * data is sent before the server's response is known) and
+ * SSL_get_early_data_status() reports that the server did not accept it.
  *
- * A third connection then resumes the now-ALPN-cleared ticket and negotiates
- * "goodalpn" again -- the same, non-empty protocol as the original session,
- * coincidentally. Since the ticket being resumed carries no ALPN, 0-RTT must
- * still be rejected: the client's SSL_write_early_data() appears to succeed
- * (the data is sent before the server's response is known), but a post hoc
- * SSL_get_early_data_status() check confirms the server never accepted it.
+ * A fourth connection resumes the same ticket again (anti-replay is disabled
+ * for this test) advertising no ALPN, consistent with the ticket, and 0-RTT
+ * must be accepted. This shows the rejection in connection 3 is specific to
+ * the ALPN mismatch.
  *
- * A fourth connection resumes that same ALPN-cleared ticket a second time --
- * anti-replay is disabled for this test, so reusing it twice is not itself a
- * reason for rejection -- but this time advertises no ALPN, consistent with
- * what the ticket actually recorded. 0-RTT must now be accepted. Without this
- * case, the rejection asserted for connection 3 would be unfalsifiable: it
- * would look identical if early data were simply never being accepted here
- * for any reason at all.
- *
- * The fourth connection resumes from an independent SSL_SESSION_dup() copy
- * of the ticket (taken before connection 3 uses the original), rather than
- * the original SSL_SESSION object itself: completing a handshake from a
- * resumed session marks that SSL_SESSION object not-resumable on the client
- * side as a single-use safeguard, independent of (and in addition to) the
- * server's SSL_OP_NO_ANTI_REPLAY setting. Resuming the literal object a
- * second time would therefore quietly fall back to a full, non-PSK
- * handshake instead of testing the intended 0-RTT path.
+ * The fourth connection resumes from an SSL_SESSION_dup() copy taken before
+ * connection 3 uses the original. Completing a handshake from a resumed
+ * session marks that SSL_SESSION object not-resumable on the client side,
+ * independent of the server's SSL_OP_NO_ANTI_REPLAY setting, and resuming it
+ * again falls back to a full handshake.
  */
 static int test_tls13_ticket_alpn_cleared(void)
 {
@@ -1079,7 +1067,7 @@ static int test_tls13_ticket_alpn_cleared(void)
          * Connection 2: resume the session, but the client advertises no ALPN
          * this time so nothing is negotiated. The server issues a fresh
          * NewSessionTicket for the resumed session; its stored ALPN must be
-         * cleared rather than inheriting "goodalpn" from the original session.
+         * empty.
          */
         && TEST_true(tls_channel_init(c, s, &resumed))
         && TEST_true(SSL_set_session(resumed.c.ssl, sess))
@@ -1107,14 +1095,8 @@ static int test_tls13_ticket_alpn_cleared(void)
         && TEST_true(tls_shutdown(&resumed))
         && TEST_ptr(sess2 = SSL_get1_session(resumed.c.ssl))
         /*
-         * Connection 3 is about to resume sess2 and, since 0-RTT is attempted
-         * on it, the client will mark sess2 not-resumable once that attempt
-         * completes (this happens on any full handshake completed from a
-         * resumed session, independent of the server's anti-replay setting --
-         * it is a client-side single-use restriction on the SSL_SESSION
-         * object itself). Take an independent copy now, while sess2 is still
-         * untouched, so connection 4 below has its own unconsumed ticket to
-         * resume from.
+         * Connection 3 resumes sess2, after which the client marks sess2
+         * not-resumable. Connection 4 resumes from this copy.
          */
         && TEST_ptr(sess2b = SSL_SESSION_dup(sess2))
         /*
@@ -1146,13 +1128,9 @@ static int test_tls13_ticket_alpn_cleared(void)
             SSL_EARLY_DATA_REJECTED)
         && TEST_true(tls_shutdown(&resumed2))
         /*
-         * Connection 4: resume the same ticket from connection 2 again, via
-         * the untouched copy (sess2b) taken before connection 3 consumed
-         * sess2 -- anti-replay is off, so a second use of that ticket is not
-         * itself rejected -- but this time advertise no ALPN, matching what
-         * the ticket recorded. 0-RTT must be accepted, proving connection 3
-         * was rejected for the ALPN mismatch specifically, not because early
-         * data never works.
+         * Connection 4: resume the same ticket again via the copy (sess2b),
+         * anti-replay being off, advertising no ALPN, matching the ticket.
+         * 0-RTT must be accepted.
          */
         && TEST_true(tls_channel_init(c, s, &resumed3))
         && TEST_true(SSL_set_session(resumed3.c.ssl, sess2b))
@@ -2105,6 +2083,117 @@ static int test_tls13_external_psk_no_master_key(void)
     return test;
 }
 
+/*
+ * A server psk_find_session callback whose result is chosen by badsess_kind,
+ * to exercise the server-side vetting in tls_parse_ctos_psk():
+ *   0: a TLS 1.3 session with no ciphersuite -- its NULL cipher must not be
+ *      dereferenced (rejected by the guard);
+ *   1: a valid TLS 1.3 cipher but a foreign (TLS 1.2) protocol version --
+ *      rejected downstream by ssl_get_prev_session(), not by the guard;
+ *   2: a well-formed TLS 1.3 session -- the positive control, which resumes;
+ *   3: a TLS 1.2 ciphersuite (matching SHA-256 digest) tagged with a TLS 1.3
+ *      version -- slips past the version and digest checks, so only the guard's
+ *      min_tls test rejects it.
+ * Every kind but the control (2) must be ignored, falling back to a full
+ * (certificate) handshake rather than crashing or resuming.
+ */
+static int badsess_kind = 0;
+
+static int badsess_psk_find_cb(SSL *ssl, const unsigned char *id, size_t idlen,
+    SSL_SESSION **sess)
+{
+    static const unsigned char tls13_aes128gcmsha256_id[] = { 0x13, 0x01 };
+    SSL_SESSION *ns;
+
+    if (idlen != sizeof(ext_psk_id) || memcmp(id, ext_psk_id, idlen) != 0) {
+        *sess = NULL;
+        return 1;
+    }
+    if ((ns = SSL_SESSION_new()) == NULL
+        || !SSL_SESSION_set1_master_key(ns, ext_psk_key, sizeof(ext_psk_key))) {
+        SSL_SESSION_free(ns);
+        return 0;
+    }
+    if (badsess_kind == 0) {
+        /* TLS 1.3 version but no ciphersuite. */
+        if (!SSL_SESSION_set_protocol_version(ns, TLS1_3_VERSION)) {
+            SSL_SESSION_free(ns);
+            return 0;
+        }
+    } else if (badsess_kind == 3) {
+        /*
+         * A TLS 1.2 ciphersuite whose handshake digest (SHA-256) matches the
+         * negotiated TLS 1.3 one, paired with a TLS 1.3 version. This slips
+         * past ssl_get_prev_session()'s version check and the digest-compat
+         * check, and its binder even matches -- so only the min_tls guard
+         * distinguishes it. It must be rejected.
+         */
+        static const unsigned char tls12_aes128gcmsha256_id[] = { 0x00, 0x9c };
+        const SSL_CIPHER *c12 = SSL_CIPHER_find(ssl, tls12_aes128gcmsha256_id);
+
+        if (c12 == NULL
+            || !SSL_SESSION_set_cipher(ns, c12)
+            || !SSL_SESSION_set_protocol_version(ns, TLS1_3_VERSION)) {
+            SSL_SESSION_free(ns);
+            return 0;
+        }
+    } else {
+        /*
+         * A valid TLS 1.3 cipher, paired with either a foreign (TLS 1.2)
+         * protocol version (kind 1, must be rejected) or the correct one
+         * (kind 2, the positive control that must resume).
+         */
+        const SSL_CIPHER *cipher = SSL_CIPHER_find(ssl, tls13_aes128gcmsha256_id);
+        int version = badsess_kind == 1 ? TLS1_2_VERSION : TLS1_3_VERSION;
+
+        if (cipher == NULL
+            || !SSL_SESSION_set_cipher(ns, cipher)
+            || !SSL_SESSION_set_protocol_version(ns, version)) {
+            SSL_SESSION_free(ns);
+            return 0;
+        }
+    }
+    *sess = ns;
+    return 1;
+}
+
+/*
+ * The client offers a well-formed external PSK; the server's find_session
+ * callback resolves it to a malformed session (see badsess_psk_find_cb). The
+ * server must reject the PSK and complete a full handshake (not resume, not
+ * crash).
+ */
+static int test_tls13_psk_bad_server_session(int idx)
+{
+    SSL_CTX *c = NULL, *s = NULL;
+    struct tls13_channel conn = { .c.ssl = NULL, .s.ssl = NULL };
+    int test;
+
+    badsess_kind = idx;
+    test = TEST_true(create_ssl_ctx_pair(NULL, TLS_server_method(),
+               TLS_client_method(), TLS1_3_VERSION, TLS1_3_VERSION,
+               &s, &c, cert, pkey))
+        && TEST_true(set_ctx_callbacks(c, s))
+        && TEST_true(SSL_CTX_set_ciphersuites(s, "TLS_AES_128_GCM_SHA256"))
+        && TEST_true(SSL_CTX_set_ciphersuites(c, "TLS_AES_128_GCM_SHA256"))
+        && TEST_true(tls_channel_init(c, s, &conn))
+        && TEST_true((SSL_set_psk_use_session_callback(conn.c.ssl,
+                          ext_psk_use_cb),
+            1))
+        && TEST_true((SSL_set_psk_find_session_callback(conn.s.ssl,
+                          badsess_psk_find_cb),
+            1))
+        && TEST_true(create_ssl_connection(conn.s.ssl, conn.c.ssl,
+            SSL_ERROR_NONE))
+        /* Only the well-formed control (idx 2) resumes; the rest fall back. */
+        && TEST_int_eq(SSL_session_reused(conn.c.ssl), idx == 2);
+
+    tls_channel_fini(&conn);
+    SSL_CTX_free(c);
+    SSL_CTX_free(s);
+    return test;
+}
+
 int setup_tests(void)
 {
     if (!test_skip_common_options()) {
@@ -2140,6 +2229,7 @@ int setup_tests(void)
     ADD_TEST(test_tls13_ticket_cipher_retire_full_handshake);
     ADD_TEST(test_tls13_external_psk_digest_not_offered);
     ADD_TEST(test_tls13_external_psk_no_master_key);
+    ADD_ALL_TESTS(test_tls13_psk_bad_server_session, 4);
 
     return 1;
 }

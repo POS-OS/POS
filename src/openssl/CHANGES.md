@@ -33,6 +33,39 @@ OpenSSL 4.2
 
 ### Changes between 4.1 and 4.2 [xx XXX xxxx]
 
+ * Changed TLS 1.3 clients to offer a PSK, and to attempt 0-RTT early data,
+   only when it can actually be used. A resumption ticket or external PSK is
+   offered only if some offered ciphersuite shares its handshake digest, and
+   0-RTT is attempted only if the first offered PSK's exact ciphersuite and,
+   where recorded, its ALPN protocol are offered and, for a ticket, it has not
+   aged out. When 0-RTT is not viable the client keeps the PSK for a 1-RTT
+   handshake. In particular a client-detected ALPN inconsistency now suppresses
+   0-RTT rather than failing with `SSL_R_INCONSISTENT_EARLY_DATA_ALPN`.
+
+   Fixed TLS 1.3 clients to reject a `psk_use_session` callback PSK whose master
+   key is empty, with `SSL_R_BAD_PSK`, instead of failing later in binder
+   computation.
+
+   *Viktor Dukhovni*
+
+ * `EVP_SKEY_get0_raw_key()` now accepts a NULL key pointer to retrieve only
+   the key length.  The length is obtained from the `OSSL_SKEY_PARAM_KEY_LENGTH`
+   key parameter without exporting the key, so it is also available for keys
+   that cannot be exported, provided the key management reports it.  The
+   built-in key managements now include this parameter when exporting key
+   parameters.
+   <!-- https://github.com/openssl/openssl/pull/33035 -->
+
+   *Iva Marinova*
+
+ * `X509_OBJECT_up_ref_count()` has been deprecated. Despite its name,
+   X509_OBJECT_up_ref_count() does not reference count the X509_OBJECT itself.
+   With X509_OBJECT being opaque there is nothing useful an application can do
+   with it.
+   <!-- https://github.com/openssl/openssl/pull/32823 -->
+
+   *Daniel Kubec*
+
  * Changed the OpenSSL FIPS provider so that every algorithm advertised with
    `fips=yes` explicitly exposes the `fips-indicator` as a gettable context
    parameter and returns 1 for an approved operation.  The absence of an
@@ -78,6 +111,25 @@ OpenSSL 4.2
    and full-length tags.
 
    *Dominic Cunningham, Billy Bob Brumley*
+
+ * The TLS 1.3 server now enforces the RFC 8446 section 9.2 requirement that
+   a ClientHello containing a supported_groups extension also contains a
+   key_share extension and vice versa, aborting the handshake with a
+   missing_extension alert otherwise. Previously a PSK resumption ClientHello
+   that offered psk_ke and carried supported_groups but no key_share was
+   accepted when the server allowed non-DHE PSK key exchange.
+
+   *Paul Grubbs*
+
+ * Added optimized ML-KEM NTT and scalar multiplication operations on `s390x`
+   (with potential reuse for other architectures with 128 bit vector registers).
+
+   *Timo Keller*
+
+ * Added optimized ML-DSA NTT and scalar multiplication operations on `s390x`
+   (with potential reuse for other architectures with 128 bit vector registers).
+
+   *Timo Keller*
 
 OpenSSL 4.1
 -----------
@@ -407,12 +459,6 @@ OpenSSL 4.1
    <!-- https://github.com/openssl/openssl/pull/30709 -->
 
    *Danny Tsen*
-
- * Added optimized ML-DSA NTT operations on `s390x`
-   (or other architectures with 128 bit vector registers).
-   <!-- https://github.com/openssl/openssl/pull/30812 -->
-
-   *Timo Keller*
 
  * Added AVX2-optimized ML-DSA NTT operations on `x86_64`.
    <!-- https://github.com/openssl/openssl/pull/30160 -->
@@ -1704,8 +1750,9 @@ OpenSSL 4.0
 
    *Bob Beck*
 
- * Added `OSSL_CMP_OPT_PERMIT_TA_IN_EXTRACERTS_FOR_IR` option for `OSSL_CMP_CTX`
-   and a corresponding `-ta_in_ip_extracert` option for the `openssl cmp` command.
+ * Added a `-ta_in_ip_extracert` option for the `openssl cmp` command, that sets
+   `OSSL_CMP_OPT_PERMIT_TA_IN_EXTRACERTS_FOR_IR` option for the `OSSL_CMP_CTX`
+   object.
 
    This work was sponsored by Siemens AG.
 

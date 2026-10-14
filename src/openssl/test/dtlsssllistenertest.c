@@ -28,6 +28,7 @@
 #include "internal/time.h"
 #include "internal/sockets.h"
 #include "internal/dgram_demux.h"
+#include "internal/dtls_record_rx.h"
 #include "internal/ssl_unwrap.h"
 #include "helpers/ssltestlib.h"
 #include "testutil.h"
@@ -1928,6 +1929,59 @@ err:
     return success;
 }
 
+#if !defined(OPENSSL_NO_UNIX_SOCK) && !defined(OPENSSL_NO_DTLS1_3)
+/*
+ * dtls_listener_cookie_hmac() used to size its address scratch buffers with
+ * a hardcoded 64 bytes instead of sizeof(BIO_ADDR). An AF_UNIX peer address,
+ * whose sun_path can be much longer than 64 bytes, overflowed those stack
+ * buffers. Exercise it with a peer_addr set to a long AF_UNIX path.
+ */
+static int test_dtls_listener_cookie_hmac_long_addr(void)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *serverssl = NULL, *clientssl = NULL;
+    SSL_CONNECTION *sc = NULL;
+    /* One byte short of sun_path's capacity: longer than the old 64-byte
+     * addr_buf/data buffers in dtls_listener_cookie_hmac(). */
+    char long_path[UNIX_PATH_MAX - 1];
+    unsigned char hmac_out[EVP_MAX_MD_SIZE];
+    int testresult = 0;
+
+    memset(long_path, 'a', sizeof(long_path) - 1);
+    long_path[sizeof(long_path) - 1] = '\0';
+
+    if (!TEST_true(create_ssl_ctx_pair(NULL, DTLS_server_method(),
+            DTLS_client_method(), DTLS1_3_VERSION, DTLS1_3_VERSION,
+            &sctx, &cctx, cert, privkey)))
+        goto end;
+
+    if (!TEST_true(create_ssl_objects(sctx, cctx, &serverssl, &clientssl,
+            NULL, NULL)))
+        goto end;
+
+    if (!TEST_true(create_ssl_connection(serverssl, clientssl, SSL_ERROR_NONE)))
+        goto end;
+
+    if (!TEST_ptr(sc = SSL_CONNECTION_FROM_SSL(serverssl)))
+        goto end;
+
+    if (!TEST_true(BIO_ADDR_rawmake(&sc->d1->peer_addr, AF_UNIX,
+            long_path, strlen(long_path), 0)))
+        goto end;
+
+    if (!TEST_true(dtls_listener_cookie_hmac(serverssl, 0, hmac_out)))
+        goto end;
+
+    testresult = 1;
+end:
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return testresult;
+}
+#endif /* !OPENSSL_NO_UNIX_SOCK && !OPENSSL_NO_DTLS1_3 */
+
 /*
  * Test SSL_new_listener with NULL context.
  * Should return NULL and not crash.
@@ -3755,15 +3809,9 @@ end:
 /*
  * Test DTLS 1.3 SSL Listener handshake message buffering.
  *
- * This test verifies that when a DTLS 1.3 SSL Listener sends handshake
- * messages, multiple records are buffered into a single datagram
- * rather than being sent as separate datagrams.
- *
- * Expected behavior with buffering:
- *   - At least one datagram contains multiple DTLS records
- *
- * Without buffering (the bug this tests for):
- *   - Each record would be in its own datagram
+ * When a DTLS 1.3 SSL Listener sends handshake messages, multiple records
+ * are buffered into a single datagram: at least one datagram must contain
+ * multiple DTLS records.
  */
 static int test_dtls13_listener_msg_buffering(void)
 {
@@ -4080,12 +4128,11 @@ static int big_ch_ext_add_cb(SSL *s, unsigned int ext_type,
 }
 
 /*
- * Helper to create a DTLS client on a *connected* UDP socket. Unlike the
- * BIO_dgram_set_peer() helpers above (which use an unconnected socket and so
- * cause DTLS to fragment the ClientHello into sub-MTU datagrams), a connected
- * socket lets DTLS discover the large loopback path MTU and send the whole
- * ClientHello in a single datagram - which is what exercises the listener demux
- * receive-buffer sizing.
+ * Helper to create a DTLS client on a connected UDP socket. A connected socket
+ * lets DTLS discover the large loopback path MTU and send the whole
+ * ClientHello in a single datagram, which exercises the listener demux
+ * receive-buffer sizing; on an unconnected socket DTLS fragments it into
+ * sub-MTU datagrams.
  */
 static int create_dtls_client_connected(SSL_CTX *cctx,
     const BIO_ADDR *server_addr, SSL **clientssl, int *client_fd)
@@ -4185,7 +4232,7 @@ static int test_dtls_listener_max_dgram_size_functional(void)
 
     SSL_set_connect_state(clientssl);
     while (serverssl == NULL) {
-        if (++abortctr > 100) {
+        if (++abortctr > 200) {
             TEST_error("connection did not converge (oversized ClientHello)");
             goto end;
         }
@@ -4213,6 +4260,9 @@ static int test_dtls_listener_max_dgram_size_functional(void)
         if (poll_result > 0 && (poll_item.revents & SSL_POLL_EVENT_IC) != 0)
             serverssl = SSL_accept_connection(listener,
                 SSL_ACCEPT_CONNECTION_NO_BLOCK);
+
+        /* Loopback delivery can lag and a lost datagram needs a retransmit */
+        OSSL_sleep(10);
     }
 
     if (!TEST_ptr(serverssl))
@@ -4899,48 +4949,19 @@ static int test_new_pending_cb_alternate(void)
  * A thread waiting in SSL_poll() for SSL_POLL_EVENT_IC is blocked on the
  * listener's network socket and on its notifier. Where another thread does the
  * demuxing, that socket does not necessarily become readable on the waiter's
- * behalf, so the notifier is what has to wake it.
+ * behalf, so the notifier is what wakes it. Signalling is conditional on a
+ * registered waiter, and the demux of a ClientHello and the push of the
+ * completed connection onto the accept queue are separate steps of a tick, so
+ * a waiter which registers between them is woken only by the push.
  *
- * Most of the time the bug this covers is masked. Every connection reaching
- * the accept queue got there because a datagram was demuxed into its receive
- * queue, and the packet handler has always signalled on that injection, so the
- * waiter is woken, ticks the listener itself during its readout, and finds the
- * connection. What is not covered by that is the window in which the injection
- * and the queue push straddle a waiter registering, because signalling is
- * conditional on there being a waiter at the time.
+ * The interleaving cannot be forced from outside the library, so this drives
+ * its essential part on one thread: pumping the demux directly performs the
+ * injection, the signal it raises is cleared, and the tick which follows can
+ * only signal by way of the queue push.
  *
- * The numbered steps below are that window - the interleaving of two threads
- * which the fix exists to handle. They are not what this test does, and are
- * given only so that what it does assert makes sense; see the end of this
- * comment for how it is actually checked.
- *
- *   1. Accept thread A polls the listener for SSL_POLL_EVENT_IC. Its readout
- *      ticks the listener, finds nothing, and it decides to block. It is not
- *      a registered waiter yet.
- *   2. Worker thread B polls one of its own connections, which also ticks the
- *      listener. The pump reads a client's final ClientHello and injects it
- *      into that pending connection's queue. There are no waiters, so nothing
- *      is signalled.
- *   3. A enters the blocking section. Its re-check runs without ticking, so it
- *      sees only the accept queue, which is still empty, and it blocks.
- *   4. B's tick reaches dtls_listener_drive_pending(), which completes the
- *      connection against the buffered ClientHello and pushes it onto the
- *      accept queue.
- *
- * Without a signal at step 4, A sleeps on with a validated connection sitting
- * ready, until some unrelated datagram makes the socket readable again. B
- * consumed the only one in flight, and the client is now waiting on the
- * server, so on a quiet listener that is until the client retransmits.
- *
- * That interleaving cannot be forced from outside the library, so rather than
- * reproducing the steps above, this drives their essential part by hand and on
- * one thread: pumping the demux directly performs step 2, the signal it raises
- * is then cleared, and the tick which follows can only signal by way of step 4.
- * Asserting that it did is therefore asserting that a queue push signals.
- *
- * signalled_notifier is protected by the listener mutex in the library, which
- * has to assume concurrent access. This test is single threaded throughout, so
- * it reads the field directly without holding the mutex.
+ * signalled_notifier is protected by the listener mutex in the library. This
+ * test is single threaded throughout, so it reads the field directly without
+ * holding the mutex.
  */
 static int test_dtls_notifier_signalled_on_accept_queue_push(void)
 {
@@ -5004,7 +5025,7 @@ static int test_dtls_notifier_signalled_on_accept_queue_push(void)
     poll_timeout.tv_usec = 0;
 
     SSL_set_connect_state(clientssl);
-    for (abortctr = 0; abortctr < 100; abortctr++) {
+    for (abortctr = 0; abortctr < 200; abortctr++) {
         retc = SSL_connect(clientssl);
         err_code = SSL_get_error(clientssl, retc);
         if (retc <= 0
@@ -5037,6 +5058,9 @@ static int test_dtls_notifier_signalled_on_accept_queue_push(void)
 
         if ((poll_item.revents & SSL_POLL_EVENT_IC) != 0)
             break;
+
+        /* Loopback delivery can lag and a lost datagram needs a retransmit */
+        OSSL_sleep(10);
     }
 
     if (!TEST_size_t_gt(SSL_get_accept_connection_queue_len(listener), 0))
@@ -5065,60 +5089,26 @@ end:
 /*
  * Test that a blocking SSL_poll() on a listener enters a blocking section.
  *
- * Unless it does, three things follow: the notifier is not in the poll set, so
- * it cannot wake this thread; cur_blocking_waiters is never incremented, and
- * since signalling is conditional on there being a waiter, no other thread
- * even attempts to signal; and there is no re-check after registering, so
- * readiness arising between the readout and the wait is lost.
+ * The blocking section puts the notifier in the poll set, registers this
+ * thread as a waiter so other threads signal it, and re-checks readiness after
+ * registering. Several threads poll the one shared socket; a datagram wakes all
+ * of them and one takes it, and that thread's tick can complete a pending
+ * connection and push it onto the accept queue. A thread watching the socket
+ * alone then sleeps with a connection on the queue.
  *
- * Polling the socket alone is not enough, though not because a wakeup can be
- * missed outright. poll() reports whatever is currently sitting in the socket
- * buffer and returns immediately if there is any, so a thread cannot miss a
- * datagram just by being outside poll() when it arrives. What it can miss is a
- * datagram another thread has already taken. With several threads polling the
- * one shared socket that happens constantly: an arriving datagram wakes all of
- * them, only one gets it, and the rest find nothing. Any of them can be the
- * one that takes it, because SSL_read() on a connection pumps the demux and
- * SSL_poll() on a connection ticks the whole listener.
+ * Entering a blocking section has no public observable. The last waiter out of
+ * a blocking section drains a raised notifier signal, so this raises one
+ * beforehand, polls briefly with nothing ready, and checks afterwards: drained
+ * means a blocking section was entered and left.
  *
- *   1. Accept thread A polls the listener for SSL_POLL_EVENT_IC. Its readout
- *      ticks the listener, finds nothing, and it decides to block.
- *   2. A client's final ClientHello lands on the shared socket.
- *   3. Worker thread B, polling one of its own connections, ticks the listener
- *      and is the one that takes the datagram. Its tick completes the pending
- *      connection and pushes it onto the accept queue. Signalling is attempted,
- *      but A never registered as a waiter, so nothing is signalled.
- *   4. A reaches its poll, watching the socket alone. B drained it, so it is
- *      empty, and A sleeps with a validated connection sitting on the accept
- *      queue.
+ * signalled_notifier is protected by the listener mutex in the library. This
+ * test is single threaded throughout, so it reads and writes the field
+ * directly without holding the mutex.
  *
- * A's readout, back at step 1, would have found that connection had it run
- * after step 3 rather than before it. Registering as a waiter and re-checking
- * is what removes the dependency on that ordering.
- *
- * Note that the signal added for the step 3 queue push is itself conditional on
- * a registered waiter, so it does nothing for a thread polling the listener
- * until that thread registers. The two fixes are complementary.
- *
- * None of that has a public observable, and this deliberately does not time
- * the wait. Instead it relies on the last waiter out of a blocking section
- * draining a raised notifier signal: raise one beforehand, poll briefly with
- * nothing ready, and check afterwards. Drained means a blocking section was
- * entered and left, since only a leave drains it and only an enter can be left;
- * still standing means neither happened.
- *
- * signalled_notifier is protected by the listener mutex in the library, which
- * has to assume concurrent access. This test is single threaded throughout, so
- * it reads and writes the field directly without holding the mutex.
- *
- * Note what this does not cover. That the notifier is in the poll set, and so
- * can actually deliver a wakeup, is not checked: with a signal raised the poll
- * returns at once if the notifier is being watched and sleeps out its timeout
- * if it is not, and only timing separates those. A longer timeout would not
- * help, because the first iteration's leave drains the notifier and the next
- * one sleeps out the remainder either way. The re-check after registering is
- * not covered either, since readiness arriving between the readout and the
- * registration cannot be produced from a single thread.
+ * Not covered: that the notifier in the poll set delivers a wakeup (only
+ * timing separates that from sleeping out the timeout), and the re-check
+ * after registering (readiness arriving between the readout and the
+ * registration cannot be produced from a single thread).
  */
 static int test_dtls_poll_listener_enters_blocking_section(void)
 {
@@ -5323,8 +5313,7 @@ static int test_dtls_poll_conn_honours_retransmit_timer(void)
 
     /*
      * Install the short timeout before the server sends anything, so that it
-     * is picked up when the retransmission timer is first started rather than
-     * only on a later expiry.
+     * is picked up when the retransmission timer is first started.
      */
     DTLS_set_timer_cb(serverssl, short_timer_cb);
 
@@ -5457,6 +5446,7 @@ static int test_dtls_blocking_mode(void)
     SSL *memlistener = NULL, *memclient = NULL, *plainssl = NULL;
     BIO_ADDR *server_addr = NULL, *client_addr = NULL;
     SSL_CONNECTION *sc;
+    DTLS_RX *listener_rx;
     int server_fd = -1, client_fd = -1;
     int testresult = 0;
 
@@ -5537,12 +5527,17 @@ static int test_dtls_blocking_mode(void)
      */
     if (!TEST_ptr(sc = SSL_CONNECTION_FROM_SSL_ONLY(serverssl)))
         goto end;
-    sc->d1->being_driven = 1;
+    listener_rx = sc->listener_rx;
+    if (!TEST_ptr(listener_rx) || !TEST_ptr_eq(listener_rx, sc->d1->rx))
+        goto end;
+    sc->listener_being_driven = 1;
 
     if (!TEST_true(SSL_clear(serverssl))
         || !TEST_int_eq(SSL_get_blocking_mode(serverssl), 0)
         || !TEST_ptr(sc = SSL_CONNECTION_FROM_SSL_ONLY(serverssl))
-        || !TEST_int_eq(sc->d1->being_driven, 1))
+        || !TEST_ptr_eq(sc->listener_rx, listener_rx)
+        || !TEST_ptr_eq(sc->d1->rx, listener_rx)
+        || !TEST_int_eq(sc->listener_being_driven, 1))
         goto end;
 
     /*
@@ -5554,10 +5549,12 @@ static int test_dtls_blocking_mode(void)
     if (!TEST_true(SSL_clear(serverssl))
         || !TEST_int_eq(SSL_get_blocking_mode(serverssl), 0)
         || !TEST_ptr(sc = SSL_CONNECTION_FROM_SSL_ONLY(serverssl))
-        || !TEST_int_eq(sc->d1->being_driven, 1))
+        || !TEST_ptr_eq(sc->listener_rx, listener_rx)
+        || !TEST_ptr_eq(sc->d1->rx, listener_rx)
+        || !TEST_int_eq(sc->listener_being_driven, 1))
         goto end;
 
-    sc->d1->being_driven = 0;
+    sc->listener_being_driven = 0;
 
     /* And back the other way round. */
     if (!TEST_true(SSL_set_blocking_mode(listener, 1))
@@ -5670,11 +5667,8 @@ end:
  * Test that a rejected SSL_set_blocking_mode() leaves the mode alone.
  *
  * Whether blocking can be supported depends on the listener's BIO, so a
- * request can be refused now and be perfectly deliverable later. The refusal
- * must therefore not record the mode it refused to set: the effect only becomes
- * visible once a BIO which can supply a poll descriptor is in place, at which
- * point the listener would be found blocking on the strength of a call which
- * failed.
+ * request refused before a BIO which can supply a poll descriptor is in place
+ * must not be recorded, or the listener is found blocking once one is.
  */
 static int test_dtls_blocking_mode_failed_set_is_inert(void)
 {
@@ -5803,18 +5797,12 @@ static const BIO_METHOD *bio_f_failing_send_filter(void)
 
 /*
  * Test that a write on a blocking listener connection waits for the socket and
- * sends again, rather than reporting that it needs to be retried.
- *
- * A datagram which cannot be sent is normally dropped, which is reasonable for
- * an unreliable transport but is not what an application asking for blocking
- * writes expects: it gets no data sent and a WANT_WRITE it did not ask to have
- * to handle. The listener's socket is shared and always non-blocking, so there
- * is nothing for such a write to block in by itself.
+ * sends again. The listener's socket is shared and always non-blocking, so
+ * there is nothing for such a write to block in by itself.
  *
  * A loopback socket's send buffer does not fill, so a filter BIO supplies the
- * transient failure instead. Only one send is rejected: the retry then goes
- * through, and the client is read to confirm the datagram was really sent
- * rather than merely reported as sent.
+ * transient failure. Only one send is rejected: the retry then goes through,
+ * and the client is read to confirm the datagram was sent.
  *
  * The handshake runs with the listener non-blocking, so this test drives both
  * ends from the one thread as the others here do, and only the connection is
@@ -5892,12 +5880,7 @@ static int test_dtls_blocking_write(void)
         || !TEST_size_t_eq(written, 3))
         goto end;
 
-    /*
-     * The send really was rejected, and was retried rather than reported: the
-     * count proves a second attempt was made, which is the whole behaviour
-     * under test. Without it, a write which never reached the filter at all
-     * would look the same as one which was retried.
-     */
+    /* The count shows the send was rejected once and then retried. */
     if (!TEST_int_eq(data.fails_remaining, 0)
         || !TEST_int_ge(data.sends, 2))
         goto end;
@@ -5932,6 +5915,598 @@ end:
     method_failing_send = NULL;
     return testresult;
 }
+
+#ifndef OPENSSL_NO_DTLS1_2
+/*
+ * Regression test for the receive-queue bound and its overflow policy: a
+ * connection left unread must not accumulate an unbounded datagram queue,
+ * and when the queue is full the oldest datagram is evicted, not the
+ * newest. A parked connection is flooded past the cap with datagrams
+ * carrying a sequence counter; the queue must stop at
+ * OSSL_DTLS_RX_DEFAULT_MAX_QUEUED entries, with the head carrying
+ * (flood - cap) and the tail (flood - 1). Under tail-drop the head would
+ * still carry 0.
+ */
+static int test_dtls_listener_rx_queue_drops_oldest(void)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *listener = NULL, *clientssl = NULL, *serverssl = NULL;
+    BIO_ADDR *client_addr = NULL;
+    BIO *client_bio;
+    SSL_CONNECTION *sc;
+    SSL_POLL_ITEM poll_item;
+    struct timeval poll_timeout;
+    size_t poll_result, queued, i;
+    unsigned char record[64];
+    DGRAM_URXE *head, *tail;
+    const unsigned char *head_data, *tail_data;
+    unsigned int head_seq, tail_seq;
+    int testresult = 0;
+    const size_t cap = OSSL_DTLS_RX_DEFAULT_MAX_QUEUED;
+    const size_t flood = cap + 64;
+
+    if (!TEST_true(create_ssl_ctx_pair(NULL, DTLS_server_method(),
+            DTLS_client_method(), DTLS1_2_VERSION, DTLS1_2_VERSION,
+            &sctx, &cctx, cert, privkey)))
+        goto end;
+
+    if (!TEST_true(create_dtls_listener_and_client_mem(sctx, cctx,
+            SSL_LISTENER_FLAG_SINGLE_THREAD,
+            &listener, &clientssl, &client_addr)))
+        goto end;
+
+    if (!TEST_true(drive_until_connection_queued(listener, clientssl)))
+        goto end;
+    if (!TEST_ptr(serverssl = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto end;
+
+    client_bio = SSL_get_rbio(clientssl);
+    poll_item.desc.type = BIO_POLL_DESCRIPTOR_TYPE_SSL;
+    poll_item.desc.value.ssl = listener;
+    poll_item.events = SSL_POLL_EVENT_IC;
+    poll_timeout.tv_sec = 0;
+    poll_timeout.tv_usec = 0;
+
+    /*
+     * The client SSL is never stepped again, so no retransmit can add
+     * datagrams: every queued entry is one of ours, in order.
+     */
+    memset(record, 0xA5, sizeof(record));
+    for (i = 0; i < flood; i++) {
+        /* Stamp a big-endian sequence counter into the first four bytes. */
+        record[0] = (unsigned char)(i >> 24);
+        record[1] = (unsigned char)(i >> 16);
+        record[2] = (unsigned char)(i >> 8);
+        record[3] = (unsigned char)i;
+        if (!TEST_int_eq(BIO_write(client_bio, record, sizeof(record)),
+                (int)sizeof(record)))
+            goto end;
+        poll_item.revents = 0;
+        if (!TEST_true(SSL_poll(&poll_item, 1, sizeof(poll_item),
+                &poll_timeout, 0, &poll_result)))
+            goto end;
+    }
+
+    if (!TEST_ptr(sc = SSL_CONNECTION_FROM_SSL_ONLY(serverssl))
+        || !TEST_ptr(sc->listener_rx))
+        goto end;
+    queued = ossl_list_urxe_num(&sc->listener_rx->urxe_pending);
+    if (!TEST_size_t_eq(queued, cap))
+        goto end;
+
+    /* The oldest datagrams were evicted: only the newest cap ones remain. */
+    if (!TEST_ptr(head = ossl_list_urxe_head(&sc->listener_rx->urxe_pending))
+        || !TEST_ptr(tail = ossl_list_urxe_tail(&sc->listener_rx->urxe_pending)))
+        goto end;
+    head_data = ossl_dgram_urxe_data(head);
+    tail_data = ossl_dgram_urxe_data(tail);
+    head_seq = ((unsigned int)head_data[0] << 24) | ((unsigned int)head_data[1] << 16)
+        | ((unsigned int)head_data[2] << 8) | head_data[3];
+    tail_seq = ((unsigned int)tail_data[0] << 24) | ((unsigned int)tail_data[1] << 16)
+        | ((unsigned int)tail_data[2] << 8) | tail_data[3];
+    if (!TEST_uint_eq(head_seq, (unsigned int)(flood - cap))
+        || !TEST_uint_eq(tail_seq, (unsigned int)(flood - 1)))
+        goto end;
+
+    testresult = 1;
+end:
+    SSL_free(serverssl);
+    SSL_free(clientssl);
+    SSL_free(listener);
+    BIO_ADDR_free(client_addr);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return testresult;
+}
+#endif /* OPENSSL_NO_DTLS1_2 */
+
+#if !defined(OPENSSL_NO_DTLS1_2) || !defined(OPENSSL_NO_DTLS1_3)
+/* Tick the listener's incoming-connection pump once, without blocking. */
+static void listener_tick(SSL *listener)
+{
+    SSL_POLL_ITEM poll_item;
+    struct timeval poll_timeout;
+    size_t poll_result = 0;
+
+    poll_item.desc.type = BIO_POLL_DESCRIPTOR_TYPE_SSL;
+    poll_item.desc.value.ssl = listener;
+    poll_item.events = SSL_POLL_EVENT_IC;
+    poll_item.revents = 0;
+    poll_timeout.tv_sec = 0;
+    poll_timeout.tv_usec = 0;
+    /* A failed poll means the tick did not run; treat it as no progress. */
+    if (!SSL_poll(&poll_item, 1, sizeof(poll_item), &poll_timeout, 0,
+            &poll_result))
+        ERR_clear_error();
+}
+
+/* Step one client's handshake, tolerating the expected WANT_READ/WANT_WRITE. */
+static int client_step(SSL *client)
+{
+    int ret = SSL_connect(client);
+    int err = SSL_get_error(client, ret);
+
+    if (ret <= 0 && err != SSL_ERROR_WANT_READ && err != SSL_ERROR_WANT_WRITE)
+        return 0;
+    ERR_clear_error();
+    return 1;
+}
+
+/*
+ * Message-callback observation harness: counts outgoing ClientHellos of
+ * the "active" client, so a test can confirm it kept retransmitting
+ * while its datagrams were refused.
+ */
+typedef struct {
+    SSL *active_client; /* client currently observed, or NULL */
+    int active_client_ch; /* outgoing ClientHellos seen for it */
+} QUEUE_CAP_OBS;
+
+static void queue_cap_msg_cb(int write_p, int version, int content_type,
+    const void *buf, size_t len, SSL *ssl, void *arg)
+{
+    QUEUE_CAP_OBS *obs = arg;
+
+    (void)version;
+    if (!write_p || content_type != SSL3_RT_HANDSHAKE || buf == NULL || len < 1)
+        return;
+
+    if (ssl == obs->active_client
+        && *(const unsigned char *)buf == SSL3_MT_CLIENT_HELLO)
+        obs->active_client_ch++;
+}
+
+/*
+ * Accelerated DTLS retransmit policy for these tests: 100 ms initial,
+ * doubling, capped at 6 s, so retransmit-driven phases stay fast.
+ */
+static unsigned int queue_cap_timer_cb(SSL *ssl, unsigned int us)
+{
+    if (us == 0)
+        return 100000;
+    return us * 2 > 6000000 ? 6000000 : us * 2;
+}
+
+/*
+ * Drive one client through the cookie exchange until the accept queue
+ * reaches |target| entries.
+ */
+static int drive_client_to_promotion(SSL *listener, SSL *client,
+    size_t target)
+{
+    int k;
+
+    for (k = 0; k < 600; k++) {
+        if (!client_step(client))
+            return 0;
+        listener_tick(listener);
+        if (SSL_get_accept_connection_queue_len(listener) >= target)
+            return 1;
+        OSSL_sleep(10);
+    }
+    TEST_error("client was not queued within the iteration budget");
+    return 0;
+}
+
+#define ACCEPT_CAP_TEST_LIMIT ((size_t)1)
+
+/*
+ * Regression test: SSL_VALUE_DTLS_LISTENER_MAX_PENDING_CONNS is a single
+ * admission budget over both listener-owned tables, so the accept queue
+ * is bounded. Client A fills the queue; client B, driven while full, must
+ * be refused at admission with no state spent on it; after a drain, B is
+ * admitted and completes its handshake: a full queue must not strand a
+ * legitimate client. Runs for both DTLS versions.
+ */
+static int test_dtls_listener_accept_queue_capped_int(int version)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *listener = NULL, *accepted = NULL;
+    SSL *client_a = NULL, *client_b = NULL;
+    int fd_a = -1, fd_b = -1;
+    BIO_ADDR *server_addr = NULL;
+    int server_fd = -1, k;
+    int testresult = 0;
+    DTLS_LISTENER *dl;
+    QUEUE_CAP_OBS obs;
+
+    memset(&obs, 0, sizeof(obs));
+
+    if (!TEST_true(create_ssl_ctx_pair(NULL, DTLS_server_method(),
+            DTLS_client_method(), version, version,
+            &sctx, &cctx, cert, privkey)))
+        goto err;
+
+    SSL_CTX_set_msg_callback(cctx, queue_cap_msg_cb);
+    SSL_CTX_set_msg_callback_arg(cctx, &obs);
+
+    if (!TEST_true(create_dtls_listener(sctx,
+            SSL_LISTENER_FLAG_SINGLE_THREAD,
+            &listener, &server_addr, &server_fd)))
+        goto err;
+
+    /* One listener-owned connection at a time, pending or queued. */
+    if (!TEST_true(SSL_set_generic_value_uint(listener,
+            SSL_VALUE_DTLS_LISTENER_MAX_PENDING_CONNS, ACCEPT_CAP_TEST_LIMIT)))
+        goto err;
+
+    dl = (DTLS_LISTENER *)listener;
+
+    if (!TEST_true(create_dtls_client_for_addr(cctx, server_addr,
+            &client_a, &fd_a))
+        || !TEST_true(create_dtls_client_for_addr(cctx, server_addr,
+            &client_b, &fd_b)))
+        goto err;
+    /* Bound the runtime of the retransmit-driven phases below. */
+    DTLS_set_timer_cb(client_a, queue_cap_timer_cb);
+    DTLS_set_timer_cb(client_b, queue_cap_timer_cb);
+
+    /* Phase 1: client A fills the accept queue to the cap. */
+    if (!drive_client_to_promotion(listener, client_a, ACCEPT_CAP_TEST_LIMIT))
+        goto err;
+    /*
+     * The pending table has no public accessor by design (the cap is
+     * silent), so read its count directly, as the existing pending-cap
+     * tests do; safe in these single-threaded tests.
+     */
+    if (!TEST_size_t_eq(SSL_get_accept_connection_queue_len(listener),
+            ACCEPT_CAP_TEST_LIMIT)
+        || !TEST_size_t_eq(ossl_dgram_conn_lookup_num_items(
+                               dl->pending_conns),
+            0))
+        goto err;
+
+    /*
+     * Phase 2: with the queue full, B must be refused at admission.
+     * B keeps retransmitting on its accelerated timer; every tick must
+     * show no pending connection created and the queue still at the cap.
+     */
+    obs.active_client = client_b;
+    obs.active_client_ch = 0;
+    for (k = 0; k < 400 && obs.active_client_ch < 3; k++) {
+        if (!client_step(client_b))
+            goto err;
+        listener_tick(listener);
+        if (!TEST_size_t_eq(SSL_get_accept_connection_queue_len(listener),
+                ACCEPT_CAP_TEST_LIMIT)
+            || !TEST_size_t_eq(ossl_dgram_conn_lookup_num_items(
+                                   dl->pending_conns),
+                0))
+            goto err;
+        OSSL_sleep(5);
+    }
+    obs.active_client = NULL;
+    if (!TEST_int_ge(obs.active_client_ch, 2)) {
+        TEST_error("client B did not retransmit its ClientHello");
+        goto err;
+    }
+
+    /*
+     * Phase 3: drain the queue. B's retransmitted ClientHello is now
+     * admitted, B completes the cookie exchange and is queued.
+     */
+    if (!TEST_ptr(accepted = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto err;
+    SSL_free(accepted);
+    accepted = NULL;
+    if (!drive_client_to_promotion(listener, client_b, ACCEPT_CAP_TEST_LIMIT))
+        goto err;
+
+    /* Phase 4: the listener is usable afterwards; B's handshake completes. */
+    if (!TEST_ptr(accepted = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto err;
+    if (!TEST_true(create_ssl_connection(accepted, client_b,
+            SSL_ERROR_NONE)))
+        goto err;
+    if (!TEST_int_eq(SSL_version(accepted), version))
+        goto err;
+
+    testresult = 1;
+
+err:
+    SSL_free(accepted);
+    SSL_free(client_a);
+    if (fd_a >= 0)
+        BIO_closesocket(fd_a);
+    SSL_free(client_b);
+    if (fd_b >= 0)
+        BIO_closesocket(fd_b);
+    SSL_free(listener);
+    BIO_ADDR_free(server_addr);
+    if (server_fd >= 0)
+        BIO_closesocket(server_fd);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return testresult;
+}
+
+static int test_dtls_listener_accept_queue_capped(void)
+{
+    int ok = 1;
+
+#ifndef OPENSSL_NO_DTLS1_2
+    if (!test_dtls_listener_accept_queue_capped_int(DTLS1_2_VERSION))
+        ok = 0;
+#endif
+#ifndef OPENSSL_NO_DTLS1_3
+    if (!test_dtls_listener_accept_queue_capped_int(DTLS1_3_VERSION))
+        ok = 0;
+#endif
+    return ok;
+}
+
+/*
+ * Regression test for SSL_LISTENER_FLAG_NO_VALIDATE: a connection is
+ * queued on its first datagram, so only the admission budget bounds the
+ * accept queue there. With the budget at ACCEPT_CAP_TEST_LIMIT, at most
+ * one listener-owned connection may exist at a time, and a drain must
+ * admit a waiting client.
+ */
+static int test_dtls_listener_accept_queue_novalidate_capped(void)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *listener = NULL, *accepted = NULL;
+    SSL *clients[3] = { NULL };
+    int client_fds[3] = { -1, -1, -1 };
+    BIO_ADDR *server_addr = NULL;
+    int server_fd = -1;
+    int testresult = 0;
+    int i, k;
+    DTLS_LISTENER *dl;
+#if !defined(OPENSSL_NO_DTLS1_3)
+    const int version = DTLS1_3_VERSION;
+#else
+    const int version = DTLS1_2_VERSION;
+#endif
+
+    if (!TEST_true(create_ssl_ctx_pair(NULL, DTLS_server_method(),
+            DTLS_client_method(), version, version,
+            &sctx, &cctx, cert, privkey)))
+        goto err;
+
+    if (!TEST_true(create_dtls_listener(sctx,
+            SSL_LISTENER_FLAG_SINGLE_THREAD | SSL_LISTENER_FLAG_NO_VALIDATE,
+            &listener, &server_addr, &server_fd)))
+        goto err;
+
+    if (!TEST_true(SSL_set_generic_value_uint(listener,
+            SSL_VALUE_DTLS_LISTENER_MAX_PENDING_CONNS, ACCEPT_CAP_TEST_LIMIT)))
+        goto err;
+
+    dl = (DTLS_LISTENER *)listener;
+
+    for (i = 0; i < 3; i++) {
+        if (!TEST_true(create_dtls_client_for_addr(cctx, server_addr,
+                &clients[i], &client_fds[i])))
+            goto err;
+        DTLS_set_timer_cb(clients[i], queue_cap_timer_cb);
+    }
+
+    /*
+     * Drive all three clients: one's first datagram queues its connection,
+     * the other two are refused; the total must never exceed the budget.
+     */
+    for (k = 0; k < 100; k++) {
+        for (i = 0; i < 3; i++)
+            if (!client_step(clients[i]))
+                goto err;
+        listener_tick(listener);
+        if (!TEST_size_t_le(SSL_get_accept_connection_queue_len(listener)
+                    + ossl_dgram_conn_lookup_num_items(dl->pending_conns),
+                ACCEPT_CAP_TEST_LIMIT))
+            goto err;
+        OSSL_sleep(2);
+    }
+    if (!TEST_size_t_eq(SSL_get_accept_connection_queue_len(listener),
+            ACCEPT_CAP_TEST_LIMIT)
+        || !TEST_size_t_eq(ossl_dgram_conn_lookup_num_items(
+                               dl->pending_conns),
+            0))
+        goto err;
+
+    /* Drain: the next retransmission from another client is admitted. */
+    if (!TEST_ptr(accepted = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto err;
+    SSL_free(accepted);
+    accepted = NULL;
+
+    /*
+     * Client 0 was just accepted and freed; stepping only the other two
+     * must refill the queue without exceeding the budget.
+     */
+    for (k = 0; k < 200
+        && SSL_get_accept_connection_queue_len(listener) < ACCEPT_CAP_TEST_LIMIT;
+        k++) {
+        for (i = 1; i < 3; i++)
+            if (!client_step(clients[i]))
+                goto err;
+        listener_tick(listener);
+        if (!TEST_size_t_le(SSL_get_accept_connection_queue_len(listener)
+                    + ossl_dgram_conn_lookup_num_items(dl->pending_conns),
+                ACCEPT_CAP_TEST_LIMIT))
+            goto err;
+        OSSL_sleep(2);
+    }
+    if (!TEST_size_t_eq(SSL_get_accept_connection_queue_len(listener),
+            ACCEPT_CAP_TEST_LIMIT))
+        goto err;
+
+    testresult = 1;
+
+err:
+    SSL_free(accepted);
+    for (i = 0; i < 3; i++) {
+        SSL_free(clients[i]);
+        if (client_fds[i] >= 0)
+            BIO_closesocket(client_fds[i]);
+    }
+    SSL_free(listener);
+    BIO_ADDR_free(server_addr);
+    if (server_fd >= 0)
+        BIO_closesocket(server_fd);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return testresult;
+}
+
+/*
+ * Regression test: the demux free list must be bounded, so a transient
+ * flood does not raise the listener's retained memory for its lifetime. A
+ * parked connection's queue is filled to the cap, then freed; the released
+ * URXEs must not leave more than DEMUX_MAX_FREE_URXE cached, and a fresh
+ * handshake must still complete.
+ */
+static int test_dtls_listener_flood_then_handshake_int(int version)
+{
+    SSL_CTX *sctx = NULL, *cctx = NULL;
+    SSL *listener = NULL, *clientssl = NULL, *serverssl = NULL;
+    SSL *client2 = NULL, *serverssl2 = NULL;
+    BIO_ADDR *server_addr = NULL;
+    int server_fd = -1, client_fd = -1, client2_fd = -1;
+    DTLS_LISTENER *dl;
+    SSL_CONNECTION *sc;
+    unsigned char garbage[1200];
+    size_t queued, i;
+    int testresult = 0, k;
+    const size_t cap = OSSL_DTLS_RX_DEFAULT_MAX_QUEUED;
+    /* Fill the queue, then keep flooding across many more pump batches. */
+    const size_t flood = cap + 128;
+
+    memset(garbage, 0xA5, sizeof(garbage)); /* invalid content type */
+
+    if (!TEST_true(create_ssl_ctx_pair(NULL, DTLS_server_method(),
+            DTLS_client_method(), version, version,
+            &sctx, &cctx, cert, privkey)))
+        goto end;
+
+    if (!TEST_true(create_dtls_listener(sctx,
+            SSL_LISTENER_FLAG_SINGLE_THREAD,
+            &listener, &server_addr, &server_fd)))
+        goto end;
+
+    if (!TEST_true(create_dtls_client_for_addr(cctx, server_addr,
+            &clientssl, &client_fd)))
+        goto end;
+
+    dl = (DTLS_LISTENER *)listener;
+
+    /* Complete the cookie exchange and promotion, then park the connection. */
+    if (!drive_client_to_promotion(listener, clientssl, 1))
+        goto end;
+    if (!TEST_ptr(serverssl = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto end;
+
+    for (i = 0; i < flood; i++) {
+        /*
+         * Send a raw datagram from the client's own endpoint, bypassing its
+         * SSL object, so it is routed to the parked connection's queue.
+         */
+        if (!TEST_int_eq(BIO_write(SSL_get_rbio(clientssl), garbage,
+                             (int)sizeof(garbage)),
+                (int)sizeof(garbage)))
+            goto end;
+        listener_tick(listener);
+    }
+    /* Drain anything still in the kernel buffer. */
+    for (k = 0; k < 50; k++) {
+        listener_tick(listener);
+        OSSL_sleep(2);
+    }
+
+    /* The receive queue is exactly at its cap, not at the flood size. */
+    if (!TEST_ptr(sc = SSL_CONNECTION_FROM_SSL_ONLY(serverssl))
+        || !TEST_ptr(sc->listener_rx))
+        goto end;
+    queued = ossl_list_urxe_num(&sc->listener_rx->urxe_pending);
+    if (!TEST_size_t_eq(queued, cap))
+        goto end;
+
+    /* Freeing the parked connection releases its URXEs to the demux. */
+    SSL_free(serverssl);
+    serverssl = NULL;
+
+    /*
+     * The flood pushed cap URXEs through the free list, but the list is
+     * capped at release time: at most DEMUX_MAX_FREE_URXE may be cached.
+     */
+    if (!TEST_size_t_le(ossl_dgram_demux_get_free_list_len(dl->demux),
+            DEMUX_MAX_FREE_URXE))
+        goto end;
+
+    /* A fresh connection over the same listener must complete a handshake. */
+    if (!TEST_true(create_dtls_client_for_addr(cctx, server_addr,
+            &client2, &client2_fd)))
+        goto end;
+    if (!drive_client_to_promotion(listener, client2, 1))
+        goto end;
+    if (!TEST_ptr(serverssl2 = SSL_accept_connection(listener,
+                      SSL_ACCEPT_CONNECTION_NO_BLOCK)))
+        goto end;
+    if (!TEST_true(create_ssl_connection(serverssl2, client2,
+            SSL_ERROR_NONE)))
+        goto end;
+    if (!TEST_int_eq(SSL_version(serverssl2), version))
+        goto end;
+
+    testresult = 1;
+end:
+    SSL_free(serverssl);
+    SSL_free(serverssl2);
+    SSL_free(client2);
+    SSL_free(clientssl);
+    if (client2_fd >= 0)
+        BIO_closesocket(client2_fd);
+    if (client_fd >= 0)
+        BIO_closesocket(client_fd);
+    SSL_free(listener);
+    BIO_ADDR_free(server_addr);
+    if (server_fd >= 0)
+        BIO_closesocket(server_fd);
+    SSL_CTX_free(sctx);
+    SSL_CTX_free(cctx);
+    return testresult;
+}
+
+static int test_dtls_listener_flood_then_handshake(void)
+{
+    int ok = 1;
+
+#ifndef OPENSSL_NO_DTLS1_2
+    if (!test_dtls_listener_flood_then_handshake_int(DTLS1_2_VERSION))
+        ok = 0;
+#endif
+#ifndef OPENSSL_NO_DTLS1_3
+    if (!test_dtls_listener_flood_then_handshake_int(DTLS1_3_VERSION))
+        ok = 0;
+#endif
+    return ok;
+}
+#endif /* !OPENSSL_NO_DTLS1_2 || !OPENSSL_NO_DTLS1_3 */
 
 OPT_TEST_DECLARE_USAGE("certfile privkeyfile\n")
 
@@ -5974,6 +6549,9 @@ int setup_tests(void)
     /* Peer address tests */
     ADD_TEST(test_dtls_get_peer_addr_no_peer);
     ADD_TEST(test_dtls_get_peer_addr_listener);
+#if !defined(OPENSSL_NO_UNIX_SOCK) && !defined(OPENSSL_NO_DTLS1_3)
+    ADD_TEST(test_dtls_listener_cookie_hmac_long_addr);
+#endif
 
     /* Error handling and edge case tests */
     ADD_TEST(test_dtls_new_listener_null_ctx);
@@ -6061,6 +6639,21 @@ int setup_tests(void)
 #endif
     ADD_TEST(test_dtls_poll_conn_honours_retransmit_timer);
     ADD_TEST(test_dtls_timer_stopped_when_retransmits_exhausted);
+
+    /* Receive-queue bound regression test */
+#ifndef OPENSSL_NO_DTLS1_2
+    ADD_TEST(test_dtls_listener_rx_queue_drops_oldest);
+#endif
+#if !defined(OPENSSL_NO_DTLS1_2) || !defined(OPENSSL_NO_DTLS1_3)
+    /*
+     * Accept-queue bound regression tests; the first runs every enabled
+     * DTLS version, the NO_VALIDATE one runs a single version.
+     */
+    ADD_TEST(test_dtls_listener_accept_queue_capped);
+    ADD_TEST(test_dtls_listener_accept_queue_novalidate_capped);
+    /* Demux free-list bound regression test; runs every enabled version */
+    ADD_TEST(test_dtls_listener_flood_then_handshake);
+#endif
 
     return 1;
 }
