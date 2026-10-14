@@ -1,0 +1,13 @@
+#%PAM-1.0
+# POS's default stack, included by the services' files: local accounts
+# (pam_unix, /etc/shadow, yescrypt hashes) and a logind session.
+auth      required    pam_env.so
+auth      required    pam_unix.so try_first_pass nullok
+
+account   required    pam_unix.so
+
+password  required    pam_unix.so try_first_pass nullok shadow yescrypt
+
+session   required    pam_limits.so
+session   required    pam_unix.so
+-session  optional    pam_systemd.so

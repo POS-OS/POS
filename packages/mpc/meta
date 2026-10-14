@@ -1,4 +1,3 @@
-build-requires pos-link
-requires glibc gmp mpfr
-provides mpc-bootstrap
-obsoletes mpc-bootstrap
+# Built only in gcc's tree (packages/gcc meta with-sources), linked into the
+# compiler statically; nothing else uses it.
+kind source

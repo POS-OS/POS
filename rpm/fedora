@@ -74,3 +74,9 @@ which which
 procps procps-ng
 diffutils diffutils
 patch patch
+pos-integration fedora-release fedora-release-common fedora-release-identity-basic
+# pos-integration: the system is POS: /pos/lib/os-release, with pos-fedora's
+# /usr/lib/os-release and /etc/os-release links to it. Fedora's presets
+# (90-default, 99-default-disable) go with fedora-release; POS's are
+# pos-integration's 80-pos.preset and systemd's 90-systemd.preset. dnf's
+# release version is pos-fedora's system-release(releasever) (rpm.sh).

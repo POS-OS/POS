@@ -31,6 +31,8 @@
 set -euo pipefail
 
 base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck source=../buildsys/buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 builds=${base}/work/builds
 # shellcheck source=../buildsys/config.sh
 source "$base/buildsys/config.sh"
@@ -49,6 +51,7 @@ fi
 id=${id:-$(basename "$(readlink "${builds}/current")")}
 bdir=${builds}/${id}
 repo=${bdir}/rpm
+evr=$(rpm_evr "$bdir")
 root=${bdir}/rpm-root
 tb=pos-${id}-try
 
@@ -95,8 +98,8 @@ dnf_pos() {
   local -a args=()
   local a
   for a in "$@"; do
-    if [[ $a == pos || $a == pos-* ]] && [[ -f $repo/$a-$id-1.x86_64.rpm ]]; then
-      a=$(tb_path "$repo/$a-$id-1.x86_64.rpm")
+    if [[ $a == pos || $a == pos-* ]] && [[ -f $repo/$a-$evr.x86_64.rpm ]]; then
+      a=$(tb_path "$repo/$a-$evr.x86_64.rpm")
     fi
     args+=("$a")
   done
@@ -104,7 +107,7 @@ dnf_pos() {
 }
 
 need_repo() {
-  [[ -f $repo/pos-$id-1.x86_64.rpm ]] || {
+  [[ -f $repo/pos-$evr.x86_64.rpm ]] || {
     echo "no RPM packages in $bdir; run ./build rpm" >&2
     exit 1
   }

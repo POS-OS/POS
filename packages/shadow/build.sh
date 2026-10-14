@@ -33,6 +33,10 @@ for f in login chfn chsh groups; do
   rm -f "${dest_dir}${prefix}/bin/${f}"
 done
 rm -f "${dest_dir}${prefix}/sbin/nologin"
+# The PAM configuration is POS's (pos-integration), as is every service's.
+# shadow's includes files for programs util-linux provides (login, chfn,
+# chsh), with modules POS does not have.
+rm -r "${dest_dir}/etc/pam.d"
 # Man pages for those, and the ones man-pages provides (passwd.5, getspnam.3).
 # The git tree carries only DocBook sources; roff pages are generated at
 # release time and need xsltproc plus the DocBook toolchain (--enable-man),

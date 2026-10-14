@@ -10,6 +10,9 @@
 #   POS_BASE        the POS checkout
 #   POS_PACKAGE     the package being built
 #   POS_SRC_DIR     its source tree (src/<source>)
+#   POS_WITH_SRC_DIRS  further source trees (meta "with-sources"), as
+#                   <source>=<dir> words; pkg_sync_src copies each into
+#                   the build tree
 #   POS_BUILD_DIR   scratch build directory
 #   POS_DEST_DIR    staging directory; the package installs into $POS_DEST_DIR/pos
 #   POS_OUTPUTS     further packages this build produces (meta "outputs");
@@ -19,10 +22,10 @@
 #                   next to it, as with the staging directories
 #   POS_ENV_SCRIPTS packages in the resolved environment that set up the
 #                   build: pkg_setup sources packages/<name>/env.sh of each.
-#                   The compiler comes from the package providing it
-#                   (host-toolchain, gcc-bootstrap or gcc); linking against
-#                   /pos from the profile the recipe requires (pos-link or
-#                   pos-link-host).
+#                   The compiler comes from the package providing gcc (the
+#                   reference's gcc, or gcc-host, Fedora's, without a
+#                   reference); linking against /pos from the pos-link
+#                   profile.
 
 package=${POS_PACKAGE:?run recipes through buildsys/build.sh}
 
@@ -82,7 +85,7 @@ pkg_setup() {
 # Compiler and linker flags every package is built with (BUILD.md "Build
 # flags"): optimized with debug info, which pkg_finish splits off, and the
 # hardening Fedora and Arch build with. -fPIE and -fstack-protector-strong
-# are the POS compiler's defaults (gcc/pos-defaults.sh). env.sh files add
+# are the POS compiler's defaults (packages/gcc/build.sh). env.sh files add
 # to these; recipes whose own build sets flags (glibc, gcc) replace them
 # with pos_optflags.
 pos_optflags="-O2 -g -pipe"
@@ -103,8 +106,14 @@ pkg_output() {
   echo "$(dirname "$dest_dir")/$1"
 }
 
+# Copy the source into the build tree, and each further source into a
+# directory of it named after the source.
 pkg_sync_src() {
+  local w
   rsync -a --delete "$src_dir/" "$build_dir/"
+  for w in ${POS_WITH_SRC_DIRS:-}; do
+    rsync -a --delete "${w#*=}/" "$build_dir/${w%%=*}/"
+  done
 }
 
 
@@ -127,20 +136,40 @@ pkg_cleanup() {
 }
 
 # Move shipped /etc and /var files into the factory tree. Reject anything a
-# package tried to put in ${prefix}/etc or ${prefix}/var.
+# package tried to put in ${prefix}/etc or ${prefix}/var. A tmpfiles.d file
+# of the package (factory-<package>.conf) copies each into place where it
+# is missing (C lines), at boot and when an image is made.
 pkg_factory() {
-  local dest=${1:-$dest_dir} kind
+  local dest=${1:-$dest_dir} kind f
+  local factory=${dest}${prefix}/share/factory
+  local conf=${dest}${prefix}/lib/tmpfiles.d/factory-$(basename "$dest").conf
+  rm -f "$conf"
   for kind in etc var; do
     if [[ -d ${dest}${prefix}/${kind} ]]; then
       echo "${package}: installed into ${prefix}/${kind}; use ${kind} outside the prefix" >&2
       exit 1
     fi
     if [[ -d ${dest}/${kind} ]]; then
-      mkdir -p "${dest}${prefix}/share/factory"
-      rm -rf "${dest}${prefix}/share/factory/${kind}"
-      mv "${dest}/${kind}" "${dest}${prefix}/share/factory/${kind}"
+      mkdir -p "$factory"
+      rm -rf "${factory:?}/${kind}"
+      mv "${dest}/${kind}" "${factory}/${kind}"
     fi
   done
+  [[ -d $factory ]] || return 0
+  mkdir -p "$(dirname "$conf")"
+  # Files and links are copied; an empty directory (sudoers.d) is made
+  # with its mode, as the factory tree loses it with the empty ones. Group
+  # write is dropped unless sticky, as packaging does (rpm.sh, image.sh).
+  (cd "$factory" && find . \( -type f -o -type l \) -printf '%P\n' | sort) |
+    while read -r f; do
+      echo "C /$f - - - - ${prefix}/share/factory/$f"
+    done >"$conf"
+  (cd "$factory" && find . -mindepth 1 -type d -empty -printf '%m %P\n' | sort -k2) |
+    while read -r m f; do
+      ((8#$m & 01000)) || m=$(printf '%o' $((8#$m & ~020)))
+      echo "d /$f $m - - -"
+    done >>"$conf"
+  [[ -s $conf ]] || rm -f "$conf"
 }
 
 # A file belongs to one package: what an output holds is removed from the

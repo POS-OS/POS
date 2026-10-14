@@ -1,0 +1,6 @@
+# POS's choices of what is enabled, ahead of systemd's 90-systemd.preset
+# and of any other preset a system has (Fedora's 90-default.preset on a
+# system where POS is not the base disables networkd).
+enable systemd-networkd.service
+enable systemd-networkd-wait-online.service
+enable systemd-resolved.service

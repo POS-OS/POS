@@ -1,0 +1,12 @@
+#%PAM-1.0
+# su (util-linux). Root switches without a password.
+auth      sufficient  pam_rootok.so
+auth      include     system-auth
+
+account   sufficient  pam_rootok.so
+account   include     system-auth
+
+password  include     system-auth
+
+session   optional    pam_keyinit.so revoke
+session   include     system-auth

@@ -6,6 +6,8 @@
 set -euo pipefail
 
 base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck source=../buildsys/buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 builds=${base}/work/builds
 
 id=${1:-$(basename "$(readlink "${builds}/current")")}
@@ -13,7 +15,7 @@ bdir=${builds}/${id}
 
 archives=()
 for s in "${base}"/stages/*/; do
-  a=${bdir}/pos-$(basename "$s")-${id}.tar.zst
+  a=${bdir}/pos-$(basename "$s")-$(build_stem "$bdir").tar.zst
   [[ -f $a ]] && archives+=("$a")
 done
 if ((${#archives[@]} == 0)); then

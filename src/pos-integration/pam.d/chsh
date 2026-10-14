@@ -1,0 +1,10 @@
+#%PAM-1.0
+# chsh (util-linux): the user's password, or root.
+auth      sufficient  pam_rootok.so
+auth      include     system-auth
+
+account   include     system-auth
+
+password  include     system-auth
+
+session   include     system-auth

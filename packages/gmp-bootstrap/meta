@@ -1,4 +1,0 @@
-# Without libgmpxx: gcc does not need it, and libstdc++ is not built yet.
-source gmp
-build-requires pos-link-host
-requires glibc-bootstrap

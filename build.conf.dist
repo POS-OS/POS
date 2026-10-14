@@ -11,12 +11,12 @@
 # registry.fedoraproject.org/fedora:<release>.
 #tools-image registry.fedoraproject.org/fedora:44
 
-# Directory of reference builds (POS_REFERENCE_DIR), which ./build
-# reference stores builds in. No default: without it, builds start from
-# nothing (the bootstrap packages).
+# Directory of reference builds (POS_REFERENCE_DIR), the toolchain builds
+# ./build reference stores. No default: without it, only a toolchain build
+# can be made, with Fedora's compiler.
 #reference-dir /path/to/pos-references
 
-# Reference build a new build takes what it does not build from
-# (POS_REFERENCE): a build ID in reference-dir, or none to build from
-# nothing. Default: the one ./build reference marked last.
+# Reference build a new build takes the toolchain from (POS_REFERENCE): a
+# build ID in reference-dir, or none for a toolchain build with Fedora's
+# compiler. Default: the one ./build reference marked last.
 #reference none

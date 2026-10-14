@@ -1,3 +1,0 @@
-source zlib
-build-requires pos-link-host
-requires glibc-bootstrap

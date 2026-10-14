@@ -1,5 +1,6 @@
 # Kernel UAPI headers, from the subset of the kernel tree in src/linux
 # (make headers_install). The headers are needed while compiling only.
+pipeline toolchain
 source linux
 # fixdep, the one program the build compiles and runs, is built with
 # Fedora's compiler.

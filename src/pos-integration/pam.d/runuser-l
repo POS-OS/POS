@@ -1,0 +1,4 @@
+#%PAM-1.0
+# runuser -l (util-linux): as runuser.
+auth      include     runuser
+session   include     runuser

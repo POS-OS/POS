@@ -1,3 +1,0 @@
-source mpc
-build-requires pos-link-host
-requires glibc-bootstrap gmp-bootstrap mpfr-bootstrap

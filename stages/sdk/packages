@@ -4,10 +4,11 @@
 # linux-headers are required while compiling (glibc headers include <linux/errno.h>),
 # not to run the finished libraries.
 # gcc-runtime (libgcc_s, libstdc++), gmp, and mpfr are core-libs: programs
-# in the base link them. mpc is only needed to build gcc.
+# in the base link them. gcc has its own copies of gmp and mpfr, and mpc,
+# built in its tree (BUILD.md "Toolchain").
+# A pos build takes linux-headers, binutils and gcc from its reference.
 linux-headers
 binutils
-mpc
 gcc
 # Developer tools and documentation, moved here from the system stage
 # (BUILD.md "System stage", OS boundary).

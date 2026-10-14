@@ -1,0 +1,17 @@
+# A bootable system with POS as the base of an RPM system: container-dnf's
+# packages and Fedora's kernel, whose scriptlets install it with POS's
+# kernel-install (root/etc/kernel): dracut makes the initramfs, the boot
+# loader entry goes to /boot, which is the ESP when the system runs.
+# BUILD.md "Images".
+#
+# One RPM package per line. A name the build made an RPM of (pos,
+# pos-sdk, pos-fedora, pos-debuginfo) is installed from that file, anything
+# else from Fedora's repositories.
+
+pos
+pos-sdk
+pos-fedora
+dnf
+kernel-core
+kernel-modules
+dracut

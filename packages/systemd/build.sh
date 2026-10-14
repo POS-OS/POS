@@ -21,11 +21,14 @@ pkg_sync_src
 # (VENDORDIR/pam.d, packages/pam sets VENDORDIR=/pos/share/pam); the meson
 # default /pos/lib/pam.d is not on pam's search path.
 #
+# The boot loader (systemd-boot and the EFI stub) is built: bootctl installs
+# it from /pos/lib/systemd/boot/efi. It is made with pyelftools, a build
+# tool, so it needs no EFI library.
+#
 # Disabled: SysV compatibility (runlevel targets, legacy tmpfiles),
-# documentation (docbook toolchain), the boot loader (stages/boot builds
-# systemd-boot separately), and every feature whose library is not built
-# yet (cryptsetup, curl, idn2, gnutls, p11-kit, fido2, tpm2, qrencode,
-# microhttpd, xkbcommon, bpf, glib, lz4, selinux, apparmor, audit).
+# documentation (docbook toolchain), and every feature whose library is
+# not built yet (cryptsetup, curl, idn2, gnutls, p11-kit, fido2, tpm2,
+# qrencode, microhttpd, xkbcommon, bpf, glib, lz4, selinux, apparmor, audit).
 #
 # Note for tmpfiles: a C line without a source copies from /usr/share/factory,
 # which does not exist on POS. Lines shipped by POS give the source
@@ -57,7 +60,7 @@ meson setup "$build_dir/build" "$build_dir" \
       -Dhtml=disabled \
       -Dtests=false \
       -Dinstall-tests=false \
-      -Dbootloader=disabled \
+      -Dbootloader=enabled \
       -Dukify=disabled \
       -Dkernel-install=true \
       -Dseccomp=enabled \

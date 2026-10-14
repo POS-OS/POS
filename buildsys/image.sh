@@ -5,13 +5,16 @@
 #   image.sh <build dir> <image>
 #
 # images/<image>/layout names the stages and the root layout around /pos.
-# The archive is <build dir>/pos-image-<image>-<id>.tar.zst, owned by root.
+# The archive is <build dir>/pos-image-<image>-<stem>.tar.zst (stem:
+# buildinfo.sh), owned by root.
 # The tree is left at <build dir>/image/<image>.
 
 set -euo pipefail
 export LC_ALL=C
 
 base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck source=buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 bdir=${1:-}
 image=${2:-}
 
@@ -26,9 +29,9 @@ if [[ ! -f $layout ]]; then
   exit 1
 fi
 
-id=$(basename "$bdir")
+stem=$(build_stem "$bdir")
 root=${bdir}/image/${image}
-archive=${bdir}/pos-image-${image}-${id}.tar.zst
+archive=${bdir}/pos-image-${image}-${stem}.tar.zst
 
 rm -rf "$root"
 mkdir -p "$root"
@@ -37,7 +40,7 @@ while read -r kind path arg; do
   case $kind in
     ''|'#'*) continue ;;
     stage)
-      a=${bdir}/pos-${path}-${id}.tar.zst
+      a=${bdir}/pos-${path}-${stem}.tar.zst
       [[ -f $a ]] || { echo "stage $path is not assembled in $bdir" >&2; exit 1; }
       tar --zstd -xpf "$a" -C "$root"
       ;;
@@ -50,28 +53,16 @@ while read -r kind path arg; do
   esac
 done < "$layout"
 
-# Shipped defaults are copied into place, as the tmpfiles C lines would on
-# first boot (BUILD.md "Prefix").
-for d in etc var; do
-  if [[ -d $root/pos/share/factory/$d ]]; then
-    install -d -m 0755 "$root/$d"
-    cp -a "$root/pos/share/factory/$d/." "$root/$d/"
-  fi
-done
+# Shipped defaults, from the factory tree (BUILD.md "Prefix").
+"$base/buildsys/image-factory.sh" "$root"
 
 # Users and groups from the packages' sysusers.d, created by POS
 # systemd-sysusers run through the POS loader, so /pos need not be
-# installed where this runs. The files are named: systemd searches only
-# /usr/lib/sysusers.d, not /pos/lib/sysusers.d.
-shopt -s nullglob
-sysusers=("$root"/pos/lib/sysusers.d/*.conf)
-shopt -u nullglob
-if ((${#sysusers[@]})); then
-  SYSTEMD_LOG_LEVEL=warning "$root/pos/lib/ld-linux-x86-64.so.2" \
-    --library-path "$root/pos/lib:$root/pos/lib/systemd" \
-    "$root/pos/bin/systemd-sysusers" --root="$root" "${sysusers[@]}"
-  rm -f "$root/etc/.pwd.lock"
-fi
+# installed where this runs.
+SYSTEMD_LOG_LEVEL=warning "$root/pos/lib/ld-linux-x86-64.so.2" \
+  --library-path "$root/pos/lib:$root/pos/lib/systemd" \
+  "$root/pos/bin/systemd-sysusers" --root="$root"
+rm -f "$root/etc/.pwd.lock"
 
 # Nothing in the image is group-writable except the sticky directories
 # (/tmp). Build trees can carry group write from the umask or default ACLs

@@ -15,7 +15,8 @@ cd "$build_dir" || exit 1
 # Out-of-tree, as binutils requires. The tree also carries gdb; only the
 # binutils parts are built. No debuginfod: binutils cannot require
 # elfutils, which is built with the gcc that execs it; auto would link it
-# wherever elfutils happens to be in /pos.
+# wherever elfutils happens to be in /pos. The bundled zlib and no zstd,
+# as for gcc: the toolchain runs on glibc only (BUILD.md "Toolchain").
 "${src_dir}/configure" --prefix="$prefix" \
                        --libdir="${prefix}/lib" \
                        --sysconfdir="$sysconfdir" \
@@ -28,8 +29,7 @@ cd "$build_dir" || exit 1
                        --enable-new-dtags \
                        --enable-relro \
                        --enable-default-hash-style=gnu \
-                       --with-system-zlib \
-                       --with-zstd \
+                       --without-zstd \
                        --without-debuginfod \
                        --disable-gdb \
                        --disable-gdbserver \
@@ -42,7 +42,7 @@ cd "$build_dir" || exit 1
 # tooldir is where binutils puts the tools for a compiler of the target
 # (<prefix>/<target>/bin, hard links of /pos/bin's) and ld's reference
 # linker scripts. The POS compiler is given /pos/bin/as and ld
-# (gcc/pos-defaults.sh), and ld has its default scripts built in: with
+# (packages/gcc/build.sh), and ld has its default scripts built in: with
 # tooldir the prefix itself, there is no /pos/x86_64-pc-linux-gnu, and the
 # scripts are in /pos/lib/ldscripts.
 make -j"$nproc" tooldir="$prefix"

@@ -1,4 +1,0 @@
-# glibc for building the sdk compiler, built by the Fedora compiler.
-# No pos-link-host, as for glibc.
-source glibc
-build-requires host-gcc

@@ -1,0 +1,7 @@
+#%PAM-1.0
+# chpasswd (shadow): root sets passwords in bulk.
+auth      sufficient  pam_rootok.so
+
+account   required    pam_permit.so
+
+password  include     system-auth

@@ -1,4 +1,0 @@
-# Library only matters here; no gzip or xz support.
-source zstd
-build-requires pos-link-host
-requires glibc-bootstrap

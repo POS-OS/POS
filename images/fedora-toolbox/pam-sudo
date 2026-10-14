@@ -1,7 +1,0 @@
-#%PAM-1.0
-# The toolbox user has an empty password (nullok), as Fedora's
-# system-auth allows.
-auth     required pam_unix.so nullok
-account  required pam_unix.so
-session  required pam_limits.so
-session  required pam_unix.so

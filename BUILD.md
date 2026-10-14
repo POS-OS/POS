@@ -7,6 +7,8 @@ reaches through `flatpak-spawn --host` from inside a toolbox, as the
 (see "Build containers").
 
     $ ./build plan                 # what run would build, in order
+    $ ./build run --new --toolchain  # build the toolchain (see "Toolchain")
+    $ ./build reference            # store it as the reference of later builds
     $ ./build run                  # build and assemble every stage
     $ ./build run core-libs        # one stage
     $ ./build run zlib             # one package (and what it needs)
@@ -17,22 +19,80 @@ reaches through `flatpak-spawn --host` from inside a toolbox, as the
     $ devtools/try-rpm.sh          # try out the RPM packages
     $ ./build image container-dnf  # make an image of the current build again
     $ ./build image fedora-toolbox # POS as a toolbox image
-    $ ./build reference            # store the build as the reference of later ones
+    $ devtools/vm.sh               # boot the vm-dnf disk in a VM
+    $ devtools/vm.sh -c devtools/smoke.sh  # check it: boot, run the checks, power off
     $ devtools/compare-builds.sh <id> <id>  # what differs between two builds
 
 ## Builds
 A build has an ID (a timestamp) and keeps everything under
 `work/builds/<id>`: `dest/<package>` staging trees, `debug/<package>` debug
 info (see "Debug info"), `logs/<package>.log`, the stage archives
-`pos-<stage>-<id>.tar.zst` with their `pos-debug-<stage>-<id>.tar.zst`,
-the RPM packages in `rpm/`, and the image archives
-`pos-image-<image>-<id>.tar.zst`. `work/builds/current`
-points at the build that `run` continues. `run --new` starts another. A
+`pos-<stage>-<stem>.tar.zst` with their `pos-debug-<stage>-<stem>.tar.zst`,
+the RPM packages in `rpm/`, the image archives
+`pos-image-<image>-<stem>.tar.zst` and disks `pos-disk-<image>-<stem>.raw`,
+where `<stem>` is `<version>-<id>` (see "Build numbers"). `work/builds/current`
+points at the build that `run` continues. `run --new` starts another, a
+pos build, or a toolchain build with `--toolchain` (`info`: `pipeline`;
+see "Toolchain"). A
 package is built once per build; `./build rebuild <package>` drops it
 from the current build so the next `run` builds it again. Packages that were
-built against it are not rebuilt. Builds from before build containers
+built against it are not rebuilt. A package that a bootstrap package
+stands in for is rebuilt with what replaced the bootstrap package:
+`rebuild systemd util-linux`, since util-linux, built against systemd,
+otherwise takes util-linux-bootstrap's place in systemd's environment
+("systemd: needs systemd"). Builds from before build containers
 (their `info` has no `tools-image`) cannot be continued; `status`, `rpm`,
 `image` and `reference` still work on them.
+
+## Build numbers
+A build is identified by its ID, the timestamp it was created with. An OS
+build, one that ships, also gets a BUILD number: `VERSION` holds the
+number main's next numbered build gets. The project owners number a build
+with `./build tag`:
+
+1. `./build validate` checks the current build from what its producers
+   recorded. Every producer records what it made in `made/<name>`
+   (`package-<package>`, `stage-<stage>`, `rpm`, `image-<image>`): the
+   commit it was made from and whether the tree had uncommitted changes.
+   It drops its record and `complete` before it starts, so a failed one
+   leaves neither. A default `run` that finishes records `complete`;
+   `rebuild` drops the records of the dropped packages and of everything
+   made from packages.
+   The build is an OS build when it is a pos build with `complete`, every
+   record names its commit with a clean tree, and its BUILD (`VERSION` at
+   its commit) is above every `main-*` tag.
+2. The build's commit is tagged `main-<BUILD>`, an annotated tag with the
+   build ID, the reference and whether checks were skipped.
+3. `./build bump` commits `VERSION` with the next BUILD, as pos-bot. Run
+   it alone when `tag` failed after tagging.
+
+Checks belong to their producer. An image with `images/<image>/check`
+names a script that `devtools/vm.sh` runs in its booted disk (vm-dnf:
+`devtools/smoke.sh`); the image is recorded only when it passes. `run
+--no-checks` and `image --no-checks` skip checks and record the image
+`unchecked`, which `validate --unchecked` and `tag --unchecked` accept.
+
+Every build carries the numbers of `VERSION` at the commit it was created
+at (`info`: `build-number`, `update`, `version`), tagged or not: a tag
+changes no artifact. A release is not a renamed snapshot but a new build
+on its release line, whose `VERSION` also has `UPDATE`. The version is
+`<BUILD>` on main and `<BUILD>u<UPDATE>` on a release line, and names the
+artifacts with the build ID (`buildsys/buildinfo.sh`):
+
+* archives and disks: `pos-system-12-<id>.tar.zst`, `pos-system-12u3-<id>.tar.zst`;
+* RPM packages: version BUILD, release `<UPDATE>.<id>`, UPDATE 0 on main,
+  so an update sorts after the snapshot it was cut from (`pos-12-0.<id>`,
+  `pos-12-3.<id>`);
+* os-release (assembled into the stage that has it): `VERSION="12"` or
+  `"12 Update 3"`, `VERSION_ID=12`, `POS_BUILD`, `POS_UPDATE`,
+  `BUILD_ID=<id>`, and `PRETTY_NAME` with the version;
+* podman images: tagged `:<id>` as before, labelled `pos.version`.
+
+A build without `VERSION` at its commit is named by its ID alone.
+
+`tag` runs on main, with `VERSION` at HEAD still the build's BUILD. Every
+commit between two bumps carries the same BUILD; only the tagged one is
+that build. Neither command pushes.
 
 ## Settings
 Settings of `./build` are lines of `<key> <value>` in
@@ -48,7 +108,7 @@ an unknown key is an error.
 | `fedora-release` | `POS_FEDORA_RELEASE` | 44 |
 | `tools-image` | `POS_TOOLS_IMAGE` | `registry.fedoraproject.org/fedora:<release>` |
 | `reference-dir` | `POS_REFERENCE_DIR` | none: no reference store |
-| `reference` | `POS_REFERENCE` | the store's default (see "Reference builds"); `none` builds from nothing |
+| `reference` | `POS_REFERENCE` | the store's default (see "Reference builds"); `none`: a toolchain build with Fedora's compiler |
 
 ## Sources
 POS builds from upstream source, not from upstream releases, so it does
@@ -82,8 +142,9 @@ Prepared trees are kept in `work/sources/<source>/<key>`. The key is a hash
 of the committed source tree, its `.upstream`, the prepare recipe, the
 helpers, the `prepare-requires`, and the committed `src/gnulib` for
 packages that use gnulib. A tree is prepared once for each key and shared by
-every package built from that source (gcc, gcc-bootstrap,
-gcc-runtime-bootstrap) and by later builds. `run` prepares a source when it
+every package built from that source (util-linux, util-linux-bootstrap),
+every build that copies it into its own tree (gcc builds gmp, mpfr and mpc
+in its tree: `with-sources gmp mpfr mpc`), and later builds. `run` prepares a source when it
 first needs it; `./build prepare` does it ahead of time. Builds and
 prepare use the committed state of a source, so uncommitted changes under
 `src/<source>` stop them.
@@ -109,7 +170,7 @@ assembling the stages, archives every source its packages were built from,
 as recorded in their metadata: `pos-src-<source>-<key>.tar.zst`, the
 prepared tree or the committed tree. It also archives the build recipes as
 they are at `HEAD` (`buildsys`, `packages`, `stages`, `images`, `rpm`, the docs) as
-`pos-recipes-<id>.tar.zst`, with a warning if they changed since the build
+`pos-recipes-<stem>.tar.zst`, with a warning if they changed since the build
 started. Together they are the source of the build's archives. Whether a
 build writes them is chosen when it is created.
 
@@ -118,9 +179,9 @@ build writes them is chosen when it is created.
 what the package needs and what it gives (format in `buildsys/resolve.sh`):
 
     build-requires gcc pos-link
-    requires glibc zlib
-    provides zstd-bootstrap
-    obsoletes zstd-bootstrap
+    requires glibc ncurses readline
+    provides util-linux-bootstrap
+    obsoletes util-linux-bootstrap
     host-requires meson ninja-build
 
 `requires` are run-time requirements, installed along with the package
@@ -129,6 +190,10 @@ Every package provides its own name. When two available packages provide
 what is required, the one the other obsoletes is not used. `host-requires`
 are Fedora packages, in the build's tools image (see "Build containers");
 `packages/host-base` lists the tools every build gets.
+
+`pipeline toolchain` marks a package of the toolchain (see "Toolchain").
+`kind source` is a directory with only a prepare recipe, for a source
+other packages copy into their tree (mpc).
 
 `run` picks a package whose requirements are all available (built in this
 build, host packages, or from the reference build), builds it, and repeats
@@ -152,44 +217,60 @@ belongs to one package and the recipe can install everything first.
 Requirements an output provides are not part of its own build's
 environment: gcc requires gcc-runtime, which it produces.
 
-## Bootstrap packages
-There are three compilers, each a capability:
+## Toolchain
+The toolchain is gcc (with its gcc-runtime output), binutils and the
+kernel headers (linux-headers): the packages whose meta says `pipeline
+toolchain`. It is built apart from the rest, and a build is one of two
+kinds (`info`: `pipeline`):
 
-| capability | compiler | provided by |
-| --- | --- | --- |
-| `host-gcc` | Fedora's | `host-toolchain` (host package) |
-| `gcc-bootstrap` | a POS compiler in `/pos` | `gcc-bootstrap`, `gcc` |
-| `gcc` | the self-built sdk compiler | `gcc` |
+* A toolchain build (`run --new --toolchain`) builds the toolchain
+  packages, and what they need at run time, glibc. Its compiler is the
+  reference's gcc, or Fedora's without a reference. `./build reference`
+  stores it as the reference of later builds.
+* A pos build (`run --new`) builds every stage with the reference's
+  toolchain, and never builds a toolchain package. Its own packages are
+  all built from the checkout; the stages that list toolchain packages
+  (sdk, and core-libs' gcc-runtime) are assembled with the reference's.
+  A pos build needs a reference.
 
-`gcc-bootstrap` is gcc built by `host-gcc` against bootstrap packages:
-glibc, libstdc++, gmp, mpfr, mpc, zlib and zstd, which it runs on, and
-binutils, which it execs. Each `<name>-bootstrap` is built by `host-gcc`.
+A toolchain build without a reference uses Fedora's compiler, the
+`gcc-host` profile, which provides `gcc`: it runs Fedora's gcc with
+`/pos` ahead of `/usr` in its search (`gcc-host/env.sh`). gcc obsoletes
+`gcc-host`, and a host or profile package a reference package obsoletes is
+not available, so with a reference the reference's gcc is the compiler.
+From nothing, POS is built in three builds:
 
-`gcc-bootstrap` then builds the main packages of those same libraries. Each
-main package provides its bootstrap name as well and obsoletes the
-bootstrap package, so once it is built it replaces the bootstrap package
-everywhere, including under `gcc-bootstrap` itself. With all of them built,
-`gcc-bootstrap` builds `gcc` against them. `gcc` requires and provides
-`gcc-bootstrap` and obsoletes the `gcc-bootstrap` package.
+    $ POS_REFERENCE=none ./build run --new --toolchain  # by Fedora's gcc
+    $ ./build reference
+    $ ./build run --new --toolchain                     # by itself
+    $ ./build reference
+    $ ./build run --new                                 # the stages
 
-Every other package requires `gcc`, so it is built by the self-built
-compiler. The libraries `gcc` runs on cannot require `gcc`; they require
-`gcc-bootstrap`, which is the `gcc-bootstrap` package the first time.
-It is built from the same sources, so it generates the same code `gcc`
-would. Release stages list only main packages; the sdk ships `gcc`.
+The second toolchain build is the one released: its gcc is built by a POS
+gcc of the same sources. A toolchain update is a toolchain build with
+the current reference, stored as the next reference.
 
-The bootstrap packages are built by a build without a reference build
-(from nothing). With one, the reference's packages stand in for them
-(see "Reference builds"), and the chain starts at the main packages.
+The toolchain runs on glibc only. gcc builds gmp, mpfr and mpc in its tree
+(`with-sources`) and links them statically, as it does libstdc++ and libgcc
+(`--with-static-standard-libraries`); gcc and binutils use their bundled
+zlib and no zstd. The gcc recipe fails if a compiler program needs another
+library. So a pos build can change any library but glibc, whose ABI is
+backward compatible, under the toolchain it builds with: the reference's
+gcc runs on the pos build's glibc as soon as that is built. gmp and mpfr
+are also pos packages, built from the same sources for coreutils and
+gawk; mpc is only built in gcc's tree (`kind source`).
 
-The same arrangement breaks other cycles. `util-linux-bootstrap` is
-util-linux without libsystemd; systemd requires it, and util-linux requires
-systemd.
+gcc-runtime (libstdc++, libgcc_s) ships in core-libs but is an output of
+the gcc build, so the C++ headers a program is compiled with and the
+libstdc++ it runs on always come from the same gcc.
 
-A bootstrap package's `build.sh` sources the main recipe. Where the builds
-differ, it sets `configure_extra` first; the main recipe appends that to its
-configure arguments, where the later flag wins (gmp-bootstrap
-`--disable-cxx`, util-linux-bootstrap `--without-systemd`).
+`util-linux-bootstrap` breaks a cycle with a bootstrap package: it is
+util-linux without libsystemd; systemd requires it, and
+util-linux requires systemd. util-linux provides its name and obsoletes it,
+so once util-linux is built it replaces util-linux-bootstrap everywhere.
+Its `build.sh` sources the main recipe after setting `configure_extra`,
+which the main recipe appends to its configure arguments, where the later
+flag wins (`--without-systemd`).
 
 ## Build containers
 Every step of a build (preparing a source, building a package, making the
@@ -233,37 +314,35 @@ an installed `/pos` records what it contains.
 `./build clean` removes the tools image; a later `run` makes it again.
 
 ## Reference builds
-A build takes what it does not build from a reference build: a complete
-earlier build. Its packages are available to the resolver as
-`<name>@ref`: where no package of the build provides a capability, the
-reference's copy does, if the capability is a bootstrap one (one that a
-package another obsoletes provides) or if no target of the run provides it.
-So the reference's gcc stands in for gcc-bootstrap and no bootstrap package
-is built; a full build builds glibc and the libraries gcc runs on with the
-reference's gcc, then gcc, then the rest with it. A run of a single
-package builds only that package, against the reference.
+A reference build is a stored toolchain build. Its packages are available
+to the resolver as `<name>@ref`: where no package of the build provides a
+capability, the reference's copy does, if the capability is a stand-in one
+(one that a package another obsoletes provides: the reference's gcc stands
+in for `gcc-host`), or, in a pos build, if no target of the run provides
+it. A pos build does not build the toolchain packages, so they are always
+the reference's. A run of a single package builds only that package,
+against the reference.
 
 A reference package's own requirements are those it was built with (its
 recorded meta). They are met by this build's packages once built,
-otherwise by the reference's, targets or not: the reference's gcc requires
-glibc, and builds it. Until gmp, mpfr and mpc are built, their builds see
-the reference's copies, which the reference's gcc runs on.
+otherwise by the reference's, targets or not: the reference's gcc
+requires glibc, and builds it, running on the reference's glibc until
+then.
 
 `./build reference [<id>]` (default: the current build) stores a complete
-build in the reference store, the `reference-dir` setting, as
-`pos-ref-<id>.tar.zst`: its `info` and the staging trees of its packages,
-but for the bootstrap packages. It marks the build the store's `default`,
-the reference of new builds. A build records its reference in `info`
-(`reference`) and restores it from the store into `work/references/<id>`
-when it is not there. The store is a directory outside the checkout, so
-removing builds never removes a reference.
+toolchain build in the reference store, the `reference-dir` setting, as
+`pos-ref-<id>.tar.zst`: its `info` and the staging trees and debug info of
+its packages, the toolchain and glibc. It marks the build the store's
+`default`, the reference of new builds. A build records its reference in
+`info` (`reference`) and restores it from the store into
+`work/references/<id>` when it is not there. The store is a directory
+outside the checkout, so removing builds never removes a reference.
+References from before toolchain builds, complete pos builds, are refused.
 
-With no reference store, or `reference none`, a build starts from nothing:
-the bootstrap packages, built with Fedora's compiler (see "Bootstrap
-packages"). Comparing such a build with one made against a reference
-(`devtools/compare-builds.sh`: the files of each package and the libraries
-every ELF file links against) shows what a build environment leaked into
-a package.
+Comparing a pos build made with a toolchain built from nothing to one
+made with a later toolchain (`devtools/compare-builds.sh`: the files of
+each package and the libraries every ELF file links against) shows what
+the build environment leaked into a package.
 
 ## Build setup
 `pkg_setup` has no build strategy of its own. A package that changes how
@@ -271,24 +350,22 @@ others are built has an `env.sh`, and `pkg_setup` sources the `env.sh` of
 every package in the resolved requirements. What a build gets therefore
 follows from what it requires, never from what is found on disk:
 
-* `host-toolchain/env.sh`: the Fedora compiler.
-* `gcc/env.sh`: a POS compiler, `/pos/bin/gcc`, `g++` and `ld`.
-  `gcc-bootstrap/env.sh` sources it; both install to the same paths.
-* `pos-link/env.sh`: link against `/pos` with a POS compiler.
-* `pos-link-host/env.sh`: link against `/pos` with the Fedora compiler.
-  Sources `pos-link/env.sh` and puts `/pos` ahead of `/usr`.
+* `gcc/env.sh`: the POS compiler, `/pos/bin/gcc`, `g++` and `ld`.
+* `host-toolchain/env.sh` and `gcc-host/env.sh`: the Fedora compiler,
+  searching `/pos` ahead of `/usr` (`gcc-host`, standing in for gcc).
+* `pos-link/env.sh`: link against `/pos` with the build's compiler.
 
-`pos-link` and `pos-link-host` are profiles (`kind profile`): nothing is
-built or installed, they only carry the setup and its requirements
-(`gcc-bootstrap`, or `host-gcc` and `glibc-bootstrap`). Recipes
-build-require one of them, and packages built by the sdk compiler also require
-`gcc`. glibc, glibc-bootstrap and gcc-runtime-bootstrap require only
-the compiler (see "Core libs stage").
+`pos-link` and `gcc-host` are profiles (`kind profile`): nothing is built
+or installed, they only carry the setup and its requirements. Recipes
+build-require `gcc` and `pos-link`, which requires `gcc`. glibc requires
+only the compiler (see "Core libs stage"); linux-headers only
+`host-gcc`, for the one program its build runs.
 
 Requirements are what a build sees, but configure scripts also find what
-they were not asked to. gcc's run-time requirements are in every build
-that uses it, so an undeclared check for zlib or zstd finds the bootstrap
-copy. A package that links a library must require it.
+they were not asked to. gcc's run-time requirements (glibc, gcc-runtime,
+binutils, linux-headers) are in every build that uses it, and gcc-host's
+Fedora compiler falls back to the tools image's `/usr`. A package that
+links a library must require it.
 
 ## Build flags
 `pkg_setup` sets the flags every package is built with (`pkg_flags`), as
@@ -303,8 +380,9 @@ them:
   -Wl,--build-id=sha1`.
 * PIE and `-fstack-protector-strong` are the POS compiler's defaults
   (`--enable-default-pie --enable-default-ssp`), and it gives every link
-  a build ID (`--enable-linker-build-id`). Fedora's compiler, used for the
-  bootstrap packages, does both through its own defaults.
+  a build ID (`--enable-linker-build-id`). Fedora's compiler, used in a
+  toolchain build without a reference, does both through its own
+  defaults.
 
 meson builds use `--buildtype=plain` and cmake builds
 `-DCMAKE_BUILD_TYPE=None`, so these flags are the only ones; meson's
@@ -312,7 +390,7 @@ meson builds use `--buildtype=plain` and cmake builds
 errors (no `-Werror=format-security`): POS builds upstream's development
 branches.
 
-glibc and the gcc builds (gcc, gcc-bootstrap, gcc-runtime-bootstrap) keep
+glibc and gcc keep
 only `-O2 -g -pipe` (`pos_optflags`). glibc has its own hardening options
 and builds parts of itself without the stack protector; gcc derives the
 flags of its target libraries (libgcc, libstdc++) from `CFLAGS`. glibc
@@ -336,7 +414,7 @@ stripped with a warning in the log. Set-uid bits, modes and hard links are
 kept.
 
 The debug trees are not part of build roots. Each stage's is
-archived next to it as `pos-debug-<stage>-<id>.tar.zst`, which extracts
+archived next to it as `pos-debug-<stage>-<stem>.tar.zst`, which extracts
 on top of the stage into `/pos/lib/debug`, and `./build rpm` makes it the
 `pos-debuginfo` package. gdb looks in `/usr/lib/debug` unless told
 otherwise, and reads the directory before it loads the program:
@@ -364,8 +442,10 @@ There is no `/pos/etc` or `/pos/var`. glibc only rewrites those paths to
 `/etc` and `/var` when its prefix is `/usr`, so with `--prefix=/pos` the
 flags have to be passed explicitly. Files a package installs into `etc/` or
 `var/` at build time are shipped defaults, so `pkg_finish` moves them to
-`/pos/share/factory`. That is the tree `systemd-tmpfiles` `C` lines copy
-into place when a file is missing. glibc's nss_db helper is one of them: it
+`/pos/share/factory`, and write a tmpfiles.d file of the package,
+`/pos/lib/tmpfiles.d/factory-<package>.conf`, with a `C` line for each:
+`systemd-tmpfiles` copies a file into place where it is missing, at every
+boot and when an image is made (`buildsys/image-factory.sh`). glibc's nss_db helper is one of them: it
 is installed as `/var/db/Makefile` and generates the `.db` files there from
 `/etc`. Packages that have a separate vendor directory (pam's `vendordir`)
 ship their defaults there instead. `DESTDIR` is only the staging directory
@@ -385,17 +465,30 @@ outside `/pos` (`buildsys/build.sh` warns on it).
   `-Dpamconfdir=/pos/share/pam/pam.d`, the vendor directory POS pam reads;
   pam's other fallback, `/usr/lib/pam.d`, is hardcoded.
 * systemd-tmpfiles: a `C` line without a source argument copies from
-  `/usr/share/factory/`. That path is hardcoded. Either POS tmpfiles lines
-  give the source explicitly (`C /etc/foo - - - - /pos/share/factory/etc/foo`),
-  or the root layout has `/usr/share/factory -> /pos/share/factory`. The
-  symlink also makes third-party tmpfiles lines work unchanged.
+  `/usr/share/factory/`. That path is hardcoded. POS's lines give the
+  source explicitly (`C /etc/foo - - - - /pos/share/factory/etc/foo`); a
+  root layout can also have `/usr/share/factory -> /pos/share/factory`,
+  for third-party tmpfiles lines.
+* os-release: `/etc/os-release` and `/usr/lib/os-release` are where the
+  os-release specification and systemd (PID 1, hostnamed, nspawn, image
+  dissection) look. POS's is `/pos/lib/os-release` (pos-integration);
+  `/usr/lib/os-release` links to it, from an image's layout or from
+  pos-fedora, and `/etc/os-release` to that, as systemd's tmpfiles.d
+  `etc.conf` makes it.
 * Shebangs and the kernel: `#!/bin/sh`, `#!/bin/bash`, `#!/usr/bin/env`,
   `/sbin/init`, and `/lib64/ld-linux-x86-64.so.2` for third-party binaries
   are the same class. Which of these the root layout provides as symlinks
   into `/pos` is decided per image (see "Images"), and for a machine it
   interacts with keeping its own `/usr`. The container image has them all.
-* kmod: `-Ddistconfdir=/pos/lib` for `modprobe.d`/`depmod.d`;
-  `-Dmoduledir=/pos/lib/modules`.
+* systemd's drop-in directories (`tmpfiles.d`, `sysusers.d`, `sysctl.d`,
+  `modules-load.d`, `binfmt.d`, `udev/rules.d`, ...) and kernel-install's
+  plugins are searched in `/etc`, `/run`, `/usr/local/lib` and `/usr/lib`.
+  Its prepare recipe adds `/pos/lib` before `/usr/lib`, as units have the
+  prefix before `/usr/lib`, so packages outside POS (Fedora's on a
+  `pos-fedora` system, a kernel) are still read.
+* kmod: `-Ddistconfdir=/pos/lib` for `modprobe.d`/`depmod.d`. Modules stay
+  in `/usr/lib/modules`, where kernel packages install them: POS boots
+  kernels other projects build.
 * util-linux: `--enable-fs-paths-default=/pos/sbin` for mount helpers.
 * shadow: `--enable-vendordir=/pos/share/factory/etc`, so login.defs is found
   before `/etc/login.defs` has been created. pam's vendordir
@@ -411,7 +504,7 @@ outside `/pos` (`buildsys/build.sh` warns on it).
 ## Library directory
 `/pos/lib` is the only library directory: the native x86-64 libraries, the
 loader `/pos/lib/ld-linux-x86-64.so.2`, and the architecture-independent
-trees (`lib/systemd`, `lib/modules`, `lib/pos`). There is no `/pos/lib64`
+trees (`lib/systemd`, `lib/pos`). There is no `/pos/lib64`
 and no multilib. This is the Arch and LFS layout, not Fedora's, where
 `lib64` holds the 64-bit libraries and `lib` the 32-bit ones and the
 architecture-independent files.
@@ -419,15 +512,16 @@ architecture-independent files.
 The upstream defaults assume Fedora's layout in a few places, which the
 recipes override:
 
-* gcc: `t-linux64` names `../lib64` for `-m64`; `gcc_pos_patch_defaults`
-  makes it `../lib`, and gcc is `--disable-multilib`.
+* gcc: `t-linux64` names `../lib64` for `-m64`; the recipe makes it
+  `../lib`, and gcc is `--disable-multilib`.
 * glibc: the x86-64 `ldd-rewrite.sed` turns the loader list into the
   `lib64`/`lib`/`libx32` set; `ldd-rewrite-script = no` in configparms keeps
   `RTLDLIST` at the installed loader.
 * meson, cmake's GNUInstallDirs and Fedora's gcc see the build
   container's `/usr/lib64` and choose `lib64`; recipes built with them set libdir to
-  `/pos/lib`. gcc-bootstrap, built by Fedora's g++, is `--disable-libcc1`:
-  libcc1 installs into the building compiler's multilib directory.
+  `/pos/lib`. gcc is `--disable-libcc1`: libcc1 installs into the
+  building compiler's multilib directory, which Fedora's g++ answers with
+  `../lib64`.
 
 `pkg_record` stops a build that installs into `pos/lib64`, `pos/lib32` or
 `pos/libx32`; the POS loader would not find libraries there.
@@ -464,8 +558,8 @@ and `pos-link` adds only
 gcc drops the later duplicate, and libstdc++'s `#include_next <stdlib.h>`
 finds nothing after itself (ncurses then falls back to `<iostream.h>`).
 
-The bootstrap packages are built by the host toolchain. Only for those
-does `pos-link-host` add `-isystem /pos/include`,
+A toolchain build without a reference is built by the host toolchain.
+Only there does `gcc-host` add `-isystem /pos/include`,
 `C_INCLUDE_PATH`, `CPLUS_INCLUDE_PATH`, and `LIBRARY_PATH` to put `/pos`
 ahead of the host's `/usr`.
 
@@ -486,7 +580,7 @@ then `LD_LIBRARY_PATH`, then its cache, then its default directory
 would only repeat it. Library lookup is decided in one place: the cache and
 `/etc/pos/ld.so.conf`.
 
-glibc is built with gcc-bootstrap, which runs on glibc-bootstrap. This is the same arrangement
+glibc is built with the reference's gcc, which runs on the reference's glibc. This is the same arrangement
 as Fedora: the gcc in `/usr` was linked against the installed libc, and it
 compiles the glibc that will replace it. The compiler runs on the old libc.
 The new one is a build output. glibc passes `-nostdlib -nostartfiles` and
@@ -494,7 +588,8 @@ names the build-tree `libc.so` and `ld.so` on the link line, then appends
 its own `-Wl,-dynamic-linker=/pos/lib/ld-linux-x86-64.so.2`.
 
 The extra search path other packages get stays off for this build: glibc
-requires `gcc`, not `pos-link`.
+requires `gcc`, not `pos-link`. With `gcc-host` it does get `/pos` in its
+search; there `/pos` holds the kernel headers only, which glibc wants.
 `C_INCLUDE_PATH` and `LIBRARY_PATH` are not disabled by `-nostdinc` or
 `-nostdlib`, and the `/pos` link flags are not ones glibc puts on its own
 binaries. Fedora gets the header isolation from `--with-headers`, which
@@ -502,11 +597,7 @@ turns on `-nostdinc` and adds only the kernel headers. Our recipe does not
 pass that, because the kernel headers and the installed glibc headers share
 `/pos/include`.
 
-gcc-runtime-bootstrap skips the same search path. Its libgcc and libstdc++
-are built by the in-tree xgcc, which reads `LIBRARY_PATH` and would pick up
-the copies already installed in `/pos`.
-
-For the bootstrap packages, the host gcc is still
+In a toolchain build without a reference, the host gcc is still
 visible and keeps `/usr/include` and `/usr/lib64` in its default search
 after `/pos`. A configure check for a library that is not in `/pos` yet
 then finds the tools image's copy, and the binary fails to load because the
@@ -521,18 +612,17 @@ set it. glibc reads compiled locales only from its own prefix; other
 languages would be built the same way (`SUPPORTED-LOCALES`).
 
 gmp and mpfr are in this stage. coreutils `expr` and `factor`, and gawk
-`-M`, link them at run time. gmp `--enable-cxx` needs libstdc++. gcc runs on
-gmp, so gmp is built before gcc and its gcc-runtime output, and requires
-`gcc-runtime-bootstrap`; in the release gcc-runtime provides that name.
-gmp-bootstrap, for the compiler, is built `--disable-cxx`.
+`-M`, link them at run time. gmp `--enable-cxx` needs libstdc++, from the
+reference's gcc-runtime. The compiler has its own static copies (see
+"Toolchain").
 
 `run` assembles each stage it was given into one archive,
-`work/builds/<id>/pos-<stage>-<id>.tar.zst`, with a top-level `pos/`
+`work/builds/<id>/pos-<stage>-<stem>.tar.zst`, with a top-level `pos/`
 directory. The merged tree is left at `work/builds/<id>/assemble/<stage>/pos`.
 
 # Images
 An image is a root filesystem with POS installed, archived as
-`work/builds/<id>/pos-image-<image>-<id>.tar.zst` by `buildsys/image.sh`.
+`work/builds/<id>/pos-image-<image>-<stem>.tar.zst` by `buildsys/image.sh`.
 `images/<image>/layout` names the stages it holds and the root layout
 around `/pos`: directories with their modes, and the symlinks into `/pos`
 for the paths in "Prefix". `run` makes an image when it assembles every
@@ -540,13 +630,11 @@ stage the image holds, so a plain `run` makes them all. The tree is left at
 `work/builds/<id>/image/<image>`.
 
 The image extracts its stage archives into `/pos`, then fills what a first
-boot would: `/pos/share/factory/etc` and `var` are copied to `/etc` and
-`/var`, and `/etc/passwd`, `group`, `shadow` and `gshadow` are created by
+boot would: the factory tree's `C` lines are applied to `/etc` and
+`/var` by the image's own `systemd-tmpfiles` (`buildsys/image-factory.sh`), and `/etc/passwd`, `group`, `shadow` and `gshadow` are created by
 POS `systemd-sysusers --root` from `/pos/lib/sysusers.d`. That runs
 through the image's own loader, `pos/lib/ld-linux-x86-64.so.2
 --library-path ...`, so `/pos` need not be installed where `run` runs.
-systemd searches `/usr/lib/sysusers.d`, not `/pos/lib/sysusers.d` (its
-`CONF_PATHS` are fixed paths), so the files are named on the command line.
 Everything is owned by root in the archive. Group write, which build trees
 pick up from the build directory, is removed except on sticky directories.
 
@@ -559,7 +647,7 @@ it:
     $ podman import \
         --change 'ENV PATH=/pos/bin:/pos/sbin:/usr/local/bin:/usr/bin' \
         --change 'CMD ["/bin/bash"]' \
-        work/builds/<id>/pos-image-container-<id>.tar.zst pos:<id>
+        work/builds/<id>/pos-image-container-<stem>.tar.zst pos:<id>
 
 `devtools/import-image.sh [-i <image>] [<id>]` does that.
 
@@ -571,16 +659,27 @@ for `pos`, `pos-sdk`, `pos-fedora` and `pos-debuginfo`, and Fedora
 packages from Fedora's repositories, so making it needs the network. `run` makes such
 images when it assembles all stages, after making the RPM packages;
 `./build image [<image>...]` makes images of the
-current build again. Next to the archive, `pos-image-<image>-<id>.packages`
+current build again. Next to the archive, `pos-image-<image>-<stem>.packages`
 lists the packages installed. The tree is removed after archiving: its
 files belong to users the packages create, which only the container's
 root can remove.
 
 The root layout comes from Fedora's `filesystem` and `setup` packages and
 pos-fedora's links; users and groups are created by rpm from the packages'
-sysusers definitions. No package creates `/tmp` and `/dev` (on Fedora,
-systemd-tmpfiles and the image builders do), so image-dnf.sh makes them.
-`/etc/os-release` is Fedora's.
+sysusers definitions. No package creates `/tmp` (on Fedora,
+systemd-tmpfiles and the image builders do), so image-dnf.sh makes it.
+It applies the factory tree's `C` lines too (`buildsys/image-factory.sh`),
+as a boot would: dnf installs none of POS's files outside `/pos`.
+`/etc/os-release` is POS's (pos-fedora's links). Files in `images/<image>/root` are copied
+into the root before dnf runs, for configuration the packages' scriptlets
+read.
+
+The scriptlets run in the root as on a running system: dnf runs with
+`/proc`, `/sys` and `/dev` mounted in the root, and a file system of its
+own at `/boot`, as the ESP is when the system runs. The mounts are in a
+mount namespace of the step's container (which runs as the container's
+root, allowed to mount there) and are gone when dnf is done; what was
+written to `/boot` is kept in the tree.
 
 `images/container-dnf` is `pos`, `pos-sdk`, `pos-fedora` and `dnf`: a
 container with POS as its base in which `dnf install` adds Fedora
@@ -589,6 +688,47 @@ packages, which use POS for what it replaces:
     $ devtools/import-image.sh -i container-dnf
     $ podman run --rm -it pos-dnf
     # dnf install htop
+
+`images/vm-dnf` is container-dnf's packages and Fedora's kernel
+(`kernel-core`, `kernel-modules`) with `dracut`: a bootable system. POS
+boots kernels other projects build; Fedora's kernel package installs as
+on Fedora. Its scriptlet runs POS's kernel-install (`root/etc/kernel`:
+Type #1 boot loader entries, the kernel command line), whose plugins are
+POS's (depmod, the loader entry) and dracut's, which makes the initramfs
+from POS's systemd, udev and libraries (pos-fedora gives dracut their
+directories, see "RPM packages"). The kernel, initramfs and entry are in
+`/boot`.
+
+## Disks
+An image with `images/<image>/repart.d` (layout or dnf) also gets a disk,
+`pos-disk-<image>-<stem>.raw`, made by `buildsys/image-disk.sh` from the
+image's archive in a container of the tools image: the image's own
+systemd-boot is installed into `/boot` (POS `bootctl install`), then
+`systemd-repart` makes the partitions of `repart.d` and fills them from
+the tree, without loop devices or privileges. The partitions have the
+discoverable partition types, so systemd finds them by type: no fstab and
+no `root=` on the kernel command line. vm-dnf's disk is a 1G ESP (vfat)
+with `/boot`'s contents, mounted at `/boot`, and an 8G root (ext4) with
+the rest. The file is sparse.
+
+`devtools/vm.sh [-i <image>] [<id>]` boots a disk in qemu with KVM and
+UEFI firmware, in a container of `localhost/pos-vm` (Fedora with qemu
+and OVMF, made when missing), on the serial console of the terminal
+(Ctrl-a x quits). The disk is not changed: the VM writes to an overlay
+that is gone when it stops. Root is logged in on the console by a getty
+drop-in passed as a systemd credential, so no password is set. The VM
+has qemu's user mode network: dnf works inside.
+
+`vm.sh -c <script>` runs a script in the VM instead, without a console:
+the script and a unit that runs it go in as credentials (the unit as
+`systemd.extra-unit`, pulled in by `systemd.wants` on the command line),
+it runs as root once the boot transaction is done, writes to a second
+serial port that vm.sh prints, and the VM powers off. vm.sh exits with the
+script's status; the console goes to `logs/vm-<image>.log` of the build.
+`devtools/smoke.sh` is the check of a booted image: system state, failed
+units, module loading in the initrd and after, unit file modes, network
+and dnf, the PAM services and sudo. Its status is the number of failed
+checks.
 
 ## Images made with podman
 An image with `images/<image>/containerfile` is made by podman from
@@ -603,10 +743,9 @@ build ID and with the Fedora release.
 `localhost/pos-fedora-toolbox`, for working in a POS-based toolbox; builds
 do not use it. It adds what toolbox needs and nothing installs:
 toolbox puts its user in `wheel` with an empty password and runs sudo, so
-the image has `/etc/sudoers` (POS's, from `/pos/share/factory`), a
-`wheel` rule and a PAM configuration for sudo. POS has none for sudo,
-and pos-fedora stands in for Fedora's sudo and pam packages, which ship
-them.
+the image adds a `wheel` rule in `/etc/sudoers.d` to POS's `/etc/sudoers`
+(from the factory tree), which has none. sudo's PAM configuration is
+POS's (see "System integration").
 
 # RPM packages (experimental)
 `./build rpm [<stage>...]` makes the RPM packages of the current build's
@@ -617,7 +756,7 @@ when it makes an image with dnf (see "Images made with dnf"). dnf
 installs them as files, next to packages from Fedora's repositories:
 
     $ sudo dnf --installroot=<root> --releasever=44 --use-host-config \
-        install work/builds/<id>/rpm/pos{,-sdk,-fedora}-<id>-1.x86_64.rpm dnf
+        install work/builds/<id>/rpm/pos{,-sdk,-fedora}-<BUILD>-0.<id>.x86_64.rpm dnf
 
 * `pos` is the `/pos` tree of the stages other than sdk: the OS, as one
   package. It installs nothing outside `/pos` and provides nothing Fedora
@@ -671,7 +810,14 @@ Fedora packages installed next to POS put their libraries in `/usr/lib64`,
 which the POS loader does not search by default. pos-fedora ships
 `/etc/pos/ld.so.conf` (`/pos/lib`, then `/usr/lib64`) and runs
 `/pos/sbin/ldconfig` after every package that adds libraries there or in
-`/pos/lib`, so a later package's scriptlets find them.
+`/pos/lib`, so a later package's scriptlets find them. `/etc/ld.so.conf`,
+which Fedora's glibc ships, links to it: tools that read the library path
+there (dracut's) see the POS loader's.
+
+Fedora's dracut has Fedora's `/usr` directories of systemd, udev and dbus
+in its configuration (`01-dist.conf`). pos-fedora sets them to POS's
+(`/usr/lib/dracut/dracut.conf.d/50-pos.conf`, from `rpm/dracut.conf`), so
+an initramfs is made from POS's systemd.
 
 rpmbuild's defaults are for Fedora's `/usr`, and both specs turn them off:
 automatic dependencies (they would make `pos` provide `libc.so.6()(64bit)`
@@ -683,16 +829,18 @@ removed as in images; set-uid bits are kept. `License` is `NOASSERTION`:
 package metadata records no license yet. No source RPMs are made;
 `--source-archives` covers the sources.
 
-Not covered yet: POS systemd reads units from `/pos/lib/systemd`, not the
-`/usr/lib/systemd` Fedora packages install into, and the POS compiler does
-not search `/usr/include`, so Fedora `-devel` packages and the compiler are
-not replaced.
+POS systemd reads units and drop-ins from `/pos/lib` and from `/usr/lib`,
+where Fedora packages install them (see "Prefix"); generators only from
+`/pos/lib/systemd`. Not covered yet: the POS compiler does not search
+`/usr/include`, so Fedora `-devel` packages and the compiler are not
+replaced.
 
 # SDK
 `stages/sdk` is the compiler, the assembler and linker, and the kernel UAPI
-headers (linux-headers, binutils, mpc, gcc), plus developer tools moved out
-of the system stage (diffutils, patch, man-pages). gmp and mpfr are
-core-libs; mpc is only needed to build gcc. The sdk is a component POS
+headers (linux-headers, binutils, gcc), plus developer tools moved out
+of the system stage (diffutils, patch, man-pages). The first three are
+the toolchain, built by toolchain builds (see "Toolchain"); a pos build
+assembles the stage with its reference's. The sdk is a component POS
 ships, so it installs under `/pos` like the base system. A base system
 image does not include it; the builds of other packages require it.
 The headers are needed only while compiling: glibc's `errno.h` includes
@@ -716,10 +864,9 @@ searches `/usr/lib64` on its own. binutils is configured
 The compiler's own programs (cc1, cc1plus, lto1) are ordinary `/pos`
 binaries, built without gcc's own staged bootstrap (`--disable-bootstrap`)
 with the usual `/pos` link flags, running under the POS loader against
-`/pos` glibc and `libstdc++.so.6`. gcc-bootstrap is built by the host g++
-against the bootstrap packages; host g++ 16 linking the libstdc++ built
-from gcc 17 sources is the compatible direction. gcc is built by
-gcc-bootstrap against the main packages. gcc's
+`/pos` glibc alone: gmp, mpfr, mpc, libstdc++ and libgcc are linked in
+statically (see "Toolchain"). Built by Fedora's g++, that is Fedora's
+`libstdc++.a` (`libstdc++-static`, which `gcc-host` installs). gcc's
 top-level configure derives `CFLAGS_FOR_TARGET` from `CFLAGS`, which the
 gcc recipes set to `-O2 -g -pipe` only (see "Build flags"), so the
 hardening flags do not reach the target libraries; those are built by the
@@ -738,18 +885,16 @@ directory `lib/gcc/<target>/<version>` (crt files, `libgcc.a`, `unwind.h`,
 unversioned `lib*.so` names the linker looks up, `libgomp.spec` and
 `libstdc++.modules.json`. The `.la` files are deleted, as Fedora does.
 
-gcc-bootstrap cannot work that way. It is linked by Fedora's g++ and needs
-a libstdc++ in `/pos` while it is built, before it could produce one.
-`gcc-runtime-bootstrap` builds the libraries alone first, as the LFS
-"Libstdc++ from GCC" step does (plus libgcc and libatomic).
 The compiler searches `/pos/include` as its system header directory, so gcc
 requires linux-headers even though they are not part of the core-libs
 archive.
 
-The sdk archive ships gcc, the second build. A third, gcc built by itself,
-should produce the same compiler and is not done; comparing the two would
-be the check gcc's own `make bootstrap` does. gmp is `--enable-fat` because
-the archive is installed on other machines.
+The sdk archive ships the gcc of the reference, a toolchain build made
+with the previous toolchain. Two toolchain builds in a row from the same
+sources should produce the same compiler; comparing them would be the
+check gcc's own `make bootstrap` does. The pos package gmp is
+`--enable-fat` because the archive is installed on other machines; gcc's
+copy is built for gcc's own host triplet, generic x86-64.
 
 
 # System stage
@@ -810,9 +955,32 @@ libsystemd (journal output for logger/lslogins). util-linux-bootstrap,
 after systemd `--with-systemd`. shadow and dbus require systemd so their
 logind and sd_notify integration is on.
 
-## Still missing for a bootable system
-Upstream cronie and logrotate install no systemd units and no default
-`logrotate.conf`; `run-parts` has no provider. These belong in a POS-owned
-integration package (units, tmpfiles.d lines pointing at the factory tree,
-sysusers.d), which does not exist yet. The root layout (symlinks above,
-`/etc` seeding from the factory tree) is the other missing piece.
+## System integration
+`pos-integration` is POS's own package for the files that make the
+packages one system and that no upstream ships. Its source is
+`src/pos-integration`, a POS-owned tree (no upstream, so `get-latest.sh`
+skips it); like any source, it is built from the committed tree. So far it
+holds POS's PAM configuration: `system-auth`, the stack services include
+(local accounts with `pam_unix`, a logind session with `pam_systemd`), a
+file for every PAM service in POS (util-linux's login, su, runuser, chfn
+and chsh, shadow's passwd, chpasswd and newusers, sudo, cronie's crond;
+systemd installs its own), and `other`, which denies the rest. It is
+installed into pam's vendor directory `/pos/share/pam/pam.d`, so it
+applies without being copied to `/etc`, and `/etc/pam.d` overrides it per
+service. shadow's and cronie's own files are not installed (shadow's are
+for programs util-linux provides, with modules POS does not have).
+
+It also holds the system's identity, `/pos/lib/os-release` (`ID=pos`;
+see "Prefix"), and POS's systemd presets, `80-pos.preset`: networkd,
+networkd-wait-online and resolved are enabled, ahead of systemd's
+`90-systemd.preset` and of any preset a system adds. A system with POS as
+its base is POS: pos-fedora stands in for Fedora's `fedora-release`
+packages (`rpm/fedora`), with their provides (dnf's
+`system-release(releasever)`), so Fedora's identity and presets are not
+installed.
+
+Still missing for a bootable system: upstream cronie and logrotate install
+no systemd units and no default `logrotate.conf`; `run-parts` has no
+provider. These belong in pos-integration too (units, sysusers.d). The
+policy for units no preset names is systemd's default, enable; Fedora's
+`99-default-disable.preset` is not there.

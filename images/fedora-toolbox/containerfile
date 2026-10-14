@@ -11,13 +11,10 @@ LABEL com.github.containers.toolbox="true" \
       usage="This image is meant to be used with the toolbox command" \
       summary="Base image for creating toolbox containers"
 
-# toolbox runs sudo for its user. Nothing installs /etc/sudoers and the
-# PAM configuration: POS's sudoers is in /pos/share/factory, POS has no PAM
-# configuration for sudo, and pos-fedora stands in for Fedora's sudo and
-# pam packages, which have them.
+# toolbox runs sudo for its user, whom it puts in wheel. POS's
+# /etc/sudoers (from the factory tree) has no wheel rule; this adds one.
+# sudo's PAM configuration is POS's (pos-integration).
 COPY sudoers-toolbox /etc/sudoers.d/toolbox
-COPY pam-sudo /etc/pam.d/sudo
-RUN install -m 0440 /pos/share/factory/etc/sudoers /etc/sudoers && \
-    chmod 0440 /etc/sudoers.d/toolbox && chmod 0644 /etc/pam.d/sudo
+RUN chmod 0440 /etc/sudoers.d/toolbox
 
 CMD /pos/bin/bash

@@ -7,14 +7,16 @@ require_container
 pkg_setup
 
 # kmod searches /usr/lib/{modprobe,depmod}.d by default; distconfdir points
-# that at the prefix. Modules live under /pos/lib/modules.
+# that at the prefix. Modules stay in /usr/lib/modules: POS boots kernels
+# other projects build, and their packages install modules there (as
+# systemd's kernel-install expects).
 meson setup "$build_dir" "$src_dir" \
       --prefix="$prefix" \
       --libdir=lib \
       --sysconfdir="$sysconfdir" \
       --buildtype=plain \
       -Ddistconfdir="${prefix}/lib" \
-      -Dmoduledir="${prefix}/lib/modules" \
+      -Dmoduledir=/usr/lib/modules \
       -Dopenssl=enabled \
       -Dmbedtls=disabled \
       -Dzlib=enabled \

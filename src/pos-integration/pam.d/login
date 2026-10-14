@@ -1,0 +1,12 @@
+#%PAM-1.0
+# Console login (util-linux login, agetty).
+auth      requisite   pam_nologin.so
+auth      include     system-auth
+
+account   include     system-auth
+
+password  include     system-auth
+
+session   required    pam_loginuid.so
+session   optional    pam_keyinit.so force revoke
+session   include     system-auth

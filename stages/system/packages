@@ -25,6 +25,8 @@ file
 which
 # Process tools: ps, top, free, pgrep, sysctl, watch, w, uptime.
 procps
+# POS's own integration: the default PAM stack.
+pos-integration
 # Moved to stages/sdk (developer material): diffutils, patch, man-pages.
 # Deferred for later:
 #man-db       page viewer; needs groff, gdbm, libpipeline for that alone

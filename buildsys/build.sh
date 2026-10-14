@@ -18,10 +18,16 @@
 # Fedora packages every step declares, made when the build is created. A
 # step sees that image and the paths it is given, nothing else of the host.
 # A package build gets a /pos of exactly its resolved environment, composed
-# for it and mounted read-only. What the build does not build comes from
-# its reference build (work/references/<ref>, restored from the reference
-# store) or, without one, from the bootstrap packages. podman runs on the
-# host; from inside a toolbox through flatpak-spawn.
+# for it and mounted read-only.
+#
+# A build is a toolchain build or a pos build (resolve.sh). The toolchain
+# (gcc, binutils, the kernel headers) is built by toolchain builds, with
+# the toolchain of a reference build, a stored toolchain build
+# (work/references/<ref>, restored from the reference store), or Fedora's
+# without one. A pos build builds the rest with its reference's toolchain,
+# and assembles the stages with the reference's toolchain packages in
+# them. podman runs on the host; from inside a toolbox through
+# flatpak-spawn.
 
 set -euo pipefail
 
@@ -30,8 +36,13 @@ base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
 source "$base/buildsys/resolve.sh"
 # shellcheck source=config.sh
 source "$base/buildsys/config.sh"
+# shellcheck source=buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 
 builds=$base/work/builds
+CHECKS=yes
+# Who commits VERSION bumps, as the source syncs are committed.
+bot_name=pos-bot bot_email=pos-bot@devzero.dk
 sources=$base/work/sources
 refs=$base/work/references
 fedora_release=$(config fedora-release)
@@ -40,32 +51,42 @@ export LC_ALL=C
 
 usage() {
   cat >&2 <<EOF
-usage: ./build plan [--new] [<target>...]      print what run would build, in order
-       ./build run [--new [--source-archives]] [<target>...]
+usage: ./build plan [--new [--toolchain]] [<target>...]
+                                               print what run would build, in order
+       ./build run [--new [--toolchain] [--source-archives]] [--no-checks] [<target>...]
                                                build the targets, then assemble stage
                                                archives and images
        ./build prepare [<target>...]           prepare the sources of the targets now
        ./build rebuild <package>...            drop packages from the current build
        ./build rpm [<stage>...]                make RPM packages of the current build
-       ./build image [<image>...]              make images of the current build again
+       ./build image [--no-checks] [<image>...]
+                                               make images of the current build again
        ./build status                          show the current build
-       ./build reference [<id>]                store a complete build as the
-                                               default reference
+       ./build reference [<id>]                store a complete toolchain build as
+                                               the default reference
        ./build clean [<id>]                    remove the tools image of a build
+       ./build validate [--unchecked] [<id>]   check that a build is an OS build
+       ./build tag [--unchecked]               number the current build: validate it,
+                                               tag its commit main-<BUILD>, then bump
+       ./build bump                            commit VERSION with the next BUILD
 
 A target is a stage (stages/<stage>/packages) or a package. The default is
-every stage. run continues the current build; --new starts another. An
+every stage. run continues the current build; --new starts another, a
+toolchain build with --toolchain. A toolchain build builds the toolchain
+packages (meta: pipeline toolchain) and what they need; a pos build
+builds the rest, and takes the toolchain from its reference. An
 image (images/<image>/layout) is made when run assembles all its stages;
 one made with dnf (images/<image>/packages) when run assembles all
 stages, after the RPM packages; one made with podman
 (images/<image>/containerfile) after the image it is made from.
 --source-archives makes the new build also write an archive of every
 source it built from (pos-src-<source>-<key>.tar.zst) and of the build
-recipes (pos-recipes-<id>.tar.zst).
+recipes (pos-recipes-<stem>.tar.zst).
 
-A new build takes what it does not build from a reference build, by
-default the one reference marked last, or builds the bootstrap packages
-without one. Settings (build.conf.dist) are read from
+A new build takes the toolchain from a reference build, a toolchain build,
+by default the one reference marked last. A toolchain build without one
+(reference none) is built by Fedora's compiler; a pos build needs one.
+Settings (build.conf.dist) are read from
 $build_config; an environment variable overrides one:
   fedora-release  POS_FEDORA_RELEASE  the Fedora release (default 44)
   tools-image     POS_TOOLS_IMAGE     the image tools are installed on
@@ -102,14 +123,16 @@ host_podman() {
 
 # The Fedora packages of the tools image: the host-requires and
 # prepare-requires of every package, so any step of the run finds what it
-# declares, and rpm-build for the RPM packages (buildsys/rpm.sh).
+# declares, rpm-build for the RPM packages (buildsys/rpm.sh), and
+# systemd-repart and the tools it makes file systems with, for disks
+# (buildsys/image-disk.sh).
 tools_packages() {
   local p
   {
     for p in "${PKGS[@]}"; do
       echo ${HREQ[$p]} ${PREQ[$p]}
     done
-    echo rpm-build
+    echo rpm-build systemd-standalone-repart dosfstools mtools e2fsprogs
   } | xargs -n1 | sort -u
 }
 
@@ -184,11 +207,14 @@ reference_restore() {
 }
 
 # The packages of a reference the resolver may use, with the requirements
-# they were built with (resolve.sh: REF, REF_REQ).
+# they were built with (resolve.sh: REF, REF_REQ). A reference is a
+# toolchain build.
 load_reference() {
   local ref=$1 meta p
   REF=() REF_REQ=()
   [[ $ref != none ]] || return 0
+  [[ $(awk '$1 == "pipeline" {print $2}' "$refs/$ref/info") == toolchain ]] ||
+    die "reference $ref is not a toolchain build; make one with: POS_REFERENCE=none ./build run --new --toolchain"
   for meta in "$refs/$ref"/dest/*/pos/lib/pos/packages/*/meta; do
     [[ -f $meta ]] || continue
     p=$(basename "$(dirname "$meta")")
@@ -261,10 +287,12 @@ current_id() {
 
 # Writes progress to stderr; the ID is the output.
 build_new() {
-  local archives=${1:-no} ref from
+  local archives=$1 ref from
   id=$(date +%Y%m%d%H%M)
   [[ ! -e $builds/$id ]] || die "build $id already exists; wait a minute"
   ref=$(reference_choose)
+  [[ $ref != none || $PIPELINE == toolchain ]] ||
+    die "a pos build takes the toolchain from a reference; make one with: POS_REFERENCE=none ./build run --new --toolchain"
   reference_restore "$ref"
   from=$(tools_base)
   bdir=$builds/$id
@@ -272,12 +300,14 @@ build_new() {
   tools_build "$from"
   {
     echo "id $id"
+    echo "pipeline $PIPELINE"
     echo "fedora $fedora_release"
     echo "tools-base $from"
     echo "tools-image localhost/pos-tools:$id"
     echo "reference $ref"
     echo "branch $(git -C "$base" rev-parse --abbrev-ref HEAD)"
-    echo "commit $(git -C "$base" rev-parse HEAD)"
+    tree_state | awk '{print "commit", $1; print "tree", $2}'
+    version_info HEAD
     echo "started $(date -u +%FT%TZ)"
     echo "source-archives $archives"
   } >"$builds/$id/info"
@@ -286,7 +316,48 @@ build_new() {
 }
 
 build_info() {
-  awk -v k="$1" '$1 == k {print $2}' "$bdir/info"
+  info_get "$bdir" "$1"
+}
+
+# The commit the checkout is at, and clean or dirty: tracked files that
+# differ from it, or files not added yet where the build reads its
+# instructions. Recorded for the build, each package and each step made,
+# so validate can tell that a build was made from one commit.
+tree_state() {
+  local dirty
+  dirty=$(git -C "$base" --no-optional-locks status --porcelain --untracked-files=no
+          git -C "$base" --no-optional-locks status --porcelain -- VERSION buildsys packages stages images rpm devtools)
+  if [[ -n $dirty ]]; then
+    echo "$(git -C "$base" rev-parse HEAD) dirty"
+  else
+    echo "$(git -C "$base" rev-parse HEAD) clean"
+  fi
+}
+
+# Each producer of a build records what it made, in made/<name>
+# (package-<package>, stage-<stage>, rpm, image-<image>), with the checkout
+# it made it from (tree_state), and "unchecked" when its checks were
+# skipped. A producer drops its record, and complete, before it starts
+# (step_start), so a failed one leaves none. A default run that finishes
+# records complete. rebuild drops the dropped packages' records and
+# everything made from packages. validate reads only these records.
+step_start() {
+  rm -f "$bdir/made/$1" "$bdir/made/complete"
+}
+
+step_made() {
+  mkdir -p "$bdir/made"
+  echo "$(tree_state)${2:+ $2}" >"$bdir/made/$1"
+}
+
+# Load the build in bdir: its pipeline (pos for builds from before
+# pipelines), what it has built and its reference.
+build_load() {
+  PIPELINE=$(build_info pipeline)
+  PIPELINE=${PIPELINE:-pos}
+  load_built
+  reference_restore "$(build_reference)"
+  load_reference "$(build_reference)"
 }
 
 # The committed state of a source: builds and archives must match a commit.
@@ -369,7 +440,7 @@ load_built() {
 # the package, so a /pos tree records what it contains. The meta file is
 # written last: its presence marks the package built.
 pkg_record() {
-  local p=$1 dest=$bdir/dest/$1 dir extra
+  local p=$1 dest=$bdir/dest/$1 dir extra s
   [[ -d $dest/pos ]] || die "$p: nothing installed into $dest/pos"
   extra=$(find "$dest" -mindepth 1 -maxdepth 1 ! -name pos -print)
   if [[ -n $extra ]]; then
@@ -388,12 +459,16 @@ pkg_record() {
     sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$base/packages/$p/meta"
     echo "build $id"
     echo "build-source ${SRC[$(build_of "$p")]} ${SOURCE_ID:-}"
+    for s in "${WITH_SOURCE_IDS[@]}"; do
+      echo "build-with-source $s"
+    done
     echo "build-env ${ENV[*]}"
     echo "build-tools $TOOLS_ID"
     echo "build-reference $(build_reference)"
     echo "built $(date -u +%FT%TZ)"
   } >"$dir/meta.tmp"
   mv "$dir/meta.tmp" "$dir/meta"
+  step_made "package-$p"
 }
 
 # The staging tree of a package in the environment: this build's, or the
@@ -427,8 +502,9 @@ root_compose() {
 # the image and what it is given: ro:<path> and rw:<path> mount a path at
 # its host path, read-only or read-write, and pos:<path> mounts a composed
 # root as /pos, read-only. The user is the caller and there is no network,
-# unless given net (network) or root (the container's root, which is the
-# caller outside it).
+# unless given net (network) or root: the container's root, which is the
+# caller outside it, allowed to mount in the container's own namespaces
+# (SYS_ADMIN of rootless podman covers its user namespace only).
 step_run() {
   local name=$1 a h net=--network=none user=--userns=keep-id
   local -a mounts=()
@@ -439,7 +515,7 @@ step_run() {
     h=$(host_path "${a#*:}")
     case $a in
       net) net= ;;
-      root) user= ;;
+      root) user=--cap-add=SYS_ADMIN ;;
       ro:*) mounts+=(-v "$h:$h:ro") ;;
       rw:*) mounts+=(-v "$h:$h") ;;
       pos:*) mounts+=(-v "$h:/pos:ro") ;;
@@ -453,34 +529,49 @@ step_run() {
     "$(build_info tools-image)" "$@"
 }
 
+# The tree a source is built from, and its identity for the package
+# metadata and the source archives: the prepared tree's key, or the
+# committed tree. Sets SOURCE_DIR and SOURCE_KEY.
+source_of() {
+  local s=$1
+  SOURCE_DIR=$base/src/$s
+  if has_prepare "$s"; then
+    prepare_source "$s"
+    SOURCE_DIR=$PREPARED
+    SOURCE_KEY=$(basename "$PREPARED")
+  elif [[ -d $base/src/$s ]]; then
+    SOURCE_KEY=$(source_tree "$s")
+  else
+    SOURCE_KEY=
+  fi
+}
+
 build_one() {
   local p=$1 q scripts log root
   env_of "$p" || die "$p: unresolved: ${MISSING[*]}"
   scripts=$(env_scripts | xargs)
   log=$bdir/logs/$p.log
   root=$bdir/roots/$p
-  local hbase hbdir src_dir s=${SRC[$p]}
+  local hbase hbdir src_dir s with_dirs=
   hbase=$(host_path "$base")
   hbdir=$(host_path "$bdir")
-  # The source a package is built from, and its identity for the package
-  # metadata and the source archives: the prepared tree's key, or the
-  # committed tree.
-  if has_prepare "$s"; then
-    prepare_source "$s"
-    src_dir=$PREPARED
-    SOURCE_ID=$(basename "$PREPARED")
-  elif [[ -d $base/src/$s ]]; then
-    src_dir=$base/src/$s
-    SOURCE_ID=$(source_tree "$s")
-  else
-    src_dir=$base/src/$s
-    SOURCE_ID=
-  fi
-
+  for q in "$p" ${OUTS[$p]}; do
+    step_start "package-$q"
+  done
+  source_of "${SRC[$p]}"
+  src_dir=$SOURCE_DIR
+  SOURCE_ID=$SOURCE_KEY
   # The package's own inputs: the recipes (they source each other's),
-  # its source tree, and the build's build, dest and debug directories.
+  # its source trees, and the build's build, dest and debug directories.
   local -a mounts=(pos:"$root" ro:"$base/buildsys" ro:"$base/packages")
   [[ ! -d $src_dir ]] || mounts+=(ro:"$src_dir")
+  WITH_SOURCE_IDS=()
+  for s in ${WSRC[$p]}; do
+    source_of "$s"
+    mounts+=(ro:"$SOURCE_DIR")
+    with_dirs+=" $s=$(host_path "$SOURCE_DIR")"
+    WITH_SOURCE_IDS+=("$s $SOURCE_KEY")
+  done
   mounts+=(rw:"$bdir/build" rw:"$bdir/dest" rw:"$bdir/debug")
 
   echo "=== $p: setup: ${scripts:-none} ===" | tee "$log"
@@ -490,6 +581,7 @@ build_one() {
     POS_BASE="$hbase" \
     POS_PACKAGE="$p" \
     POS_SRC_DIR="$(host_path "$src_dir")" \
+    POS_WITH_SRC_DIRS="${with_dirs# }" \
     POS_BUILD_DIR="$hbdir/build/$p" \
     POS_DEST_DIR="$hbdir/dest/$p" \
     POS_DEBUG_DIR="$hbdir/debug/$p" \
@@ -514,30 +606,35 @@ report_stuck() {
 }
 
 cmd_plan() {
-  local id= bdir n=0 t
+  local id= bdir n=0 t toolchain=
   local -a args=()
   for t in "$@"; do
     case $t in
       --new) id="<new>" ;;
+      --toolchain) toolchain=1 ;;
       -*) usage ;;
       *) args+=("$t") ;;
     esac
   done
+  [[ -z $toolchain || -n $id ]] || die "--toolchain is chosen when a build is created; use it with --new"
   local ref
   if [[ -z $id ]] && id=$(current_id); then
     bdir=$builds/$id
-    load_built
+    build_load
     ref=$(build_reference)
   else
     id="<new>"
+    PIPELINE=${toolchain:+toolchain}
+    PIPELINE=${PIPELINE:-pos}
     ref=$(reference_choose)
+    [[ $ref != none || $PIPELINE == toolchain ]] || die "a pos build takes the toolchain from a reference"
+    reference_restore "$ref"
+    load_reference "$ref"
   fi
-  reference_restore "$ref"
-  load_reference "$ref"
-  ((${#args[@]})) || mapfile -t args < <(all_stages)
+  ((${#args[@]})) || mapfile -t args < <(pipeline_targets)
   targets_expand "${args[@]}"
-  targets_check "${TARGETS[@]}"
-  echo "build $id"
+  [[ $PIPELINE == toolchain ]] || targets_check "${TARGETS[@]}"
+  echo "build $id ($PIPELINE)"
   echo "reference $ref (${#REF[@]} packages)"
   while next_package "${TARGETS[@]}"; do
     env_of "$NEXT"
@@ -553,29 +650,29 @@ cmd_plan() {
 }
 
 # Archive every source the build's packages were built from, as recorded in
-# their metadata (build-source), and the build recipes.
+# their metadata (build-source, build-with-source), and the build recipes.
 source_archives() {
   local p s key out commit
   local -A seen=()
   for p in "${PKGS[@]}"; do
     [[ ${KIND[$p]} == package && -n ${BUILT[$p]:-} ]] || continue
-    s=${SRC[$p]}
-    [[ -z ${seen[$s]:-} ]] || continue
-    seen[$s]=1
-    key=$(awk '$1 == "build-source" {print $3}' "$(marker "$p")")
-    if [[ -z $key ]]; then
-      echo "note: no source archive for $s: src/$s is not in the repository"
-      continue
-    fi
-    out=$bdir/pos-src-$s-${key:0:16}.tar.zst
-    [[ -f $out ]] && continue
-    if [[ -d $sources/$s/$key ]]; then
-      tar --zstd -cf "$out.tmp" -C "$sources/$s" --transform "s,^$key,$s," "$key"
-    else
-      git -C "$base" archive --format=tar --prefix="$s/" "$key" | zstd -q -o "$out.tmp"
-    fi
-    mv "$out.tmp" "$out"
-    echo "$out"
+    while read -r s key; do
+      [[ -z ${seen[$s]:-} ]] || continue
+      seen[$s]=1
+      if [[ -z $key ]]; then
+        echo "note: no source archive for $s: src/$s is not in the repository"
+        continue
+      fi
+      out=$bdir/pos-src-$s-${key:0:16}.tar.zst
+      [[ -f $out ]] && continue
+      if [[ -d $sources/$s/$key ]]; then
+        tar --zstd -cf "$out.tmp" -C "$sources/$s" --transform "s,^$key,$s," "$key"
+      else
+        git -C "$base" archive --format=tar --prefix="$s/" "$key" | zstd -q -o "$out.tmp"
+      fi
+      mv "$out.tmp" "$out"
+      echo "$out"
+    done < <(awk '$1 == "build-source" || $1 == "build-with-source" {print $2, $3}' "$(marker "$p")")
   done
   commit=$(git -C "$base" rev-parse HEAD)
   if [[ $commit != "$(build_info commit)" ]] ||
@@ -583,8 +680,8 @@ source_archives() {
     echo "warning: buildsys, packages, stages, images or rpm differ from the commit the build started at;" \
          "the recipes archive holds HEAD" >&2
   fi
-  out=$bdir/pos-recipes-$id.tar.zst
-  git -C "$base" archive --format=tar --prefix="pos-recipes-$id/" HEAD \
+  out=$bdir/pos-recipes-$(build_stem "$bdir").tar.zst
+  git -C "$base" archive --format=tar --prefix="pos-recipes-$(build_stem "$bdir")/" HEAD \
     buildsys packages stages images rpm BUILD.md README.md | zstd -q -f -o "$out.tmp"
   mv "$out.tmp" "$out"
   echo "$out"
@@ -648,8 +745,8 @@ podman_import() {
   local t=$1 path=/usr/local/bin:/usr/bin:/pos/bin:/pos/sbin
   [[ $t != container ]] || path=/pos/bin:/pos/sbin:/usr/local/bin:/usr/bin
   host_podman import --change "ENV PATH=$path" --change 'CMD ["/usr/bin/bash"]' \
-    --change "LABEL pos.build=$id" \
-    "$(host_path "$bdir/pos-image-$t-$id.tar.zst")" "$(podman_name "$t"):$id"
+    --change "LABEL pos.build=$id" --change "LABEL pos.version=$(info_get "$bdir" version)" \
+    "$(host_path "$bdir/pos-image-$t-$(build_stem "$bdir").tar.zst")" "$(podman_name "$t"):$id"
 }
 
 # Make an image with podman from images/<image>/containerfile, on top of
@@ -659,11 +756,11 @@ podman_import() {
 podman_image() {
   local t=$1 from name
   from=$(image_from "$t")
-  [[ -f $bdir/pos-image-$from-$id.tar.zst ]] || die "$t: build $id has no $from image; make it first"
+  [[ -f $bdir/pos-image-$from-$(build_stem "$bdir").tar.zst ]] || die "$t: build $id has no $from image; make it first"
   podman_import "$from"
   name=localhost/$(podman_name "$t")
   host_podman build --build-arg "BASE=localhost/$(podman_name "$from"):$id" \
-    --label "pos.build=$id" -t "$name:$id" \
+    --label "pos.build=$id" --label "pos.version=$(info_get "$bdir" version)" -t "$name:$id" \
     -f "$(host_path "$base/images/$t/containerfile")" "$(host_path "$base/images/$t")"
   host_podman tag "$name:$id" "$name:$(build_info fedora)"
   echo "$name:$id"
@@ -673,8 +770,10 @@ podman_image() {
 # network: pos-fedora takes the provides of the Fedora packages it stands
 # in for from Fedora's repositories.
 rpm_make() {
+  step_start rpm
   step_run rpm net ro:"$base/buildsys" ro:"$base/stages" ro:"$base/rpm" rw:"$bdir" -- \
     bash "$(host_path "$base/buildsys/rpm.sh")" "$(host_path "$bdir")" "$@"
+  step_made rpm
 }
 
 # Make an image with dnf (buildsys/image-dnf.sh), as root: dnf installs
@@ -685,52 +784,89 @@ dnf_image() {
     bash "$(host_path "$base/buildsys/image-dnf.sh")" "$(host_path "$bdir")" "$1"
 }
 
+disk_image() {
+  step_run "disk-$1" root ro:"$base/buildsys" ro:"$base/images" rw:"$bdir" -- \
+    bash "$(host_path "$base/buildsys/image-disk.sh")" "$(host_path "$bdir")" "$1"
+}
+
 # Make the images of the given names: layout images from the stage
 # archives, dnf images from the RPM packages, podman images from another
-# image.
+# image. A layout or dnf image with images/<image>/repart.d also gets a
+# disk.
 make_images() {
   local t
   for t in "$@"; do
     title "image $t"
+    step_start "image-$t"
     if [[ -f $base/images/$t/layout ]]; then
       "$base/buildsys/image.sh" "$bdir" "$t"
     elif [[ -f $base/images/$t/packages ]]; then
       dnf_image "$t"
     else
       podman_image "$t"
+      image_made "$t"
+      continue
     fi
+    if [[ -d $base/images/$t/repart.d ]]; then
+      disk_image "$t"
+    fi
+    image_made "$t"
   done
 }
 
+# Run an image's check and record the image. images/<image>/check names a
+# script that devtools/vm.sh runs in the image's booted disk
+# (devtools/smoke.sh); with --no-checks (CHECKS no) it is skipped and the
+# image recorded unchecked.
+image_made() {
+  local t=$1 script
+  if [[ -f $base/images/$t/check ]]; then
+    if [[ $CHECKS == no ]]; then
+      step_made "image-$t" unchecked
+      return 0
+    fi
+    script=$(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' "$base/images/$t/check")
+    title "check $t"
+    "$base/devtools/vm.sh" -i "$t" -c "$base/$script" "$id" ||
+      die "image $t: its check $script failed (--no-checks skips it)"
+  fi
+  step_made "image-$t"
+}
+
 cmd_run() {
-  local new= archives=no t
+  local new= archives=no t toolchain= all=
   local -a args=() stages=()
   for t in "$@"; do
     case $t in
       --new) new=1 ;;
+      --toolchain) toolchain=1 ;;
       --source-archives) archives=yes ;;
+      --no-checks) CHECKS=no ;;
       -*) usage ;;
       *) args+=("$t") ;;
     esac
   done
-  ((${#args[@]})) || mapfile -t args < <(all_stages)
-  targets_expand "${args[@]}"
-  targets_check "${TARGETS[@]}"
-
   if [[ $archives == yes && -z $new ]]; then
     die "--source-archives is chosen when a build is created; use it with --new"
   fi
+  [[ -z $toolchain || -n $new ]] || die "--toolchain is chosen when a build is created; use it with --new"
   if [[ -n $new ]] || ! id=$(current_id); then
+    PIPELINE=${toolchain:+toolchain}
+    PIPELINE=${PIPELINE:-pos}
     id=$(build_new "$archives")
     echo "new build $id"
   fi
   bdir=$builds/$id
   [[ -n $(build_info tools-image) ]] ||
     die "build $id builds in toolboxes, which this buildsys no longer does; start another with run --new"
-  load_built
-  reference_restore "$(build_reference)"
-  load_reference "$(build_reference)"
-  echo "reference $(build_reference) (${#REF[@]} packages)"
+  build_load
+  echo "build $id ($PIPELINE), reference $(build_reference) (${#REF[@]} packages)"
+  if ((${#args[@]} == 0)); then
+    all=1
+    mapfile -t args < <(pipeline_targets)
+  fi
+  targets_expand "${args[@]}"
+  [[ $PIPELINE == toolchain ]] || targets_check "${TARGETS[@]}"
   tools_ensure
   TOOLS_ID=$(host_podman image inspect --format '{{.Id}}' "$(build_info tools-image)")
 
@@ -753,7 +889,9 @@ cmd_run() {
   done
   for t in "${stages[@]}"; do
     title "assemble $t"
-    "$base/buildsys/assemble.sh" "$bdir" "$t"
+    step_start "stage-$t"
+    "$base/buildsys/assemble.sh" "$bdir" "$t" "$refs/$(build_reference)"
+    step_made "stage-$t"
   done
   local -a layout_images dnf_images podman_images
   mapfile -t layout_images < <(layout_images_of "${stages[@]}")
@@ -770,6 +908,7 @@ cmd_run() {
     title "source archives"
     source_archives
   fi
+  [[ -z $all ]] || step_made complete
 }
 
 # Prepare the sources the targets are built from, ahead of a run (run
@@ -780,15 +919,19 @@ cmd_prepare() {
   local -A seen=()
   id=$(current_id) || die "no current build; start one with run --new"
   bdir=$builds/$id
+  PIPELINE=$(build_info pipeline)
+  PIPELINE=${PIPELINE:-pos}
   title_init
-  ((${#args[@]})) || mapfile -t args < <(all_stages)
+  ((${#args[@]})) || mapfile -t args < <(pipeline_targets)
   targets_expand "${args[@]}"
   for p in "${TARGETS[@]}"; do
-    s=${SRC[$(build_of "$p")]}
-    [[ -z ${seen[$s]:-} ]] && has_prepare "$s" || continue
-    seen[$s]=1
-    prepare_source "$s"
-    echo "$s: $PREPARED"
+    p=$(build_of "$p")
+    for s in ${SRC[$p]} ${WSRC[$p]}; do
+      [[ -z ${seen[$s]:-} ]] && has_prepare "$s" || continue
+      seen[$s]=1
+      prepare_source "$s"
+      echo "$s: $PREPARED"
+    done
   done
 }
 
@@ -802,7 +945,7 @@ cmd_rpm() {
   ((${#args[@]})) || mapfile -t args < <(all_stages)
   for s in "${args[@]}"; do
     [[ -f $base/stages/$s/packages ]] || die "not a stage: $s"
-    [[ -f $bdir/pos-$s-$id.tar.zst ]] || die "stage $s is not assembled in build $id; run it first"
+    [[ -f $bdir/pos-$s-$(build_stem "$bdir").tar.zst ]] || die "stage $s is not assembled in build $id; run it first"
   done
   rpm_make "${args[@]}"
 }
@@ -812,6 +955,7 @@ cmd_rpm() {
 # made from.
 cmd_image() {
   local t
+  [[ ${1:-} != --no-checks ]] || { CHECKS=no; shift; }
   local -a args=("$@")
   id=$(current_id) || die "no current build"
   bdir=$builds/$id
@@ -839,10 +983,12 @@ cmd_rebuild() {
       *) die "not a package: $p" ;;
     esac
     for q in "$p" ${OUTS[$p]}; do
-      rm -rf "${bdir:?}/dest/$q" "${bdir:?}/debug/$q"
+      rm -rf "${bdir:?}/dest/$q" "${bdir:?}/debug/$q" "${bdir:?}/made/package-$q"
       echo "$q: dropped from build $id"
     done
   done
+  # What was made from the packages is made again by run.
+  find "$bdir/made" -mindepth 1 -maxdepth 1 ! -name 'package-*' -delete 2>/dev/null || true
 }
 
 cmd_status() {
@@ -851,14 +997,13 @@ cmd_status() {
   id=$(current_id) || die "no current build"
   bdir=$builds/$id
   cat "$bdir/info"
-  load_built
-  load_reference "$(build_reference)"
+  build_load
   for p in "${PKGS[@]}"; do
     [[ -n ${BUILT[$p]:-} ]] && built+=("$p")
   done
   echo "built (${#built[@]}): ${built[*]}"
   local -a args
-  mapfile -t args < <(all_stages)
+  mapfile -t args < <(pipeline_targets)
   targets_expand "${args[@]}"
   wanted "${TARGETS[@]}"
   echo "pending (${#WANTED[@]}): ${WANTED[*]}"
@@ -874,39 +1019,157 @@ cmd_clean() {
   echo "outputs are kept in $builds/$id"
 }
 
-# Store a complete build in the reference store (reference-dir) and mark
-# it the default reference of new builds. The archive holds the build's
-# info and the staging trees of its packages, but for the bootstrap
-# packages, which a reference never stands in for.
+# Store a complete toolchain build in the reference store (reference-dir)
+# and mark it the default reference of new builds. The archive holds the
+# build's info and the staging trees and debug info of what it built: the
+# toolchain packages, and what they run on (glibc), which a pos build uses
+# while it builds its own.
 cmd_reference() {
   local store out p t
-  local -a built=() trees=()
+  local -a trees=() debug=()
   id=${1:-$(current_id)} || die "no current build"
   bdir=$builds/$id
   [[ -f $bdir/info ]] || die "no build $id"
+  [[ $(build_info pipeline) == toolchain ]] || die "build $id is not a toolchain build; only those are references"
+  PIPELINE=toolchain
   store=$(config reference-dir)
   [[ -n $store ]] || die "reference-dir is not set (build.conf.dist)"
   [[ -d $store ]] || die "reference-dir $store does not exist"
   load_built
   local -a args
-  mapfile -t args < <(all_stages)
+  mapfile -t args < <(pipeline_targets)
   targets_expand "${args[@]}"
   for t in "${TARGETS[@]}"; do
     [[ -n ${BUILT[$t]:-} ]] || die "build $id is not complete: $t is not built"
   done
   for p in "${PKGS[@]}"; do
-    [[ -n ${BUILT[$p]:-} ]] && built+=("$p")
-  done
-  for p in "${built[@]}"; do
-    obsoleted_by_any "$p" "${built[@]}" || trees+=("dest/$p")
+    [[ -n ${BUILT[$p]:-} ]] || continue
+    trees+=("dest/$p")
+    [[ ! -d $bdir/debug/$p ]] || debug+=("debug/$p")
   done
   out=$store/pos-ref-$id.tar.zst
   if [[ ! -f $out ]]; then
-    tar --zstd -cf "$out.tmp" -C "$bdir" info "${trees[@]}"
+    tar --zstd -cf "$out.tmp" -C "$bdir" info "${trees[@]}" "${debug[@]}"
     mv "$out.tmp" "$out"
   fi
   echo "$id" >"$store/default"
   echo "$out (${#trees[@]} packages), the default reference"
+}
+
+# The BUILD number in VERSION at a commit, or nothing; version_update the
+# same for UPDATE, which only a release line has.
+version_build() {
+  { git -C "$base" show "$1:VERSION" 2>/dev/null || true; } | sed -n 's/^BUILD=\([0-9][0-9]*\)$/\1/p'
+}
+
+version_update() {
+  { git -C "$base" show "$1:VERSION" 2>/dev/null || true; } | sed -n 's/^UPDATE=\([0-9][0-9]*\)$/\1/p'
+}
+
+# The info lines naming a build made at a commit (buildinfo.sh): its BUILD,
+# UPDATE and version, <BUILD> or <BUILD>u<UPDATE>. None without VERSION.
+version_info() {
+  local n u
+  n=$(version_build "$1")
+  u=$(version_update "$1")
+  [[ -n $n ]] || return 0
+  echo "build-number $n"
+  [[ -z $u ]] || echo "update $u"
+  echo "version $n${u:+u$u}"
+}
+
+# Check that build id is an OS build (BUILD.md "Build numbers"): a pos
+# build with a complete run, whose every record (step_made) was made from
+# its commit, clean, with its checks unless unchecked is yes; its BUILD
+# (VERSION at that commit) above every main-* tag. Lists every problem and
+# exits, or sets BUILD_NUMBER and UNCHECKED (the records made unchecked).
+validate() {
+  local unchecked=$1 commit f r last
+  local -a problems=()
+  bdir=$builds/$id
+  [[ -f $bdir/info ]] || die "no build $id"
+  commit=$(build_info commit)
+  UNCHECKED=()
+  [[ $(build_info pipeline) == pos ]] || problems+=("not a pos build")
+  [[ -f $bdir/made/complete ]] || problems+=("no complete run since it was created or last rebuilt")
+  for f in "$bdir"/made/*; do
+    [[ -f $f ]] || continue
+    r=$(<"$f")
+    case $r in
+      "$commit clean") ;;
+      "$commit clean unchecked")
+        UNCHECKED+=("$(basename "$f")")
+        [[ $unchecked == yes ]] || problems+=("$(basename "$f"): made without its checks (--unchecked accepts it)") ;;
+      *) problems+=("$(basename "$f"): made from $r, not $commit clean") ;;
+    esac
+  done
+  BUILD_NUMBER=$(version_build "$commit")
+  if [[ -z $BUILD_NUMBER ]]; then
+    problems+=("no BUILD in VERSION at $commit")
+  else
+    last=$(git -C "$base" tag -l 'main-*' | sed -n 's/^main-\([0-9][0-9]*\)$/\1/p' | sort -n | tail -1)
+    ((BUILD_NUMBER > ${last:-0})) || problems+=("BUILD $BUILD_NUMBER is not above the last tag, main-$last")
+  fi
+  if ((${#problems[@]})); then
+    echo "build $id is not an OS build:" >&2
+    printf '  %s\n' "${problems[@]}" >&2
+    exit 1
+  fi
+}
+
+# The checks of a validated build, for messages and the tag.
+checks_said() {
+  if ((${#UNCHECKED[@]})); then
+    echo "checks skipped: ${UNCHECKED[*]}"
+  else
+    echo "checks passed"
+  fi
+}
+
+cmd_validate() {
+  local unchecked=no
+  [[ ${1:-} != --unchecked ]] || { unchecked=yes; shift; }
+  (($# <= 1)) || usage
+  id=${1:-$(current_id)} || die "no current build"
+  validate "$unchecked"
+  echo "build $id is BUILD $BUILD_NUMBER (commit $(build_info commit), $(checks_said))"
+}
+
+# Number the current build: tag its commit main-<BUILD>, with the build ID
+# in the tag, then bump. HEAD is on main and has not been bumped since the
+# build's commit, so the next BUILD follows this one.
+cmd_tag() {
+  local unchecked=no commit
+  [[ ${1:-} != --unchecked ]] || { unchecked=yes; shift; }
+  (($# == 0)) || usage
+  [[ $(git -C "$base" symbolic-ref --short HEAD 2>/dev/null) == main ]] || die "tag numbers builds of main; check out main"
+  id=$(current_id) || die "no current build"
+  validate "$unchecked"
+  commit=$(build_info commit)
+  git -C "$base" merge-base --is-ancestor "$commit" HEAD || die "build $id: $commit is not on main"
+  [[ $(version_build HEAD) == "$BUILD_NUMBER" ]] ||
+    die "VERSION at HEAD is BUILD $(version_build HEAD), build $id is BUILD $BUILD_NUMBER; bumped since?"
+  git -C "$base" tag -a "main-$BUILD_NUMBER" -m "POS BUILD $BUILD_NUMBER
+
+build $id
+reference $(build_info reference)
+$(checks_said)" "$commit"
+  echo "tagged $commit main-$BUILD_NUMBER"
+  cmd_bump
+}
+
+# Commit VERSION with the next BUILD. tag runs it after tagging; run it
+# alone when tag failed after the tag was made.
+cmd_bump() {
+  local n
+  (($# == 0)) || usage
+  git -C "$base" diff --quiet HEAD -- VERSION || die "VERSION has uncommitted changes"
+  n=$(version_build HEAD)
+  [[ -n $n ]] || die "no BUILD in VERSION at HEAD"
+  sed -i "s/^BUILD=$n\$/BUILD=$((n + 1))/" "$base/VERSION"
+  GIT_COMMITTER_NAME=$bot_name GIT_COMMITTER_EMAIL=$bot_email \
+    git -C "$base" commit -q --author="$bot_name <$bot_email>" -m "BUILD $((n + 1)) is next" -- VERSION
+  echo "VERSION: BUILD $((n + 1))"
 }
 
 meta_load
@@ -924,5 +1187,8 @@ case $cmd in
   status) cmd_status ;;
   reference) cmd_reference "$@" ;;
   clean) cmd_clean "$@" ;;
+  validate) cmd_validate "$@" ;;
+  tag) cmd_tag "$@" ;;
+  bump) cmd_bump "$@" ;;
   *) usage ;;
 esac

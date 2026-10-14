@@ -1,0 +1,16 @@
+POS system integration: the files that make POS's packages one system,
+which no upstream package ships. Installed by packages/pos-integration.
+
+pam.d/  POS's PAM configuration: system-auth, the stack services
+        include; a file for every PAM service in POS (util-linux's login,
+        su, runuser, chfn, chsh; shadow's passwd, chpasswd, newusers;
+        sudo; cronie's crond; systemd ships its own); and other, which
+        denies the rest. Installed into pam's vendor directory
+        (/pos/share/pam/pam.d); /etc/pam.d overrides it per service.
+
+os-release  The system's identity (ID=pos), installed as /pos/lib/os-release.
+        /usr/lib/os-release and /etc/os-release link to it: an image's
+        layout, or pos-fedora, which stands in for Fedora's fedora-release.
+
+presets/  POS's systemd presets (80-pos.preset), read before systemd's
+        90-systemd.preset and other presets of the system.

@@ -9,6 +9,8 @@
 set -euo pipefail
 
 base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck source=../buildsys/buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 builds=${base}/work/builds
 
 image=container
@@ -31,5 +33,5 @@ fi
 
 podman import --change "ENV PATH=$path" \
   --change 'CMD ["/usr/bin/bash"]' \
-  "${bdir}/pos-image-${image}-${id}.tar.zst" "${name}:${id}"
+  "${bdir}/pos-image-${image}-$(build_stem "$bdir").tar.zst" "${name}:${id}"
 podman tag "${name}:${id}" "${name}:latest"

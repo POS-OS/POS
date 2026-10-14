@@ -23,6 +23,8 @@ cd "$build_dir" || exit 1
             --without-audit
 make -j"$nproc"
 make DESTDIR="$dest_dir" install
+# The PAM configuration is POS's (pos-integration).
+rm -r "${dest_dir}/etc/pam.d"
 
 pkg_setuid "${prefix}/bin/crontab"
 

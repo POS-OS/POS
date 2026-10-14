@@ -15,6 +15,7 @@ meson setup "$build_dir" "$src_dir" \
       --sysconfdir="$sysconfdir" \
       --localstatedir="$localstatedir" \
       --buildtype=plain \
+      -Druntime_dir=/run \
       -Dsystem_socket=/run/dbus/system_bus_socket \
       -Dsystem_pid_file=/run/dbus/pid \
       -Duser_session=true \
@@ -32,6 +33,9 @@ meson setup "$build_dir" "$src_dir" \
       -Dmodular_tests=disabled
 meson compile -C "$build_dir" -j "$nproc"
 DESTDIR="$dest_dir" meson install -C "$build_dir"
+# The empty /run/dbus it installs is made at run time: systemd makes it
+# for dbus.socket's socket.
+rm -rf "${dest_dir:?}/run"
 
 pkg_setuid "${prefix}/libexec/dbus-daemon-launch-helper"
 

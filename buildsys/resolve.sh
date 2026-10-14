@@ -15,8 +15,14 @@
 #                   the obsoleting package is the one chosen
 #   source          tree under src/ (default: the package name); its
 #                   prepare recipe is packages/<source>/prepare.sh
+#   with-sources    further source trees the build copies into its own,
+#                   each as a directory named after the source (gcc builds
+#                   gmp, mpfr and mpc in its tree)
 #   outputs         further packages the build produces (kind output)
 #   output-of       the package whose build produces this one
+#   pipeline        pos (default) or toolchain: the build that builds the
+#                   package (see below). An output is in its main
+#                   package's pipeline
 #   kind            package (default): built by build.sh
 #                   output: produced by another package's build; installed
 #                   and released like a package, never built on its own
@@ -24,6 +30,8 @@
 #                   installed by dnf
 #                   profile: nothing to build or install; a build setup
 #                   that recipes require
+#                   source: nothing to build; holds the prepare recipe of
+#                   a source other packages build from (with-sources)
 #
 # A package directory may also have env.sh. pkg_setup sources it in every
 # build whose resolved environment contains the package.
@@ -34,20 +42,30 @@
 # available, those obsoleted by another candidate are dropped; more than one
 # left is an error.
 #
+# A build is in one of two pipelines (PIPELINE). A toolchain build builds
+# the toolchain packages and what they need at run time. A pos build
+# builds everything else and never builds a toolchain package: those are
+# its reference's. A host or profile package that a reference package
+# obsoletes is not available: gcc-host, Fedora's compiler, stands in for
+# gcc only in a build without a reference.
+#
 # A build with a reference build (REF: the packages built in it) falls
 # back to the reference's copy of a package when nothing available
-# provides a capability, if the capability is a bootstrap one (provided by
-# a package another obsoletes: the reference stands in for the bootstrap
-# packages) or no target of the run provides it (it is not being built).
-# In ENV it is <name>@ref. Its own requirements are those it was built
-# with (REF_REQ), and are met by this build's packages where they are
-# built, otherwise by the reference's, whether or not they are targets:
-# the reference's gcc builds glibc, which gcc itself requires.
+# provides a capability, if the capability is a stand-in one (provided by
+# a package another obsoletes: the reference's gcc stands in for
+# gcc-host), or, in a pos build, if no target of the run provides it (it
+# is not being built). In ENV it is <name>@ref. Its own requirements are
+# those it was built with (REF_REQ), and are met by this build's packages
+# where they are built, otherwise by the reference's, whether or not they
+# are targets: the reference's gcc builds glibc, which gcc itself
+# requires.
 
 declare -a PKGS=()
-declare -A KIND=() REQ=() BREQ=() HREQ=() PREQ=() PROV=() OBS=() SRC=() OUTS=() PARENT=()
+declare -A KIND=() REQ=() BREQ=() HREQ=() PREQ=() PROV=() OBS=() SRC=() WSRC=() OUTS=() PARENT=()
+declare -A PIPE=()
 declare -A PROVIDERS=() BOOTCAP=() TPROV=()
 declare -A BUILT=() REF=() REF_REQ=()
+PIPELINE=pos
 
 die() {
   echo "$*" >&2
@@ -61,7 +79,7 @@ meta_load() {
     [[ -f $dir/meta ]] || die "packages/$p: missing meta"
     PKGS+=("$p")
     KIND[$p]=package REQ[$p]= BREQ[$p]= HREQ[$p]= PREQ[$p]= PROV[$p]=$p OBS[$p]= SRC[$p]=$p
-    OUTS[$p]= PARENT[$p]=
+    WSRC[$p]= OUTS[$p]= PARENT[$p]= PIPE[$p]=pos
     while read -r line; do
       line=${line%%#*}
       read -r key vals <<<"$line"
@@ -74,6 +92,8 @@ meta_load() {
         provides) PROV[$p]+=" $vals" ;;
         obsoletes) OBS[$p]+=" $vals" ;;
         source) SRC[$p]=$vals ;;
+        with-sources) WSRC[$p]+=" $vals" ;;
+        pipeline) PIPE[$p]=$vals ;;
         kind) KIND[$p]=$vals ;;
         outputs) OUTS[$p]+=" $vals" ;;
         output-of) PARENT[$p]=$vals ;;
@@ -87,6 +107,7 @@ meta_load() {
   done
   local cap q
   for p in "${PKGS[@]}"; do
+    [[ ${KIND[$p]} != output ]] || PIPE[$p]=${PIPE[${PARENT[$p]}]:-pos}
     for cap in ${PROV[$p]}; do
       PROVIDERS[$cap]+=" $p"
     done
@@ -111,13 +132,23 @@ meta_validate() {
           err=1
         fi
         ;;
-      host|profile) ;;
+      host|profile|source) ;;
       *) echo "packages/$p/meta: unknown kind: ${KIND[$p]}" >&2; err=1 ;;
     esac
     for cap in ${REQ[$p]} ${BREQ[$p]}; do
       required[$cap]=1
       if [[ -z ${PROVIDERS[$cap]:-} ]]; then
         echo "packages/$p/meta: nothing provides $cap" >&2
+        err=1
+      fi
+    done
+    case ${PIPE[$p]} in
+      pos|toolchain) ;;
+      *) echo "packages/$p/meta: unknown pipeline: ${PIPE[$p]}" >&2; err=1 ;;
+    esac
+    for q in ${WSRC[$p]}; do
+      if [[ ! -d $base/src/$q ]]; then
+        echo "packages/$p/meta: with-sources $q: no src/$q" >&2
         err=1
       fi
     done
@@ -150,8 +181,18 @@ meta_validate() {
   return $err
 }
 
+# Built packages, and host and profile packages that no reference package
+# obsoletes.
 available() {
-  [[ ${KIND[$1]} == host || ${KIND[$1]} == profile || -n ${BUILT[$1]:-} ]]
+  case ${KIND[$1]} in
+    host|profile) ! obsoleted_by_any "$1" "${!REF[@]}" ;;
+    *) [[ -n ${BUILT[$1]:-} ]] ;;
+  esac
+}
+
+# Whether the build's pipeline builds a package.
+in_pipeline() {
+  [[ ${PIPE[$1]} == "$PIPELINE" ]]
 }
 
 # The package whose build produces p.
@@ -207,7 +248,8 @@ provider() {
 # The reference's copy of a provider, as PROVIDER=<name>@ref (see the top).
 provider_ref() {
   local cap=$1 ref=$2 p
-  [[ -n $ref || -n ${BOOTCAP[$cap]:-} || -z ${TPROV[$cap]:-} ]] || return 1
+  [[ -n $ref || -n ${BOOTCAP[$cap]:-} ]] ||
+    [[ $PIPELINE == pos && -z ${TPROV[$cap]:-} ]] || return 1
   for p in ${PROVIDERS[$cap]:-}; do
     if [[ -n ${REF[$p]:-} ]]; then
       PROVIDER=$p@ref
@@ -224,7 +266,10 @@ is_ref() {
 # Resolve the build environment of a package: its requirements and,
 # recursively, the run-time requirements of each provider chosen. A
 # requirement the build itself provides (gcc requires its own output
-# gcc-runtime) is installed with the package, not needed to build it. Sets
+# gcc-runtime) is installed with the package, not needed to build it.
+# Reached through another package's requirements, it is needed (systemd
+# links util-linux's libmount, which links libsystemd), and the reference's
+# copy is used, as in a new build, where the package is not built yet. Sets
 # ENV (sorted package names) and MISSING (capabilities with no available
 # provider). Returns 1 when anything is missing.
 env_of() {
@@ -246,7 +291,7 @@ env_of() {
     seen[$entry]=1
     cap=${entry#ref:}
     ref=
-    [[ $entry == ref:* ]] && ref=1
+    [[ $entry == ref:* || $self == *" $cap "* ]] && ref=1
     if ! provider "$cap" "$ref"; then
       MISSING+=("$cap")
       continue
@@ -284,20 +329,28 @@ env_scripts() {
 }
 
 # Expand target names (stages or packages) into TARGETS (package names),
-# and TPROV, the capabilities their builds provide.
+# and TPROV, the capabilities their builds provide. A pos build leaves out
+# the toolchain packages of a stage, which its reference has; a toolchain
+# build has toolchain packages only.
 targets_expand() {
   local t p
   local -A set=()
   for t in "$@"; do
     if [[ -f $base/stages/$t/packages ]]; then
+      [[ $PIPELINE == pos ]] || die "$t: a toolchain build builds toolchain packages, not stages"
       while read -r p; do
         p=${p%%#*}
         p=${p//[[:space:]]/}
         [[ -z $p ]] && continue
-        [[ -n ${KIND[$p]:-} ]] || die "stages/$t/packages: unknown package $p"
-        set[$p]=1
+        case ${KIND[$p]:-} in
+          package|output) ;;
+          '') die "stages/$t/packages: unknown package $p" ;;
+          *) die "stages/$t/packages: $p is not a package (kind ${KIND[$p]})" ;;
+        esac
+        in_pipeline "$p" && set[$p]=1
       done <"$base/stages/$t/packages"
     elif [[ -n ${KIND[$t]:-} ]]; then
+      in_pipeline "$t" || die "$t: a ${PIPE[$t]} package; this is a $PIPELINE build"
       set[$t]=1
     else
       die "unknown stage or package: $t"
@@ -320,8 +373,23 @@ all_stages() {
   return 0
 }
 
-# Warn about run-time requirements that nothing in the target set provides:
-# the released archives would not be complete.
+# What a build of the pipeline builds by default: every stage, or every
+# toolchain package.
+pipeline_targets() {
+  local p
+  if [[ $PIPELINE == pos ]]; then
+    all_stages
+    return 0
+  fi
+  for p in "${PKGS[@]}"; do
+    [[ ${KIND[$p]} == package ]] && in_pipeline "$p" && echo "$p"
+  done
+  return 0
+}
+
+# Warn about run-time requirements that nothing in the target set, or the
+# toolchain a pos build takes from its reference, provides: the released
+# archives would not be complete.
 targets_check() {
   local p cap q found
   for p in "$@"; do
@@ -329,6 +397,9 @@ targets_check() {
       found=
       for q in "$@"; do
         [[ " ${PROV[$q]} " == *" $cap "* ]] && { found=1; break; }
+      done
+      for q in ${PROVIDERS[$cap]:-}; do
+        [[ ${PIPE[$q]} == toolchain ]] && found=1
       done
       [[ -n $found ]] || echo "warning: $p requires $cap, which no target provides" >&2
     done
@@ -365,6 +436,10 @@ wanted() {
         fi
         for q in ${PROVIDERS[$cap]:-}; do
           b=$(build_of "$q")
+          # Only packages are built, and a pos build does not build the
+          # toolchain; a toolchain build builds what the toolchain needs.
+          [[ ${KIND[$b]} == package ]] || continue
+          [[ $PIPELINE == pos && ${PIPE[$b]} == toolchain ]] && continue
           if [[ -z ${want[$b]:-} ]] && ! available "$q"; then
             want[$b]=1
             changed=1

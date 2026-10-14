@@ -27,6 +27,8 @@ export LC_ALL=C
 }
 
 base=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)
+# shellcheck source=buildinfo.sh
+source "$base/buildsys/buildinfo.sh"
 bdir=${1:-}
 (($# >= 2)) || {
   echo "usage: $0 <build dir> <stage>..." >&2
@@ -38,9 +40,9 @@ stages=("$@")
 id=$(basename "$bdir")
 out=$bdir/rpm
 work=$bdir/rpm-work
-version=$id
-release=1
-evr=$version-$release
+evr=$(rpm_evr "$bdir")
+version=${evr%%-*}
+release=${evr#*-}
 fedora=$(rpm -E %fedora)
 
 die() {
@@ -287,6 +289,22 @@ awk '$1 != "d" {print $2}' "$work/paths" | awk -F/ '
   awk '$1 ~ /^\/usr\/lib64\// {print "/lib64/" substr($1, 12)}' "$work/links"
 } | sort -u >"$work/pos-fedora.provides"
 
+# The system's os-release is POS's (pos-integration), in place of Fedora's
+# fedora-release, which rpm/fedora claims. fedora-release required Fedora's
+# repositories (fedora-repos); pos-fedora does in its place. dnf's release
+# version is the version of the system-release provider (fedora-release's
+# is 44, pos-fedora's the build ID) unless a system-release(releasever)
+# provide gives it.
+osrel_install= osrel_files= osrel_tags=
+if [[ -n ${in_build[pos-integration]:-} ]]; then
+  osrel_install='ln -s ../../pos/lib/os-release %{buildroot}/usr/lib/os-release
+ln -s ../usr/lib/os-release %{buildroot}/etc/os-release'
+  osrel_files='/usr/lib/os-release
+/etc/os-release'
+  osrel_tags="Requires: fedora-repos
+Provides: system-release(releasever) = $fedora"
+fi
+
 {
   spec_head pos-fedora "POS as the base of a Fedora system"
   echo "Requires: pos = $evr"
@@ -294,6 +312,7 @@ awk '$1 != "d" {print $2}' "$work/paths" | awk -F/ '
   # its programs are linked and its sonames provided like the rest.
   ((${#sdk_stages[@]})) && echo "Requires: pos-sdk = $evr"
   echo "Requires: filesystem"
+  [[ -z $osrel_tags ]] || echo "$osrel_tags"
   sed 's/^/Provides: /' "$work/pos-fedora.provides"
   sed 's/^/Conflicts: /' "$work/claimed"
   cat <<EOF
@@ -305,16 +324,22 @@ $(xargs <"$work/claimed" | fold -s -w 72)
 It provides what those provide, links their programs and libraries in
 /usr to /pos, and conflicts with them. Fedora packages that need them use
 POS; dnf installs only what POS does not have. The POS loader also
-searches /usr/lib64, after /pos/lib (/etc/pos/ld.so.conf), where Fedora
-packages installed next to POS put their libraries.
+searches /usr/lib64, after /pos/lib (/etc/pos/ld.so.conf, also as
+/etc/ld.so.conf for tools that read the library path there), where Fedora
+packages installed next to POS put their libraries. Fedora's dracut is
+given POS's systemd, udev and dbus directories. The system's os-release
+is POS's.
 
 %install
-mkdir -p %{buildroot}/usr/bin %{buildroot}/usr/lib64 %{buildroot}/etc/pos
+mkdir -p %{buildroot}/usr/bin %{buildroot}/usr/lib %{buildroot}/usr/lib64 %{buildroot}/etc/pos
 while read -r path target; do
   ln -s "\$target" "%{buildroot}\$path"
 done <'$work/links'
 printf '%s\n' /pos/lib /usr/lib64 >%{buildroot}/etc/pos/ld.so.conf
 chmod 0644 %{buildroot}/etc/pos/ld.so.conf
+ln -s pos/ld.so.conf %{buildroot}/etc/ld.so.conf
+install -D -m 0644 '$base/rpm/dracut.conf' %{buildroot}/usr/lib/dracut/dracut.conf.d/50-pos.conf
+$osrel_install
 
 # The POS loader finds what is not in /pos/lib through its cache only, so
 # the cache is updated after every package that adds libraries, before
@@ -332,6 +357,9 @@ rpm.execute("/pos/sbin/ldconfig")
 %files
 %dir /etc/pos
 %config(noreplace) /etc/pos/ld.so.conf
+/etc/ld.so.conf
+/usr/lib/dracut/dracut.conf.d/50-pos.conf
+$osrel_files
 $(awk '{print $1}' "$work/links" | rpm_escape)
 EOF
 } >"$work/pos-fedora.spec"

@@ -1,7 +1,5 @@
-# Built by a POS compiler (gcc-bootstrap); gcc-bootstrap itself runs on
-# glibc-bootstrap.
+# Built by the build's compiler: the reference's gcc, which runs on the
+# reference's glibc until this one is built, or gcc-host without one.
 # No pos-link: glibc links its new libc by path from the build tree, and
 # the search path pos-link adds would reach it (BUILD.md "Core libs stage").
-build-requires gcc-bootstrap linux-headers
-provides glibc-bootstrap
-obsoletes glibc-bootstrap
+build-requires gcc linux-headers

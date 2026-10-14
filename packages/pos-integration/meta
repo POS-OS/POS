@@ -1,0 +1,3 @@
+# POS's own system integration (src/pos-integration): data only. Its PAM
+# stack uses pam's modules, systemd's pam_systemd and util-linux's login.
+requires pam systemd util-linux

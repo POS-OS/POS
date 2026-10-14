@@ -1,0 +1,6 @@
+#%PAM-1.0
+# su -l (util-linux): as su.
+auth      include     su
+account   include     su
+password  include     su
+session   include     su

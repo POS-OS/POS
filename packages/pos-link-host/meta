@@ -1,3 +1,0 @@
-# Build profile: compile with the Fedora compiler and link against /pos.
-kind profile
-requires host-gcc glibc-bootstrap

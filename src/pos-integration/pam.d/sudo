@@ -1,0 +1,12 @@
+#%PAM-1.0
+# sudo: the user's password (an empty one where the account has none, as
+# toolbox users do: nullok in system-auth).
+auth      include     system-auth
+
+account   include     system-auth
+
+password  include     system-auth
+
+session   optional    pam_keyinit.so revoke
+session   required    pam_limits.so
+session   required    pam_unix.so

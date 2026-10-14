@@ -1,0 +1,9 @@
+# Build profile: Fedora's compiler standing in for gcc, in a toolchain
+# build without a reference (BUILD.md "Toolchain"). gcc obsoletes it, so
+# where a reference has gcc, the reference's is used.
+# libstdc++-static: gcc links libstdc++ into its own programs
+# (--with-static-standard-libraries), so the toolchain runs on glibc only.
+kind profile
+provides gcc
+requires host-gcc
+host-requires libstdc++-static

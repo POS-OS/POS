@@ -1,10 +1,12 @@
-# The sdk compiler, built by gcc-bootstrap against the full libraries it
-# runs on. Those are built by gcc-bootstrap too; everything else requires
-# gcc and is built by this compiler. The build also produces gcc-runtime,
-# which gcc requires; a build does not need its own outputs to run.
-build-requires pos-link
+# The sdk compiler, built by toolchain builds with the reference's gcc, or
+# Fedora's (gcc-host) without one. gmp, mpfr and mpc are built in its tree
+# and linked in statically, as are libstdc++ and libgcc, so it runs on
+# glibc only and a pos build can change any other library under it. The
+# build also produces gcc-runtime, which gcc requires; a build does not
+# need its own outputs to run.
+pipeline toolchain
+build-requires gcc pos-link
 requires glibc gcc-runtime binutils linux-headers
-requires gmp mpfr mpc zlib zstd
-provides gcc-bootstrap
-obsoletes gcc-bootstrap
+with-sources gmp mpfr mpc
+obsoletes gcc-host
 outputs gcc-runtime

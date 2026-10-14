@@ -1,4 +1,5 @@
-# The Fedora compiler. Builds the bootstrap packages and gcc-bootstrap.
+# The Fedora compiler: what gcc-host stands in for gcc with, and what
+# builds programs that run in the build only (linux-headers' fixdep).
 kind host
 provides host-gcc
 host-requires gcc gcc-c++
