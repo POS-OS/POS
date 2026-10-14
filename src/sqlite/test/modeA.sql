@@ -281,7 +281,7 @@ SELECT * FROM t1;
 
 .testcase 601
 SELECT 'abc',char(0x05,0x18,0x33),'xyz';
-.check --glob abc,"??3",xyz
+.check --glob abc,"*3",xyz
 
 .testcase 610
 .mode csv -reset
@@ -305,6 +305,11 @@ SELECT * FROM t1;
 .mode csv --title off
 SELECT * FROM t1;
 .check 1,2,3
+
+.testcase 640
+.mode csv --reset --colsep "^" --rowsep "::"
+SELECT 1, 2, 3 UNION ALL SELECT 'a','b','c';
+.check 1^2^3::a^b^c::
 
 # Verification of claims about .insert mode in the climode.html
 # documentation.
@@ -629,3 +634,26 @@ SELECT 1.23456789e+12;
 .mode list -fpfmt "" -ifmt ""
 SELECT 1.25e+12, 0x1234;
 .check 1250000000000.0|4660
+
+# Bug 2026-10-04T05:35:43Z
+#
+.testcase 1200
+.mode jobject --fpfmt auto
+SELECT 1 AS a, +9.0e+999 AS b, -9.0e+999 AS c, 0.0 AS d;
+.check {"a":1,"b":9e+999,"c":-9e+999,"d":0}
+.open :memory:
+.testcase 1210
+CREATE TABLE t1(a);
+INSERT INTO t1 VALUES(123),(9e999),('hello'),(-9e999),(x'313233');
+.dump
+.check <<END
+PRAGMA foreign_keys=OFF;
+BEGIN TRANSACTION;
+CREATE TABLE t1(a);
+INSERT INTO t1 VALUES(123);
+INSERT INTO t1 VALUES(9e+999);
+INSERT INTO t1 VALUES('hello');
+INSERT INTO t1 VALUES(-9e+999);
+INSERT INTO t1 VALUES(x'313233');
+COMMIT;
+END
