@@ -45,6 +45,10 @@ All tools:
 * `$SYSTEMD_INVOKED_AS=name` — override argv[0] for detection of a multicall
   binary. E.g. `SYSTEMD_INVOKED_AS=systemd-udevd build/udevadm`.
 
+* `$SYSTEMD_EXPERIMENTAL=0|1` — if set to true, experimental features may be
+  used. This variable is not checked if the build was configured with
+  "-Dexperimental=disabled".
+
 * `$SYSTEMD_PROC_CMDLINE` — if set, the contents are used as the kernel command
   line instead of the actual one in `/proc/cmdline`. This is useful for
   debugging, in order to test generators and other code against specific kernel
@@ -141,6 +145,14 @@ All tools:
   on the subsystem in question. Usually,
   RootImage=/ExtensionImages=/MountImages= in unit files default to enabled,
   while other uses default to disabled for this.
+
+* `$SYSTEMD_DISSECT_TPM2_UNLOCK=` — takes a boolean. If false, turns off
+  unlocking of LUKS encrypted partitions in disk images via a TPM2 token
+  enrolled in the LUKS2 header (e.g. via `systemd-cryptenroll --tpm2-device=…`)
+  for the tools that do this by default if no passphrase is supplied, i.e.
+  `systemd-dissect`, `systemd-nspawn` and `systemd-sysext`/`systemd-confext`.
+  It cannot turn this on for other uses (including `systemd-mountfsd`),
+  which act on behalf of unprivileged clients.
 
 `systemctl`:
 
@@ -282,6 +294,9 @@ All tools:
   If the worker process cannot finalize the event within the specified timespan,
   the worker process is killed by the manager process. Defaults to 10 seconds,
   maximum allowed is 5 hours.
+
+* `$SYSTEMD_UDEV_USE_INOTIFY=` — If true, use inotify instead of fanotify for
+  device node watches (`OPTIONS+="watch"`). Defaults to false.
 
 `udevadm` and `systemd-hwdb`:
 
