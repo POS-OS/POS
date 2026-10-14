@@ -1,0 +1,54 @@
+# Process this file with autom4te to create testsuite.  -*- Autotest -*-
+# Copyright (C) 2009-2026 Free Software Foundation, Inc.
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3, or (at your option)
+# any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+AT_SETUP([big block size])
+AT_KEYWORDS([block integer overflow])
+
+AT_CHECK([
+# Cpio versions up to 2.12 did not check the size of the
+# value supplied to the --block-size argument. This could result in
+# a signed integer overflow. 
+cat > experr <<EOF
+3 blocks
+cpio: block size out of allowed range: $(sizemax -hi)
+Try 'cpio --help' or 'cpio --usage' for more information.
+EOF
+genfile -l 1k > file
+echo file | cpio -o > a
+cpio -i --block-size=$(sizemax -hib) -F a
+],
+[2],
+[],
+[experr])
+
+AT_CHECK([
+# Cpio versions up to 2.15 incorrectly set input buffer size in copy-out
+# mode with append. 
+cat > experr <<EOF
+3 blocks
+cpio: block size out of allowed range: $(sizemax -hi)
+Try 'cpio --help' or 'cpio --usage' for more information.
+EOF
+genfile -l 1k > file
+echo file | cpio -o > a
+echo file | cpio -o -A --block-size=$(sizemax -hib) -F a
+],
+[2],
+[],
+[experr])
+AT_CLEANUP
+
+
