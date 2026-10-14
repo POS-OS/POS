@@ -8,9 +8,16 @@ Linux kernel coding conventions and workflows.
 
 ## Legal
 
-Only human beings can be credited in commit messages. Do not include
-Co-Developed-By, Co-Authored-By, or similar attribution for AI models.
-Commits should include a Signed-off-by line (`git commit -s`).
+Only human beings can be credited as authors. Do not use Co-Developed-By,
+Co-Authored-By, or similar authorship attribution for AI models — authorship
+carries responsibility for the origin of the patch, which a model cannot take.
+
+Disclosing tool use with an `Assisted-by:` trailer is welcome, but not
+required. It does not change the standard the patch is held to.
+
+Commits must include a Signed-off-by line (`git commit -s`) from the human
+submitter, who is responsible for the patch and is expected to understand and
+be able to defend every line of it.
 
 ## Key Documentation
 
@@ -74,5 +81,11 @@ Meson:
 
 - Build: `meson setup build && meson compile -C build`
 - Run tests: `meson test -C build`
+
+Tests:
+
+- Use `./tests/run.sh` to execute all tests.
+- Use `./tests/run.sh <subsystem> ...` to test specified subsystems (e.g., `run.sh mount more`). The subsystem name is based on the directory name; see `tests/ts/*`.
+- Use `./tests/ts/<subsystem>/<scriptname>` to directly call a script test. Do not use the `run.sh` wrapper in this case.
 
 Features should include corresponding tests.

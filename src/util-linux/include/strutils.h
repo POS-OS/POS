@@ -267,6 +267,7 @@ extern int string_to_bitmask(const char *list,
 extern int ul_parse_range(const char *str, int *lower, int *upper, int def);
 
 extern int streq_paths(const char *a, const char *b);
+extern int ul_path_is_within(const char *path, const char *dir);
 
 /*
  * Match string beginning.
@@ -505,5 +506,7 @@ extern int ul_stralnumcmp(const char *p1, const char *p2);
 extern int ul_optstr_next(char **optstr, char **name, size_t *namesz, char **value, size_t *valsz);
 extern int ul_optstr_is_valid(const char *optstr);
 extern char *ul_optstr_get_value(const char *optstr, const char *key);
+
+extern size_t ul_unquote(char *str);
 
 #endif /* UTIL_LINUX_STRUTILS */
