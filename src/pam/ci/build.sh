@@ -5,7 +5,17 @@
 #
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-opts='-Doptimization=2 -Dwerror=true -Dpam_lastlog=enabled'
+opts="-Doptimization=${MESON_OPTIMIZATION-2} -Dwerror=true -Dpam_lastlog=enabled"
+
+case "${MESON_SANITIZERS-}" in
+	'') ;;
+	*)
+		opts="$opts -Db_sanitize=$MESON_SANITIZERS -Ddebug=true"
+		case "$CC" in
+			clang*) opts="$opts -Db_lundef=false" ;;
+		esac
+		;;
+esac
 
 case "${VENDORDIR-no}" in
 	*/*|'')

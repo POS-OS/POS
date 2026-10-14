@@ -15,14 +15,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <syslog.h>
-#include <stdarg.h>
 #include <string.h>
 #include <pwd.h>
 #include <grp.h>
-
-#ifdef PAM_DEBUG
-#include <assert.h>
-#endif
 
 #include <security/pam_modules.h>
 #include <security/_pam_macros.h>
@@ -42,7 +37,7 @@
 #define APPLY_TYPE_USER		2
 #define APPLY_TYPE_GROUP	3
 
-#define LESSER(a, b) ((a) < (b) ? (a) : (b))
+#define DEFAULT_SHELL "/bin/sh"
 
 static int
 pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
@@ -53,24 +48,17 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
     int extitem = 0;
     int sense = -1;
     int quiet = 0;
-    int i;
     const void *void_citemp;
     const char *citemp;
     const char *ifname=NULL;
     char *aline=NULL;
-    const char *apply_val;
+    const char *apply_val = "";
     struct stat fileinfo;
     FILE *inf;
-    int apply_type;
+    int apply_type = APPLY_TYPE_NULL;
     size_t n=0;
 
-    /* Stuff for "extended" items */
-    struct passwd *userinfo;
-
-    apply_type=APPLY_TYPE_NULL;
-    apply_val = "";
-
-    for(i=0; i < argc; i++) {
+    for(int i=0; i < argc; i++) {
 	const char *str;
 
 	/* option quiet has no value */
@@ -181,7 +169,7 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
 		      "Non-sense use for apply= parameter");
 	    apply_type=APPLY_TYPE_NULL;
 	}
-	if(extitem && (extitem==EI_GROUP)) {
+	if(extitem == EI_GROUP) {
 	    pam_syslog(pamh,LOG_WARNING,
 		      "Non-sense use for apply= parameter");
 	    apply_type=APPLY_TYPE_NULL;
@@ -239,12 +227,13 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
             citemp = str;
     }
 
-    if(!citemp || (strlen(citemp) == 0)) {
+    if(!citemp || citemp[0] == '\0') {
 	/* The item was NULL - we are sure not to match */
 	return sense?PAM_SUCCESS:PAM_AUTH_ERR;
     }
 
     if(extitem) {
+	struct passwd *userinfo;
 	switch(extitem) {
 	    case EI_GROUP:
 		/* Just ignore, call pam_modutil_in_group... later */
@@ -260,6 +249,8 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
 		    return onerr;
 		}
 		citemp = userinfo->pw_shell;
+		if (citemp[0] == '\0')
+		    citemp = DEFAULT_SHELL;
 		break;
 	    default:
 		pam_syslog(pamh,LOG_ERR,
@@ -303,10 +294,6 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
     retval=PAM_AUTH_ERR;
     /* This loop assumes that PAM_SUCCESS == 0
        and PAM_AUTH_ERR != 0 */
-#ifdef PAM_DEBUG
-    assert(PAM_SUCCESS == 0);
-    assert(PAM_AUTH_ERR != 0);
-#endif
     while(retval && getline(&aline,&n,inf) != -1) {
 	const char *a = aline;
 
@@ -324,6 +311,13 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
 	} else {
 	    retval = strcmp(a, citemp);
 	}
+    }
+
+    if (retval && ferror(inf)) {
+	pam_syslog(pamh, LOG_ERR, "Error reading %s", ifname);
+	free(aline);
+	fclose(inf);
+	return onerr;
     }
 
     free(aline);
@@ -344,9 +338,12 @@ pam_listfile(pam_handle_t *pamh, int argc, const char **argv)
 #endif
 	(void) pam_get_item(pamh, PAM_SERVICE, &service);
 	(void) pam_get_user(pamh, &user_name, NULL);
-	if (!quiet)
-	    pam_syslog (pamh, LOG_NOTICE, "Refused user %s for service %s",
-	                user_name, (const char *)service);
+	if (!quiet) {
+	    pam_syslog(pamh, LOG_NOTICE,
+		       "Refused user %s for service %s: %s in %s",
+		       user_name, (const char *) service,
+		       sense ? "listed" : "not listed", ifname);
+	}
 	return PAM_AUTH_ERR;
     }
 }

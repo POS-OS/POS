@@ -23,19 +23,16 @@ jobs:
         run: git diff-index --check --cached 4b825dc642cb6eb9a060e54bf8d69288fbee4904
 
   build-check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:
-        cc: [gcc-15, gcc-14, gcc-13, gcc-12, gcc-11, gcc-10, gcc-9, clang-19, clang-18, clang-17, clang-16, clang-15, clang-14]
+        cc: [gcc-16, gcc-15, gcc-14, gcc-13, gcc-12, gcc-11, clang-22, clang-21, clang-20, clang-19, clang-18, clang-17]
         variant: [base, debug, logind, openssl, sanitizers, novendordir]
         exclude:
           - { cc: clang-19, variant: sanitizers }
           - { cc: clang-18, variant: sanitizers }
           - { cc: clang-17, variant: sanitizers }
-          - { cc: clang-16, variant: sanitizers }
-          - { cc: clang-15, variant: sanitizers }
-          - { cc: clang-14, variant: sanitizers }
     name: Build ${{ matrix.cc }}-x86_64-${{ matrix.variant }}
     env:
       CC: ${{ matrix.cc }}
@@ -56,9 +53,10 @@ jobs:
             logind) echo 'USE_LOGIND=yes' >> "$GITHUB_ENV" ;;
             openssl) echo 'USE_OPENSSL=yes' >> "$GITHUB_ENV" ;;
             sanitizers)
-              echo 'CFLAGS=-O1 -g -fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined -Wno-error=inline -Wno-error=format-overflow' >> "$GITHUB_ENV"
-              echo 'LDFLAGS=-fsanitize=address -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fsanitize=undefined' >> "$GITHUB_ENV"
-              echo 'ASAN_OPTIONS=strict_string_checks=1:detect_stack_use_after_return=1:check_initialization_order=1:strict_init_order=1' >> "$GITHUB_ENV"
+              echo 'MESON_OPTIMIZATION=1' >> "$GITHUB_ENV"
+              echo 'MESON_SANITIZERS=address,undefined' >> "$GITHUB_ENV"
+              echo 'CFLAGS=-Wno-error=inline -Wno-error=format-overflow' >> "$GITHUB_ENV"
+              echo 'ASAN_OPTIONS=strict_string_checks=1:detect_stack_use_after_return=1:strict_init_order=1' >> "$GITHUB_ENV"
               echo 'UBSAN_OPTIONS=print_stacktrace=1:print_summary=1:halt_on_error=1' >> "$GITHUB_ENV"
               ;;
             novendordir) echo 'VENDORDIR=' >> "$GITHUB_ENV" ;;
