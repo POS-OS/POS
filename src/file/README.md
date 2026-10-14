@@ -1,6 +1,6 @@
 ## README for file(1) Command and the libmagic(3) library ##
 
-    @(#) $File: README.md,v 1.8 2026/08/28 15:26:23 christos Exp $
+    @(#) $File: README.md,v 1.10 2026/10/03 19:07:33 christos Exp $
 
 - Bug Tracker: <https://bugs.astron.com/>
 - Build Status: <https://travis-ci.org/file/file>
@@ -70,51 +70,35 @@ COPYING - read this first.
 * `src/apprentice.c` - parses /etc/magic to learn magic
 * `src/apptype.c` - used for OS/2 specific application type magic
 * `src/ascmagic.c` - third & last set of tests, based on hardwired assumptions.
-* `src/asctime_r.c` - replacement for OS's that don't have it.
-* `src/asprintf.c` - replacement for OS's that don't have it.
 * `src/buffer.c` - buffer handling functions.
 * `src/cdf.[ch]` - parser for Microsoft Compound Document Files
 * `src/cdf_time.c` - time converter for CDF.
 * `src/compress.c` - handles decompressing files to look inside.
-* `src/ctime_r.c` - replacement for OS's that don't have it.
 * `src/der.[ch]` - parser for Distinguished Encoding Rules
-* `src/dprintf.c` - replacement for OS's that don't have it.
 * `src/elfclass.h` - common code for elf 32/64.
 * `src/encoding.c` - handles unicode encodings
 * `src/file.c` - the main program
 * `src/file.h` - header file
 * `src/file_opts.h` - list of options
-* `src/fmtcheck.c` - replacement for OS's that don't have it.
 * `src/fsmagic.c` - first set of tests the program runs, based on filesystem info
-* `src/funcs.c` - utilility functions
-* `src/getline.c` - replacement for OS's that don't have it.
-* `src/getopt_long.c` - replacement for OS's that don't have it.
-* `src/gmtime_r.c` - replacement for OS's that don't have it.
+* `src/funcs.c` - utility functions
 * `src/is_csv.c` - knows about Comma Separated Value file format (RFC 4180).
 * `src/is_json.c` - knows about JavaScript Object Notation format (RFC 8259).
 * `src/is_simh.c` - knows about SIMH tape file format.
 * `src/is_tar.c, tar.h` - knows about Tape ARchive format (courtesy John Gilmore).
 * `src/landlock.c` - linux landlock protection
-* `src/localtime_r.c` - replacement for OS's that don't have it.
 * `src/magic.h.in` - source file for magic.h
-* `src/mygetopt.h` - replacement for OS's that don't have it.
 * `src/magic.c` - the libmagic api
 * `src/names.h` - header file for ascmagic.c
-* `src/pread.c` - replacement for OS's that don't have it.
 * `src/print.c` - print results, errors, warnings.
 * `src/readcdf.c` - CDF wrapper.
 * `src/readelf.[ch]` - Stand-alone elf parsing code.
 * `src/softmagic.c` - 2nd set of tests, based on /etc/magic
 * `src/swap.h` - byte swapping
 * `src/swap.c` - byte swapping
-* `src/mygetopt.h` - replacement for OS's that don't have it.
 * `src/seccomp.c` - linux seccomp protection
-* `src/strcasestr.c` - replacement for OS's that don't have it.
-* `src/strlcat.c` - replacement for OS's that don't have it.
-* `src/strlcpy.c` - replacement for OS's that don't have it.
-* `src/strndup.c` - replacement for OS's that don't have it.
+* `src/missing/* - replacements for OS's that don't have them.
 * `src/tar.h` - tar file definitions
-* `src/vasprintf.c` - for systems that don't have it.
 * `doc/file.man` - man page for the command
 * `doc/magic.man` - man page for the magic file, courtesy Guy Harris.
 	Install as magic.4 on USG and magic.5 on V7 or Berkeley; cf Makefile.
@@ -200,6 +184,10 @@ file.readme
 file/{AmigaOS3,AmigaOS4,MorphOS}/C/{file,magic.mgc}
 ```
 
+The `file` archive is `file_ca.lha` because `file.lha` is taken on Aminet, and
+its readme is kept in the repo as `file_ca.readme` so the upload pair matches;
+`package-amiga.sh` stages it into the archive under the plain `file.readme`.
+
 `package-amiga.sh` needs a native `magic.mgc` to ship, so build the host copy
 into `build-native/` first; it is refused otherwise.
 
@@ -217,9 +205,9 @@ finds.
 `.github/workflows/amiga-packages.yml` runs the whole packaging path on every
 push to `master` (and on demand via *Run workflow*), so the commit gets a tick
 when both archives build and verify and a cross when anything fails. It
-uploads `magic.lha` and `file.lha` as run artifacts, named `magic-lha` and
-`file-lha`; GitHub always wraps an artifact in a zip, so the download is a zip
-containing the untouched `.lha`.
+uploads `magic.lha` and `file_ca.lha` as run artifacts, named `magic-lha` and
+`file-ca-lha`; GitHub always wraps an artifact in a zip, so the download is a
+zip containing the untouched `.lha`.
 
 The runner builds *LHa for UNIX* (`jca02266/lha`, pinned to a release tag) from
 source, because Debian and Ubuntu only ship `lhasa`, which extracts `.lha` but
