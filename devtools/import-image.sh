@@ -2,7 +2,9 @@
 # Makes an image of a build available in podman, tagged with the build ID
 # and with its version (BUILD, or <BUILD>u<UPDATE>), the tag to make
 # containers and toolboxes from. The version tag moves to whichever build
-# of that version was made available last:
+# of that version was made available last. A build tags the images it
+# makes with podman itself; this imports the others, or moves the version
+# tag back to an earlier build:
 #
 #   import-image.sh [-i <image>] [<id>]    (default: container, the current build)
 #   toolbox create -i localhost/pos-fedora-toolbox:<version>

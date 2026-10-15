@@ -779,7 +779,11 @@ has just made or `./build image` finds in the build. The build imports
 that image's archive into podman as `localhost/pos-<x>:<id>` (images
 `container-<x>` and `<x>`; `container` is `pos`) and builds on it, as
 `BASE`. The result exists only in podman's local store, tagged with the
-build ID; `devtools/import-image.sh` tags it with the build's version.
+build ID and with the build's version (`localhost/pos-fedora-toolbox:2`),
+which moves to the build that made the image last. Builds made by other
+users are in their own podman stores. `devtools/import-image.sh` imports
+the other images of a build into podman the same way, or moves the version
+tag back to an earlier build.
 
 `images/fedora-toolbox` is container-dnf as a toolbox image,
 `localhost/pos-fedora-toolbox`, for working in a POS-based toolbox; builds
@@ -787,13 +791,15 @@ do not use it. It adds what toolbox needs and nothing installs:
 toolbox puts its user in `wheel` with an empty password and runs sudo, so
 the image adds a `wheel` rule in `/etc/sudoers.d` to POS's `/etc/sudoers`
 (from the factory tree), which has none. sudo's PAM configuration is
-POS's (see "System integration").
+POS's (see "System integration"). Fedora's `flatpak-spawn` is installed
+with dnf, as in Fedora's toolbox image: toolbox run inside a toolbox, and
+`./build`, reach the host with it.
 
 A toolbox stays on the image it was made from: moving to a later build is
 making the toolbox again, from the image of that build.
 
-    $ devtools/import-image.sh -i fedora-toolbox [<id>]
     $ toolbox create -i localhost/pos-fedora-toolbox:<version> <name>
+    $ devtools/import-image.sh -i fedora-toolbox <id>   # back to build <id>
 
 # RPM packages (experimental)
 `./build rpm [<stage>...]` makes the RPM packages of the current build's

@@ -17,4 +17,8 @@ LABEL com.github.containers.toolbox="true" \
 COPY sudoers-toolbox /etc/sudoers.d/toolbox
 RUN chmod 0440 /etc/sudoers.d/toolbox
 
+# toolbox inside a toolbox (and ./build) reach the host with flatpak-spawn,
+# as in Fedora's toolbox image.
+RUN dnf -y install flatpak-spawn && dnf clean all
+
 CMD /pos/bin/bash

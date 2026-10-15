@@ -305,6 +305,25 @@ ln -s ../usr/lib/os-release %{buildroot}/etc/os-release'
 Provides: system-release(releasever) = $fedora"
 fi
 
+# Fedora curl, dnf, rpm, and python search /etc/pki for CA certificates.
+# When pos-fedora replaces Fedora's ca-certificates, supply the compatibility
+# symlinks in /etc/pki so HTTPS requests work in Fedora images and toolboxes.
+pki_install= pki_files=
+if [[ -n ${in_build[ca-certificates]:-} ]]; then
+  pki_install='mkdir -p %{buildroot}/etc/pki/ca-trust/extracted/pem %{buildroot}/etc/pki/tls/certs
+ln -s ../../../../../pos/share/ca-certificates/ca-bundle.crt %{buildroot}/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+ln -s ../../pos/share/ca-certificates/ca-bundle.crt %{buildroot}/etc/pki/tls/cert.pem
+ln -s ../../../pos/share/ca-certificates/ca-bundle.crt %{buildroot}/etc/pki/tls/certs/ca-bundle.crt'
+  pki_files='%dir /etc/pki/ca-trust
+%dir /etc/pki/ca-trust/extracted
+%dir /etc/pki/ca-trust/extracted/pem
+/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
+%dir /etc/pki/tls
+%dir /etc/pki/tls/certs
+/etc/pki/tls/cert.pem
+/etc/pki/tls/certs/ca-bundle.crt'
+fi
+
 {
   spec_head pos-fedora "POS as the base of a Fedora system"
   echo "Requires: pos = $evr"
@@ -338,6 +357,7 @@ printf '%s\n' /pos/lib /usr/lib64 >%{buildroot}/etc/pos/ld.so.conf
 chmod 0644 %{buildroot}/etc/pos/ld.so.conf
 ln -s pos/ld.so.conf %{buildroot}/etc/ld.so.conf
 $osrel_install
+$pki_install
 
 # The POS loader finds what is not in /pos/lib through its cache only, so
 # the cache is updated after every package that adds libraries, before
@@ -357,6 +377,7 @@ rpm.execute("/pos/sbin/ldconfig")
 %config(noreplace) /etc/pos/ld.so.conf
 /etc/ld.so.conf
 $osrel_files
+$pki_files
 $(awk '{print $1}' "$work/links" | rpm_escape)
 EOF
 } >"$work/pos-fedora.spec"

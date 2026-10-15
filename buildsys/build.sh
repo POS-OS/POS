@@ -761,17 +761,23 @@ podman_import() {
 
 # Make an image with podman from images/<image>/containerfile, on top of
 # the build's image named in images/<image>/from (BASE), tagged with the
-# build ID (devtools/import-image.sh adds the version tag).
+# build ID and with its version, which moves to the build that made the
+# image last (toolboxes are made from <name>:<version>).
 podman_image() {
-  local t=$1 from name
+  local t=$1 from name version
   from=$(image_from "$t")
+  version=$(info_get "$bdir" version)
   [[ -f $bdir/pos-image-$from-$(build_stem "$bdir").tar.zst ]] || die "$t: build $id has no $from image; make it first"
   podman_import "$from"
   name=localhost/$(podman_name "$t")
   host_podman build --build-arg "BASE=localhost/$(podman_name "$from"):$id" \
-    --label "pos.build=$id" --label "pos.version=$(info_get "$bdir" version)" -t "$name:$id" \
+    --label "pos.build=$id" --label "pos.version=$version" -t "$name:$id" \
     -f "$(host_path "$base/images/$t/containerfile")" "$(host_path "$base/images/$t")"
   echo "$name:$id"
+  if [[ -n $version ]]; then
+    host_podman tag "$name:$id" "$name:$version"
+    echo "$name:$version"
+  fi
 }
 
 # Make the RPM packages of the given stages (buildsys/rpm.sh). It needs
